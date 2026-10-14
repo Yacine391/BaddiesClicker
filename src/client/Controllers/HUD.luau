@@ -295,6 +295,7 @@ function HUD.start(scope: any, deps: any)
 		},
 	}) :: ScreenGui
 	root = gui:FindFirstChild("Root") :: Frame
+	deps.HudRoot = root -- les fenêtres se montent ici (même UIScale que le HUD)
 	HUD.gui = gui
 
 	-- « +gain » qui s'envole au-dessus du bouton à chaque entraînement envoyé

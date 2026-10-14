@@ -67,8 +67,8 @@ return function(scope: any, props: Props): Instance
 			scope:New("Frame")({
 				Name = "Border",
 				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.new(0.5, 0, 0.5, 20),
-				Size = props.Size or UDim2.fromOffset(760, 540),
+				Position = UDim2.new(0.5, 0, 0.5, 44),
+				Size = props.Size or UDim2.fromOffset(760, 500),
 				BackgroundColor3 = Color3.new(1, 1, 1),
 				[scope.Children] = {
 					scope:New("UICorner")({ CornerRadius = UDim.new(0, 22) }),

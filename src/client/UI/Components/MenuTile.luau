@@ -14,6 +14,7 @@ export type Props = {
 	Color: Color3,
 	Badge: any?, -- string ou état Fusion de string ; "" ou nil = pas de badge
 	Position: any?,
+	LayoutOrder: number?,
 	OnClick: () -> (),
 }
 
@@ -68,6 +69,7 @@ return function(scope: any, props: Props): Instance
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		Size = UDim2.fromOffset(74, 70),
 		Position = props.Position or UDim2.new(),
+		LayoutOrder = props.LayoutOrder or 0,
 		[scope.OnEvent("Activated")] = props.OnClick,
 		[scope.Children] = children,
 	})

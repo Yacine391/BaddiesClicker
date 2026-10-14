@@ -7,6 +7,7 @@
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
 local Text = require(UI.Text)
+local Metrics = require(UI.Metrics)
 
 export type Props = {
 	Color: Color3,
@@ -21,6 +22,8 @@ export type Props = {
 }
 
 return function(scope: any, props: Props): Instance
+	local buttonHeight = Metrics.touch(scope, Theme.MinTouch)
+	local baseHeight = if props.Description then 94 else 72
 	local children: { any } = Theme.bevel(scope, props.Color, 14)
 	table.insert(
 		children,
@@ -106,7 +109,9 @@ return function(scope: any, props: Props): Instance
 				BackgroundColor3 = Color3.new(1, 1, 1),
 				AnchorPoint = Vector2.new(1, 0.5),
 				Position = UDim2.new(1, -12, 0.5, 0),
-				Size = UDim2.fromOffset(130, Theme.MinTouch),
+				Size = scope:Computed(function(use)
+					return UDim2.fromOffset(130, use(buttonHeight))
+				end),
 				[scope.OnEvent("Activated")] = function()
 					if props.OnAction then
 						props.OnAction()
@@ -120,7 +125,10 @@ return function(scope: any, props: Props): Instance
 	return scope:New("Frame")({
 		Name = props.Name,
 		LayoutOrder = props.LayoutOrder or 0,
-		Size = UDim2.new(1, 0, 0, if props.Description then 94 else 72),
+		Size = scope:Computed(function(use)
+			local needed = if props.ActionLabel then use(buttonHeight) + 24 else 0
+			return UDim2.new(1, 0, 0, math.max(baseHeight, needed))
+		end),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		BackgroundTransparency = if props.Dimmed then 0.35 else 0,
 		[scope.Children] = children,

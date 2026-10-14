@@ -11,6 +11,7 @@ local UserInputService = game:GetService("UserInputService")
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
 local Text = require(UI.Text)
+local Metrics = require(UI.Metrics)
 
 export type Props = {
 	Title: string,
@@ -22,6 +23,7 @@ export type Props = {
 
 return function(scope: any, props: Props): Instance
 	local rotation = scope:Value(0)
+	local closeSide = Metrics.touch(scope, Theme.MinTouch)
 	table.insert(
 		scope,
 		RunService.Heartbeat:Connect(function(dt)
@@ -134,7 +136,10 @@ return function(scope: any, props: Props): Instance
 						AutoButtonColor = false,
 						AnchorPoint = Vector2.new(0.5, 0.5),
 						Position = UDim2.new(1, -4, 0, 4),
-						Size = UDim2.fromOffset(Theme.MinTouch, Theme.MinTouch),
+						Size = scope:Computed(function(use)
+							local side = use(closeSide)
+							return UDim2.fromOffset(side, side)
+						end),
 						BackgroundColor3 = Theme.Colors.Fermer,
 						ZIndex = 12,
 						[scope.OnEvent("Activated")] = props.OnClose,

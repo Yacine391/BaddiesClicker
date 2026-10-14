@@ -44,6 +44,7 @@ local teams: { [Player]: Team } = {}
 local folder: Folder
 local deps: any
 local pendingEntrance: { [string]: boolean } = {}
+local playerConnections: { [Player]: { RBXScriptConnection } } = {}
 
 local function lookIndexFor(player: Player, id: string): number
 	if player == Players.LocalPlayer then
@@ -179,6 +180,11 @@ local function clearTeam(player: Player)
 end
 
 local function refresh(player: Player)
+	-- Un refresh différé (CharacterAdded, attribut) peut arriver après le départ du joueur
+	if player.Parent ~= Players then
+		clearTeam(player)
+		return
+	end
 	local members = membersOf(player)
 	local signature = signatureOf(player, members)
 	local team = teams[player]
@@ -188,6 +194,8 @@ local function refresh(player: Player)
 	clearTeam(player)
 	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	local origin = if hrp then (hrp :: BasePart).Position else Vector3.zero
+	-- Sans avatar (pas encore chargé ou hors streaming), rien n'est affiché : step les placera
+	local visible = hrp ~= nil
 	local followers = {}
 	for _, member in members do
 		local model = buildModel(player, member)
@@ -199,7 +207,7 @@ local function refresh(player: Player)
 			end
 			model.Name = `{player.Name}_{member.id}`
 			model:PivotTo(CFrame.new(start))
-			model.Parent = folder
+			model.Parent = if visible then folder else nil
 			local f: Follower =
 				{ member = member, model = model, pos = { x = start.X, y = start.Y, z = start.Z } }
 			playAnims(f)
@@ -248,6 +256,11 @@ local function step(dt: number)
 		local character = player.Character
 		local hrp = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
 		if hrp == nil then
+			for _, f in team.followers do
+				if f.model.Parent ~= nil then
+					f.model.Parent = nil
+				end
+			end
 			continue
 		end
 		local far = player ~= Players.LocalPlayer
@@ -256,7 +269,10 @@ local function step(dt: number)
 			> WALK_SPEED
 		local facing = hrp.CFrame - hrp.Position
 		for index, f in team.followers do
-			f.model.Parent = if far then nil else folder
+			local parent = if far then nil else folder
+			if f.model.Parent ~= parent then
+				f.model.Parent = parent
+			end
 			if far then
 				continue
 			end
@@ -291,29 +307,33 @@ function Followers.start(scope: any, dependencies: any)
 	folder.Parent = Workspace
 	table.insert(scope, folder)
 
+	-- Connexions par joueur, coupées à son départ (§28 : nettoyer modèles, connexions, animations)
 	local function watch(player: Player)
-		table.insert(
-			scope,
+		playerConnections[player] = {
 			player.AttributeChanged:Connect(function(name)
 				if string.sub(name, 1, 3) == "BC_" then
 					refresh(player)
 				end
-			end)
-		)
-		table.insert(
-			scope,
+			end),
 			player.CharacterAdded:Connect(function()
 				clearTeam(player) -- repartir près du nouvel avatar
 				task.defer(refresh, player)
-			end)
-		)
+			end),
+		}
 		refresh(player)
+	end
+	local function forget(player: Player)
+		for _, connection in playerConnections[player] or {} do
+			connection:Disconnect()
+		end
+		playerConnections[player] = nil
+		clearTeam(player)
 	end
 	for _, player in Players:GetPlayers() do
 		watch(player)
 	end
 	table.insert(scope, Players.PlayerAdded:Connect(watch))
-	table.insert(scope, Players.PlayerRemoving:Connect(clearTeam))
+	table.insert(scope, Players.PlayerRemoving:Connect(forget))
 
 	scope:Observer(deps.Store.snapshot):onChange(function()
 		refresh(Players.LocalPlayer)
@@ -345,6 +365,9 @@ function Followers.start(scope: any, dependencies: any)
 
 	table.insert(scope, RunService.RenderStepped:Connect(step))
 	table.insert(scope, function()
+		for player in playerConnections do
+			forget(player)
+		end
 		for player in teams do
 			clearTeam(player)
 		end

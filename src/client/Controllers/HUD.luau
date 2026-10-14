@@ -13,6 +13,8 @@ local Client = script.Parent.Parent
 local HudModel = require(Client.Logic.HudModel)
 local Theme = require(Client.UI.Theme)
 local Text = require(Client.UI.Text)
+local Metrics = require(Client.UI.Metrics)
+local TouchSize = require(Client.Logic.TouchSize)
 local Components = Client.UI.Components
 local MenuTile = require(Components.MenuTile)
 local BigStat = require(Components.BigStat)
@@ -152,6 +154,7 @@ function HUD.start(scope: any, deps: any)
 	end
 	local guiSize = scope:Value(Workspace.CurrentCamera.ViewportSize)
 	local scale, canvas = viewportScale(scope, guiSize)
+	Metrics.scale = scale
 
 	local function open(name: string)
 		return function()
@@ -179,10 +182,28 @@ function HUD.start(scope: any, deps: any)
 						Name = "Tiles",
 						BackgroundTransparency = 1,
 						Position = UDim2.fromOffset(24, 190),
-						Size = UDim2.fromOffset(180, 200),
+						Size = scope:Computed(function(use)
+							local k = use(scale)
+							local w = TouchSize.offset(74, k, Theme.MinTouch)
+							local h = TouchSize.offset(70, k, Theme.MinTouch)
+							return UDim2.fromOffset(2 * w + 18, 2 * h + 34)
+						end),
 						[scope.Children] = {
+							-- Grille : les tuiles grandissent sur petit écran pour rester ≥ 48 px réels
+							scope:New("UIGridLayout")({
+								CellSize = scope:Computed(function(use)
+									local k = use(scale)
+									return UDim2.fromOffset(
+										TouchSize.offset(74, k, Theme.MinTouch),
+										TouchSize.offset(70, k, Theme.MinTouch)
+									)
+								end),
+								CellPadding = UDim2.fromOffset(18, 34),
+								SortOrder = Enum.SortOrder.LayoutOrder,
+							}),
 							MenuTile(scope, {
 								Name = "BOOK",
+								LayoutOrder = 1,
 								Icon = Theme.Icons.Book,
 								Color = Theme.Colors.Cyan,
 								Position = UDim2.fromOffset(0, 0),
@@ -190,6 +211,7 @@ function HUD.start(scope: any, deps: any)
 							}),
 							MenuTile(scope, {
 								Name = "CREW",
+								LayoutOrder = 2,
 								Icon = Theme.Icons.Crew,
 								Color = Theme.Colors.Violet,
 								Position = UDim2.fromOffset(92, 0),
@@ -197,6 +219,7 @@ function HUD.start(scope: any, deps: any)
 							}),
 							MenuTile(scope, {
 								Name = "STYLE",
+								LayoutOrder = 3,
 								Icon = Theme.Icons.Style,
 								Color = Theme.Colors.Or,
 								Position = UDim2.fromOffset(0, 104),
@@ -204,6 +227,7 @@ function HUD.start(scope: any, deps: any)
 							}),
 							MenuTile(scope, {
 								Name = "RÉGLAGES",
+								LayoutOrder = 4,
 								Icon = Theme.Icons.Settings,
 								Color = Theme.Colors.Gris,
 								Position = UDim2.fromOffset(92, 104),

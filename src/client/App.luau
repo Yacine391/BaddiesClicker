@@ -38,7 +38,7 @@ function App.start(stateController: any)
 	-- L'état doit exister avant que StateController ne pousse le premier snapshot
 	UiState.init(scope)
 	Store.init(scope, stateController)
-	Input.init(deps)
+	Input.init(deps, scope)
 
 	for _, name in VISUAL_CONTROLLERS do
 		require(Controllers:WaitForChild(name)).start(scope, deps)

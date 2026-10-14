@@ -4,6 +4,8 @@
 	S'écrase pendant l'appui puis rebondit (spring sur UIScale). Libellé et couleur réactifs.
 ]]
 
+local UserInputService = game:GetService("UserInputService")
+
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
 local Text = require(UI.Text)
@@ -17,12 +19,30 @@ export type Props = {
 	Position: any?,
 	AnchorPoint: Vector2?,
 	OnActivated: (() -> ())?,
-	OnPress: (() -> ())?,
+	OnPress: ((InputObject) -> ())?,
 	OnRelease: (() -> ())?,
 }
 
 return function(scope: any, props: Props): Instance
 	local pressed = scope:Value(false)
+	local pressedInput: InputObject? = nil
+	table.insert(
+		scope,
+		UserInputService.InputEnded:Connect(function(input)
+			local current = pressedInput
+			if current == nil then
+				return
+			end
+			local mouse = Enum.UserInputType.MouseButton1
+			if input == current or (input.UserInputType == mouse and current.UserInputType == mouse) then
+				pressedInput = nil
+				pressed:set(false)
+				if props.OnRelease then
+					props.OnRelease()
+				end
+			end
+		end)
+	)
 	local scale = scope:Spring(
 		scope:Computed(function(use)
 			return if use(pressed) then 0.9 else 1
@@ -67,24 +87,17 @@ return function(scope: any, props: Props): Instance
 		BackgroundTransparency = scope:Computed(function(use)
 			return if use(props.Enabled) then 0 else 0.4
 		end),
-		[scope.OnEvent("MouseButton1Down")] = function()
+		-- Appui : souris ou doigt. Le relâchement est suivi globalement (UserInputService),
+		-- jamais par le survol du bouton (§21).
+		[scope.OnEvent("InputBegan")] = function(input: InputObject)
+			local kind = input.UserInputType
+			if kind ~= Enum.UserInputType.MouseButton1 and kind ~= Enum.UserInputType.Touch then
+				return
+			end
+			pressedInput = input
 			pressed:set(true)
 			if props.OnPress then
-				props.OnPress()
-			end
-		end,
-		[scope.OnEvent("MouseButton1Up")] = function()
-			pressed:set(false)
-			if props.OnRelease then
-				props.OnRelease()
-			end
-		end,
-		[scope.OnEvent("MouseLeave")] = function()
-			if scope.peek(pressed) then
-				pressed:set(false)
-				if props.OnRelease then
-					props.OnRelease()
-				end
+				props.OnPress(input)
 			end
 		end,
 		[scope.OnEvent("Activated")] = function()

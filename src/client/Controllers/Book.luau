@@ -89,13 +89,10 @@ local function baddieRows(scope: any, deps: any, snapshot: any): { Instance }
 		local chips = { rarityChip(scope, catalog, id) :: any }
 		table.insert(
 			chips,
-			Chip(
-				scope,
-				{
-					Text = `PRINCIPALE · {string.upper(view.principal.slotText)}`,
-					Color = Theme.Colors.Action,
-				}
-			)
+			Chip(scope, {
+				Text = `PRINCIPALE · {string.upper(view.principal.slotText)}`,
+				Color = Theme.Colors.Action,
+			})
 		)
 		table.insert(chips, Chip(scope, { Text = view.principal.multiplierText, Color = Theme.Colors.Creme }))
 		if contains(display, id) then

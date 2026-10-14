@@ -16,11 +16,11 @@ backlog ; pendant P0/P1, seules les corrections de la boucle entrent.
 - [ ] Vérifier la sauvegarde réelle (place publié + accès API Studio) : quitter / revenir, puissance et Malik conservés
 
 **Codeur B**
-- [ ] Maya, 3 looks (Blender, rig R15 commun) → valider avant tout autre personnage
-- [ ] Malik : modèle, casque, aura, idle + animation de mixage
-- [ ] Lobby compact : spawn, sortie visible dans l'axe, podium, entraînement, emplacements « prototype »
-- [ ] HUD final branché sur `StateController`, puis `Flags.DEV_HUD = false`
-- [ ] Suiveurs (principale + crew) depuis les attributs `BC_*`
+- [ ] Maya, 3 looks (Blender, rig R15 commun) → valider avant tout autre personnage *(placeholders R15 en place : `assets/visuals/`)*
+- [ ] Malik : modèle, casque, aura, idle + animation de mixage *(placeholder + aura + idle en place)*
+- [x] Lobby compact : spawn, sortie visible dans l'axe, podium, entraînement, emplacements « prototype » *(greybox `assets/world/Lobby.rbxm`)*
+- [x] HUD final branché sur `StateController`, puis `Flags.DEV_HUD = false`
+- [x] Suiveurs (principale + crew) depuis les attributs `BC_*`
 
 **Acceptation P0 (§02)** : le bêta-testeur reconnaît les 3 looks de Maya, constate la production du DJ,
 trouve la sortie du lobby ; fluide sur le téléphone de référence ; vidéo réelle de 15 s.

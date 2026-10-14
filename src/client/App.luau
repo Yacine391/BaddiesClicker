@@ -17,7 +17,8 @@ local Input = require(Controllers.Input)
 local App = {}
 
 -- Contrôleurs visuels, démarrés dans cet ordre (chacun expose start(scope, deps))
-local VISUAL_CONTROLLERS: { string } = { "HUD", "Book", "Style", "Crew", "Settings" }
+local VISUAL_CONTROLLERS: { string } =
+	{ "HUD", "Book", "Style", "Crew", "Settings", "FX", "Followers", "Podium" }
 
 function App.start(stateController: any)
 	local scope = Fusion.scoped(Fusion)

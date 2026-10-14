@@ -68,7 +68,7 @@ local function crewLabel(id: string): string
 	return if def then `{def.name} ({def.role})` else id
 end
 
-function DevHUD.start(state)
+function DevHUD.start(state, celebration)
 	local player = Players.LocalPlayer
 
 	local gui = make("ScreenGui", {
@@ -80,7 +80,8 @@ function DevHUD.start(state)
 	-- Panneau d'état (haut gauche)
 	local panel = make("Frame", {
 		Name = "Panel",
-		Position = UDim2.fromOffset(16, 16),
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(0, 16, 0.5, -40),
 		Size = UDim2.fromOffset(360, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundColor3 = NUIT,
@@ -91,6 +92,11 @@ function DevHUD.start(state)
 		make("UIListLayout", { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 4) }),
 	})
 	panel.Parent = gui
+
+	-- Contour arc-en-ciel animé (RGB)
+	local panelStroke = make("UIStroke", { Thickness = 2, Color = Color3.new(1, 1, 1) })
+	panelStroke.Parent = panel
+	celebration.rainbowGradient(panelStroke, 120)
 
 	local title = line(1, 12, VIOLET, Enum.Font.GothamBold)
 	title.Text = "HUD DEV · codeur A · pas le HUD final"
@@ -120,14 +126,16 @@ function DevHUD.start(state)
 	}, {
 		corner(18),
 		scale,
-		make("UIStroke", {
-			Color = CREME,
-			Thickness = 2,
-			Transparency = 0.6,
-			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-		}),
 	})
 	button.Parent = gui
+
+	local buttonStroke = make("UIStroke", {
+		Color = Color3.new(1, 1, 1),
+		Thickness = 4,
+		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+	})
+	buttonStroke.Parent = button
+	celebration.rainbowGradient(buttonStroke, 200)
 
 	-- Pile de toasts (haut centre)
 	local toasts = make("Frame", {
@@ -207,9 +215,6 @@ function DevHUD.start(state)
 			local def = Catalog.crew[event.crewId]
 			local name = if def then `{def.name} le {def.role}` else event.crewId
 			toast(`{name} rejoint ton crew ! Il s'entraîne pour toi, même pendant les combats.`, CYAN)
-		elseif event.kind == "ticket" then
-			local what = if event.ticket == "baddie" then "baddie" else "compagnon"
-			toast(`+{event.amount} ticket {what}`, OR)
 		elseif event.kind == "passiveTick" then
 			crewLine.TextColor3 = CYAN
 			task.delay(0.2, function()

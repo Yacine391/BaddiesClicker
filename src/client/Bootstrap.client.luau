@@ -8,10 +8,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Flags = require(Shared:WaitForChild("Flags"))
 
-local StateController = require(script.Parent:WaitForChild("Controllers"):WaitForChild("StateController"))
+local Controllers = script.Parent:WaitForChild("Controllers")
+local StateController = require(Controllers:WaitForChild("StateController"))
+local CelebrationController = require(Controllers:WaitForChild("CelebrationController"))
+
+CelebrationController.start(StateController)
 StateController.start()
 
 if Flags.DEV_HUD then
 	local DevHUD = require(script.Parent:WaitForChild("Dev"):WaitForChild("DevHUD"))
-	DevHUD.start(StateController)
+	DevHUD.start(StateController, CelebrationController)
 end

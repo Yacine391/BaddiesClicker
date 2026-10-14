@@ -12,8 +12,10 @@ backlog ; pendant P0/P1, seules les corrections de la boucle entrent.
 - [x] Malik DJ : débloqué au 10e entraînement, production passive serveur 0,6/s, gain réel affiché
 - [x] Tickets : +1 baddie / 250 actions, +1 compagnon / 500 actions
 - [x] Contrat réseau `docs/CONTRACT.md`
-- [ ] Vérifier en Studio : Play solo, puis 2 joueurs (Test → Clients and Servers)
-- [ ] Vérifier la sauvegarde réelle (place publié + accès API Studio) : quitter / revenir, puissance et Malik conservés
+- [x] Effets RGB de célébration (paliers de puissance, nouveau compagnon, tickets ; prêts pour niveaux, maîtrise, renaissance)
+- [x] Vérifier en Studio : Play solo (14/10, Malik et production OK)
+- [ ] Vérifier en Studio : 2 joueurs (Test → Clients and Servers)
+- [x] Vérifier la sauvegarde réelle (place publié + accès API Studio) : puissance et Malik conservés après Stop / Play
 
 **Codeur B**
 - [ ] Maya, 3 looks (Blender, rig R15 commun) → valider avant tout autre personnage

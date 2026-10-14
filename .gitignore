@@ -11,3 +11,6 @@ sourcemap.json
 # Divers
 .DS_Store
 *.log
+
+# Maquettes du brainstorming (compagnon visuel)
+.superpowers/

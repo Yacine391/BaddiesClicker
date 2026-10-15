@@ -198,7 +198,7 @@ function Book.start(scope: any, deps: any)
 	WindowHost.mount(scope, deps, deps.HudRoot, {
 		name = "Book",
 		title = "BOOK",
-		icon = Theme.Icons.Book,
+		icon = "book",
 		content = function(inner)
 			return {
 				WindowHost.rows(inner, deps, signature, function(rowsScope, snapshot)

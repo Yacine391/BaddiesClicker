@@ -1,7 +1,8 @@
 --!strict
 --[[
-	Crew : compagnons équipés (§16) — nom, rôle, production réelle par seconde, niveau, copies.
-	Les compagnons n'attaquent pas en V1 : ils entraînent en continu.
+	Crew : compagnons (§16) — rareté, nom · rôle, production réelle par seconde, niveau, copies,
+	puce ÉQUIPÉ. Collection complète (`crewOwned`) si le snapshot la donne, sinon les équipés (`crew`).
+	Les compagnons n'attaquent pas en V1 : ils entraînent en continu. Aucun bouton (pas de faux bouton).
 ]]
 
 local Client = script.Parent.Parent
@@ -12,45 +13,63 @@ local Chip = require(Client.UI.Components.Chip)
 
 local Crew = {}
 
+local function entriesOf(snapshot: any): ({ any }, boolean)
+	if snapshot and type(snapshot.crewOwned) == "table" then
+		return snapshot.crewOwned, true
+	end
+	return (snapshot and snapshot.crew) or {}, false
+end
+
 local function crewRows(scope: any, deps: any, snapshot: any): { Instance }
 	local rows: { Instance } = {}
-	local crew = snapshot and snapshot.crew or {}
-	if #crew == 0 then
+	local entries, owned = entriesOf(snapshot)
+	if #entries == 0 then
 		local tutorial = snapshot and snapshot.tutorial or {}
 		table.insert(
 			rows,
 			ListRow(scope, {
-				Color = Theme.Colors.Nuit,
-				Portrait = Theme.Icons.Unknown.fallback,
+				Portrait = "?",
 				Name = "AUCUN COMPAGNON",
 				Chips = {
 					Chip(scope, {
 						Text = `Entraîne-toi : {tutorial.progress or 0}/{tutorial.needed or 0}`,
-						Color = Theme.Colors.Cyan,
+						Color = Theme.Colors.Accent,
 					}),
 				},
+				Description = "Malik te rejoint après tes premiers entraînements.",
 				Dimmed = true,
 			})
 		)
 		return rows
 	end
-	for index, entry in crew do
+	for index, entry in entries do
 		local def = deps.Catalog.crew[entry.id]
 		if def then
+			local rarity = deps.Catalog.rarities[def.rarity]
+			local equipped = if owned then entry.equipped == true else true
+			local chips = {
+				Chip(scope, {
+					Text = if rarity then rarity.label else def.rarity,
+					Color = if rarity then Color3.fromHex(rarity.color) else Theme.Colors.TextDim,
+				}),
+				Chip(scope, {
+					Text = `+{deps.Format.number(entry.perSecond or def.basePowerPerSecond)}/s`,
+					Color = Theme.Colors.Accent,
+				}),
+				Chip(scope, { Text = `Niv. {entry.level or 1}`, Color = Theme.Colors.TextDim }),
+				Chip(scope, { Text = `Copies : {entry.copies or 0}`, Color = Theme.Colors.TextDim }),
+			}
+			if equipped then
+				table.insert(chips, Chip(scope, { Text = "ÉQUIPÉ", Color = Theme.Colors.Principal }))
+			end
 			table.insert(
 				rows,
 				ListRow(scope, {
-					Color = Theme.Colors.Violet,
 					Portrait = string.sub(def.name, 1, 1),
+					PortraitColor = Theme.Colors.Crew,
 					Name = `{string.upper(def.name)} · {string.upper(def.role)}`,
-					Chips = {
-						Chip(scope, {
-							Text = `+{deps.Format.number(entry.perSecond or 0)}/s`,
-							Color = Theme.Colors.Action,
-						}),
-						Chip(scope, { Text = `Niv. {entry.level or 1}`, Color = Theme.Colors.Or }),
-						Chip(scope, { Text = `Copies : {entry.copies or 0}`, Color = Theme.Colors.Creme }),
-					},
+					Chips = chips,
+					Selected = equipped,
 					LayoutOrder = index,
 				})
 			)
@@ -64,8 +83,9 @@ local function signature(snapshot: any): string
 		return "none"
 	end
 	local parts = {}
-	for _, entry in snapshot.crew or {} do
-		table.insert(parts, `{entry.id}:{entry.level}:{entry.copies}:{entry.perSecond}`)
+	local entries = entriesOf(snapshot)
+	for _, entry in entries do
+		table.insert(parts, `{entry.id}:{entry.level}:{entry.copies}:{entry.perSecond}:{entry.equipped}`)
 	end
 	local tutorial = snapshot.tutorial or {}
 	table.insert(parts, tostring(tutorial.progress))
@@ -76,7 +96,7 @@ function Crew.start(scope: any, deps: any)
 	WindowHost.mount(scope, deps, deps.HudRoot, {
 		name = "Crew",
 		title = "CREW",
-		icon = Theme.Icons.Crew,
+		icon = "crew",
 		content = function(inner)
 			return {
 				WindowHost.rows(inner, deps, signature, function(rowsScope, snapshot)

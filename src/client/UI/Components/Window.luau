@@ -1,35 +1,108 @@
 --!strict
 --[[
-	Window : fenêtre du style V3 (Book, Style, Crew, Réglages).
-	Bord lumineux à dégradé tournant, titre en pilule qui déborde, croix rouge, contenu défilant.
-	Le fond plein écran capte les clics (rien ne traverse vers le jeu, §21) ; Échap ferme.
+	Window : fenêtre du style mix A (Book, Style, Crew, Réglages ; maquette windows-mixA.html).
+	820 × 500, contour Accent + halo, en-tête 62 (icône, titre, onglets en pastilles), croix carrée.
+	Le fond plein écran assombrit le jeu et capte les clics (rien ne traverse vers le jeu, §21) ;
+	Échap ferme.
+	Layout "list" (défaut) : contenu en liste défilante. "free" : le contenu reçoit tout le corps.
 ]]
 
-local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
-local Text = require(UI.Text)
 local Metrics = require(UI.Metrics)
+local Icon = require(script.Parent.Icon)
+
+export type Tab = { id: string, label: string, count: string? }
 
 export type Props = {
 	Title: string,
-	Icon: { image: string, fallback: string },
-	Content: { Instance },
+	Icon: string,
+	Tabs: { Tab }?,
+	ActiveTab: any?, -- état de string
+	OnTab: ((id: string) -> ())?,
+	Content: { any },
+	Layout: ("list" | "free")?,
 	OnClose: () -> (),
 	Size: UDim2?,
 }
 
+local HEADER = 62
+
+local function hex(c: Color3): string
+	return "#" .. c:ToHex()
+end
+
+local function tabButton(scope: any, props: Props, tab: Tab, order: number): Instance
+	local active = scope:Computed(function(use)
+		return props.ActiveTab ~= nil and use(props.ActiveTab) == tab.id
+	end)
+	local hit = Metrics.touch(scope, Theme.MinTouch)
+	local label = scope:New("TextLabel")({
+		Name = "Label",
+		BackgroundTransparency = 1,
+		AutomaticSize = Enum.AutomaticSize.X,
+		Size = UDim2.fromOffset(0, 34),
+		RichText = true,
+		Text = if tab.count
+			then `{tab.label} <font color="{hex(Theme.Colors.Accent)}">{tab.count}</font>`
+			else tab.label,
+		FontFace = Theme.Fonts.ExtraBold,
+		TextSize = 15,
+		TextColor3 = scope:Computed(function(use)
+			return if use(active) then Theme.Colors.Text else Theme.Colors.TextDim
+		end),
+	})
+	return scope:New("TextButton")({
+		Name = "Tab_" .. tab.id,
+		Text = "",
+		AutoButtonColor = false,
+		BackgroundTransparency = 1,
+		LayoutOrder = order,
+		AutomaticSize = Enum.AutomaticSize.X,
+		-- zone de clic ≥ 48 px réels, pastille visible de 34 px centrée dedans
+		Size = scope:Computed(function(use)
+			return UDim2.fromOffset(0, use(hit))
+		end),
+		[scope.OnEvent("Activated")] = function()
+			if props.OnTab then
+				props.OnTab(tab.id)
+			end
+		end,
+		[scope.Children] = {
+			scope:New("Frame")({
+				Name = "Pill",
+				AutomaticSize = Enum.AutomaticSize.X,
+				AnchorPoint = Vector2.new(0, 0.5),
+				Position = UDim2.fromScale(0, 0.5),
+				Size = UDim2.fromOffset(0, 34),
+				BackgroundColor3 = scope:Computed(function(use)
+					return if use(active) then Theme.Colors.Accent else Color3.new(1, 1, 1)
+				end),
+				BackgroundTransparency = scope:Computed(function(use)
+					return if use(active) then 0.88 else 0.94
+				end),
+				[scope.Children] = {
+					scope:New("UICorner")({ CornerRadius = UDim.new(0, 8) }),
+					scope:New("UIStroke")({
+						Color = Theme.Colors.Accent,
+						Thickness = 2,
+						Transparency = scope:Computed(function(use)
+							return if use(active) then 0 else 1
+						end),
+						ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+					}),
+					scope:New("UIPadding")({ PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 14) }),
+					label,
+				},
+			}),
+		},
+	})
+end
+
 return function(scope: any, props: Props): Instance
-	local rotation = scope:Value(0)
-	local closeSide = Metrics.touch(scope, Theme.MinTouch)
-	table.insert(
-		scope,
-		RunService.Heartbeat:Connect(function(dt)
-			rotation:set((scope.peek(rotation) + dt * 40) % 360)
-		end)
-	)
+	local closeSide = Metrics.touch(scope, 42)
 	table.insert(
 		scope,
 		UserInputService.InputBegan:Connect(function(input, processed)
@@ -39,120 +112,192 @@ return function(scope: any, props: Props): Instance
 		end)
 	)
 
-	local pillChildren: { any } = Theme.bevel(scope, Theme.Colors.Violet, 16)
-	table.insert(
-		pillChildren,
-		Text.icon(scope, props.Icon, UDim2.fromOffset(40, 40), UDim2.fromOffset(10, 4))
-	)
-	table.insert(
-		pillChildren,
-		Text.label(scope, {
+	local headerChildren: { any } = {
+		scope:New("UIListLayout")({
+			FillDirection = Enum.FillDirection.Horizontal,
+			VerticalAlignment = Enum.VerticalAlignment.Center,
+			Padding = UDim.new(0, 14),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+		scope:New("UIPadding")({ PaddingLeft = UDim.new(0, 16) }),
+		Icon(scope, { Name = props.Icon, Size = UDim2.fromOffset(30, 30), Color = Theme.Colors.Accent }),
+		scope:New("TextLabel")({
+			Name = "Title",
+			LayoutOrder = 1,
+			BackgroundTransparency = 1,
+			AutomaticSize = Enum.AutomaticSize.X,
+			Size = UDim2.fromOffset(0, 34),
 			Text = props.Title,
-			TextColor = Color3.fromHex("#FFD84A"),
-			Size = UDim2.new(1, -64, 1, -10),
-			Position = UDim2.fromOffset(56, 5),
-			XAlignment = Enum.TextXAlignment.Left,
-			StrokeSize = 4,
+			FontFace = Theme.Fonts.Heavy,
+			TextSize = 28,
+			TextColor3 = Theme.Colors.Text,
+		}),
+	}
+	if props.Tabs and #props.Tabs > 0 then
+		local tabs: { any } = {
+			scope:New("UIListLayout")({
+				FillDirection = Enum.FillDirection.Horizontal,
+				VerticalAlignment = Enum.VerticalAlignment.Center,
+				Padding = UDim.new(0, 6),
+				SortOrder = Enum.SortOrder.LayoutOrder,
+			}),
+			scope:New("UIPadding")({ PaddingLeft = UDim.new(0, 4) }),
+		}
+		for i, tab in props.Tabs do
+			table.insert(tabs, tabButton(scope, props, tab, i))
+		end
+		table.insert(
+			headerChildren,
+			scope:New("Frame")({
+				Name = "Tabs",
+				LayoutOrder = 2,
+				BackgroundTransparency = 1,
+				AutomaticSize = Enum.AutomaticSize.X,
+				Size = UDim2.fromOffset(0, HEADER),
+				[scope.Children] = tabs,
+			})
+		)
+	end
+
+	local body: Instance
+	if props.Layout == "free" then
+		body = scope:New("Frame")({
+			Name = "Content",
+			BackgroundTransparency = 1,
+			Position = UDim2.fromOffset(0, HEADER + 2),
+			Size = UDim2.new(1, 0, 1, -(HEADER + 2)),
+			[scope.Children] = props.Content,
 		})
-	)
+	else
+		body = scope:New("ScrollingFrame")({
+			Name = "Content",
+			BackgroundTransparency = 1,
+			Position = UDim2.fromOffset(0, HEADER + 2),
+			Size = UDim2.new(1, 0, 1, -(HEADER + 2)),
+			CanvasSize = UDim2.new(),
+			AutomaticCanvasSize = Enum.AutomaticSize.Y,
+			ScrollBarThickness = 6,
+			ScrollBarImageColor3 = Theme.Colors.PanelLine,
+			BorderSizePixel = 0,
+			[scope.Children] = {
+				scope:New("UIListLayout")({
+					Padding = UDim.new(0, 10),
+					SortOrder = Enum.SortOrder.LayoutOrder,
+				}),
+				scope:New("UIPadding")({
+					PaddingTop = UDim.new(0, 14),
+					PaddingBottom = UDim.new(0, 14),
+					PaddingLeft = UDim.new(0, 16),
+					PaddingRight = UDim.new(0, 18),
+				}),
+				props.Content,
+			},
+		})
+	end
+
+	local frameChildren: { any } = {
+		scope:New("UICorner")({ CornerRadius = UDim.new(0, 14) }),
+		scope:New("UIStroke")({
+			Color = Theme.Colors.Accent,
+			Thickness = if Theme.Glow ~= "" then 2 else 3,
+			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+		}),
+		scope:New("Frame")({
+			Name = "Header",
+			BackgroundColor3 = Theme.Colors.Accent,
+			BackgroundTransparency = 0.88,
+			BorderSizePixel = 0,
+			Size = UDim2.new(1, 0, 0, HEADER),
+			[scope.Children] = {
+				scope:New("UICorner")({ CornerRadius = UDim.new(0, 14) }),
+				scope:New("UIGradient")({
+					Transparency = NumberSequence.new({
+						NumberSequenceKeypoint.new(0, 0),
+						NumberSequenceKeypoint.new(0.6, 1),
+						NumberSequenceKeypoint.new(1, 1),
+					}),
+				}),
+				scope:New("Frame")({
+					Name = "Row",
+					BackgroundTransparency = 1,
+					Size = UDim2.new(1, -80, 1, 0),
+					[scope.Children] = headerChildren,
+				}),
+			},
+		}),
+		scope:New("Frame")({
+			Name = "HeaderLine",
+			BackgroundColor3 = Theme.Colors.PanelLine,
+			BackgroundTransparency = 0.82,
+			BorderSizePixel = 0,
+			Position = UDim2.fromOffset(0, HEADER),
+			Size = UDim2.new(1, 0, 0, 2),
+		}),
+		body,
+		scope:New("TextButton")({
+			Name = "Close",
+			Text = "X",
+			FontFace = Theme.Fonts.Heavy,
+			TextSize = 22,
+			TextColor3 = Theme.Colors.Text,
+			AutoButtonColor = false,
+			AnchorPoint = Vector2.new(1, 0.5),
+			Position = UDim2.new(1, -12, 0, HEADER / 2),
+			Size = scope:Computed(function(use)
+				local side = use(closeSide)
+				return UDim2.fromOffset(side, side)
+			end),
+			BackgroundColor3 = Theme.Colors.Close,
+			ZIndex = 3,
+			[scope.OnEvent("Activated")] = props.OnClose,
+			[scope.Children] = {
+				scope:New("UICorner")({ CornerRadius = UDim.new(0, 10) }),
+				scope:New("UIStroke")({
+					Color = Theme.Colors.Ink,
+					Thickness = 2,
+					ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+				}),
+			},
+		}),
+	}
+	if Theme.Glow ~= "" then
+		table.insert(
+			frameChildren,
+			scope:New("ImageLabel")({
+				Name = "Glow",
+				BackgroundTransparency = 1,
+				Image = Theme.Glow,
+				ImageColor3 = Theme.Colors.Accent,
+				ImageTransparency = 0.5,
+				ScaleType = Enum.ScaleType.Slice,
+				SliceCenter = Theme.GlowSlice,
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.fromScale(0.5, 0.5),
+				Size = UDim2.new(1, 40, 1, 40),
+				ZIndex = 0,
+			})
+		)
+	end
 
 	return scope:New("TextButton")({
 		Name = "WindowBackdrop",
 		Text = "",
 		AutoButtonColor = false,
 		Active = true,
-		BackgroundColor3 = Color3.fromHex("#140E28"),
-		BackgroundTransparency = 0.45,
+		BackgroundColor3 = Theme.Colors.Ink,
+		BackgroundTransparency = Theme.Transparency.Dim,
 		Size = UDim2.fromScale(1, 1),
 		ZIndex = 10,
 		[scope.Children] = {
 			scope:New("Frame")({
 				Name = "Border",
 				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.new(0.5, 0, 0.5, 44),
-				Size = props.Size or UDim2.fromOffset(760, 500),
-				BackgroundColor3 = Color3.new(1, 1, 1),
-				[scope.Children] = {
-					scope:New("UICorner")({ CornerRadius = UDim.new(0, 22) }),
-					scope:New("UIGradient")({
-						Rotation = rotation,
-						Color = ColorSequence.new({
-							ColorSequenceKeypoint.new(0, Color3.fromHex("#FF5FD2")),
-							ColorSequenceKeypoint.new(0.4, Color3.fromHex("#A86BFF")),
-							ColorSequenceKeypoint.new(1, Color3.fromHex("#5FE2FF")),
-						}),
-					}),
-					scope:New("Frame")({
-						Name = "Inner",
-						Position = UDim2.fromOffset(6, 6),
-						Size = UDim2.new(1, -12, 1, -12),
-						BackgroundColor3 = Color3.fromHex("#2B1F63"),
-						ClipsDescendants = true,
-						[scope.Children] = {
-							scope:New("UICorner")({ CornerRadius = UDim.new(0, 17) }),
-							scope:New("UIStroke")({
-								Color = Theme.Colors.Contour,
-								Thickness = Theme.Stroke.Frame,
-							}),
-							scope:New("ScrollingFrame")({
-								Name = "Content",
-								BackgroundTransparency = 1,
-								Position = UDim2.fromOffset(16, 44),
-								Size = UDim2.new(1, -32, 1, -56),
-								CanvasSize = UDim2.new(),
-								AutomaticCanvasSize = Enum.AutomaticSize.Y,
-								ScrollBarThickness = 6,
-								BorderSizePixel = 0,
-								[scope.Children] = {
-									scope:New("UIListLayout")({
-										Padding = UDim.new(0, 10),
-										SortOrder = Enum.SortOrder.LayoutOrder,
-									}),
-									scope:New("UIPadding")({
-										PaddingTop = UDim.new(0, 6),
-										PaddingLeft = UDim.new(0, 4),
-										PaddingRight = UDim.new(0, 10),
-									}),
-									props.Content,
-								},
-							}),
-						},
-					}),
-					scope:New("Frame")({
-						Name = "TitlePill",
-						AnchorPoint = Vector2.new(0.5, 0),
-						Position = UDim2.new(0.5, 0, 0, -26),
-						Size = UDim2.fromOffset(240, 52),
-						BackgroundColor3 = Color3.new(1, 1, 1),
-						ZIndex = 12,
-						[scope.Children] = pillChildren,
-					}),
-					scope:New("TextButton")({
-						Name = "Close",
-						Text = "X",
-						FontFace = Theme.Fonts.Display,
-						TextSize = 26,
-						TextColor3 = Theme.Colors.Blanc,
-						AutoButtonColor = false,
-						AnchorPoint = Vector2.new(0.5, 0.5),
-						Position = UDim2.new(1, -4, 0, 4),
-						Size = scope:Computed(function(use)
-							local side = use(closeSide)
-							return UDim2.fromOffset(side, side)
-						end),
-						BackgroundColor3 = Theme.Colors.Fermer,
-						ZIndex = 12,
-						[scope.OnEvent("Activated")] = props.OnClose,
-						[scope.Children] = {
-							scope:New("UICorner")({ CornerRadius = UDim.new(1, 0) }),
-							scope:New("UIStroke")({
-								Color = Theme.Colors.Contour,
-								Thickness = Theme.Stroke.Frame,
-								ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-							}),
-						},
-					}),
-				},
+				Position = UDim2.fromScale(0.5, 0.5),
+				Size = props.Size or UDim2.fromOffset(820, 500),
+				BackgroundColor3 = Theme.Colors.Panel,
+				BackgroundTransparency = 0.03,
+				ZIndex = 11,
+				[scope.Children] = frameChildren,
 			}),
 		},
 	})

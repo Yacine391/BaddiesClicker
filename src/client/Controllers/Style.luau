@@ -81,7 +81,7 @@ function Style.start(scope: any, deps: any)
 	WindowHost.mount(scope, deps, deps.HudRoot, {
 		name = "Style",
 		title = "STYLE",
-		icon = Theme.Icons.Style,
+		icon = "style",
 		content = function(inner)
 			return {
 				WindowHost.rows(inner, deps, signature, function(rowsScope, snapshot)

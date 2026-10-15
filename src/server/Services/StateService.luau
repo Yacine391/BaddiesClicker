@@ -142,6 +142,7 @@ function StateService.snapshot(player: Player, data): { [string]: any }
 		collection = CollectionRules.view(data, ctx),
 		saving = session ~= nil and session.mutating == true,
 		maintenance = deps.Maintenance.disabledList(), -- décisions coupées : griser leurs boutons
+		ranking = deps.Ranking.view(), -- classement du lobby (joueurs présents), le même pour tous
 		rebirth = {
 			count = data.rebirths,
 			available = SlotRules.rebirthAvailable(data, ctx),
@@ -187,6 +188,7 @@ function StateService.refreshAttributes(player: Player, data)
 	)
 	player:SetAttribute("BC_Display", table.concat(CollectionRules.displayList(data, ctx), ","))
 	player:SetAttribute("BC_BookCount", (CollectionRules.bookCount(data, ctx)))
+	player:SetAttribute("BC_CrewCount", #ctx.Catalog.crewOrder - #CrewRules.missing(data, ctx))
 	player:SetAttribute("BC_EquippedCrew", table.concat(data.equippedCrew, ","))
 	player:SetAttribute("BC_Ready", true)
 end

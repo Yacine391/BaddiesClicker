@@ -127,6 +127,11 @@ local Balance = {
 		maxDisplay = 3,
 	},
 
+	-- §15 : classement des joueurs présents, rafraîchi par lots
+	ranking = {
+		refreshSeconds = 2,
+	},
+
 	-- §24 : bornes vérifiées au chargement de chaque profil (Rules/ProfileGuard) ; ni NaN ni infini
 	limits = {
 		maxPower = 1e15,

@@ -24,9 +24,11 @@ local Receipts = require("../src/server/Rules/Receipts")
 local TestCatalog = require("../src/shared/TestCatalog")
 local ProfileGuard = require("../src/server/Rules/ProfileGuard")
 local Ranking = require("../src/server/Rules/Ranking")
+local Achievements = require("../src/server/Rules/Achievements")
 local profileV4P0 = require("./fixtures/profile_v4_p0")
 
-local ctx = { Balance = Balance, Catalog = Catalog, Formulas = Formulas }
+local Wardrobe = require("../src/shared/Wardrobe")
+local ctx = { Balance = Balance, Catalog = Catalog, Formulas = Formulas, Wardrobe = Wardrobe }
 
 local passed, failed = 0, 0
 
@@ -830,7 +832,8 @@ end)
 
 print("Baddies Book, exposition et looks (§03, §15)")
 
-local studioCtx = { Balance = Balance, Catalog = TestCatalog.merge(Catalog), Formulas = Formulas }
+local studioCtx =
+	{ Balance = Balance, Catalog = TestCatalog.merge(Catalog), Formulas = Formulas, Wardrobe = Wardrobe }
 
 test("looks débloqués par la maîtrise : XP 0 → {1}, 10 → {1, 2}, 250 → {1, 2, 3}", function()
 	local p = newProfile()
@@ -1477,6 +1480,135 @@ test("signature : change seulement si le classement change", function()
 	local c = Ranking.rank({ { userId = 1, name = "a", score = 2 } })
 	eq(Ranking.signature(a), Ranking.signature(b))
 	assert(Ranking.signature(a) ~= Ranking.signature(c), "score modifié")
+end)
+
+print("Garde-robe, titres et succès (§19)")
+
+test("profil neuf : aucun succès ; 20 entraînements → Premier entraînement, Cadre simple", function()
+	local p = newProfile()
+	eq(#Achievements.check(p, ctx), 0)
+	p.stats.trainActions = 20
+	local earned = Achievements.check(p, ctx)
+	eq(#earned, 1)
+	eq(earned[1].id, "first_training")
+	eq(earned[1].items[1], "frame_simple")
+	eq(p.wardrobe.frame_simple, true)
+	eq(p.pendingBadges.first_training, true, "badge Roblox en attente")
+	eq(#Achievements.check(p, ctx), 0, "une seule fois")
+end)
+
+test("Malik, Maya maîtrise 1, renaissance : succès et titres correspondants", function()
+	local p = newProfile()
+	Crew.grant(p, "malik", ctx)
+	p.masteryXP.maya = 10
+	finishRun(p)
+	Slots.applyRebirth(p, ctx)
+	local ids = {}
+	for _, e in Achievements.check(p, ctx) do
+		table.insert(ids, e.id)
+	end
+	eq(table.concat(ids, ","), "first_look,first_boss,first_crew,run_complete,first_rebirth")
+	eq(p.wardrobe.headset_player, true)
+	eq(p.wardrobe.pose_photo, true)
+	eq(p.wardrobe.chain_silver, true)
+	eq(p.titles.boss_manager, true)
+	eq(p.titles.baddie_pro, true)
+end)
+
+test("Mythic : un drop de Vega en attente ne compte pas ; accepté, oui", function()
+	local p = newProfile()
+	p.pendingDrops.vega = 1
+	eq(#Achievements.check(p, ctx), 0)
+	Slots.applyAcceptDrop(p, "vega", ctx)
+	local earned = Achievements.check(p, ctx)
+	eq(earned[1].id, "mythic_found")
+	eq(p.wardrobe.aura_spark, true)
+end)
+
+test("Collection V1 complète : acquise, et le reste si une V2 ajoute des personnages", function()
+	local p = newProfile()
+	for _, id in Catalog.baddieOrder do
+		p.discoveredBaddies[id] = true
+	end
+	for _, id in Catalog.crewOrder do
+		Crew.grant(p, id, ctx)
+	end
+	local ids = {}
+	for _, e in Achievements.check(p, ctx) do
+		table.insert(ids, e.id)
+	end
+	assert(table.find(ids, "book_baddies_v1") and table.find(ids, "book_crew_v1"), "Books V1")
+	assert(table.find(ids, "collection_v1"), "collection V1")
+	eq(p.wardrobe.chain_gold, true)
+	eq(p.wardrobe.frame_v1, true)
+	-- Une V2 ajoute une baddie : le Book public n'est plus complet, mais le succès V1 reste
+	local v2Catalog = table.clone(Catalog)
+	v2Catalog.baddieOrder = table.clone(Catalog.baddieOrder)
+	table.insert(v2Catalog.baddieOrder, "nouvelle_v2")
+	local v2 = { Balance = Balance, Catalog = v2Catalog, Formulas = Formulas, Wardrobe = Wardrobe }
+	eq(Slots.isBookComplete(p, v2), false, "Book public V2 incomplet")
+	eq(p.achievements.collection_v1, true, "succès V1 conservé")
+	eq(#Achievements.check(p, v2), 0, "rien à reprendre ni redonner")
+end)
+
+test("style : seulement débloqué, au bon emplacement ; retirer ; titre", function()
+	local p = newProfile()
+	eq(Achievements.setStyle(p, "neck", "chain_gold", ctx), "locked")
+	p.wardrobe.chain_gold = true
+	eq(Achievements.setStyle(p, "frame", "chain_gold", ctx), "wrong_slot")
+	eq(Achievements.setStyle(p, "neck", "bob", ctx), "unknown")
+	eq(Achievements.setStyle(p, "pieds", "chain_gold", ctx), "invalid")
+	eq(Achievements.setStyle(p, "neck", "chain_gold", ctx), nil)
+	eq(Achievements.publicStyle(p, ctx), "neck=chain_gold")
+	eq(Achievements.setStyle(p, "neck", nil, ctx), nil, "retirer")
+	eq(p.style.neck, nil)
+	eq(Achievements.setStyle(p, "title", "baddie_pro", ctx), "locked")
+	p.titles.baddie_pro = true
+	eq(Achievements.setStyle(p, "title", "baddie_pro", ctx), nil)
+	eq(Achievements.view(p, ctx).title, "baddie_pro")
+end)
+
+test(
+	"mort et renaissance : la garde-robe reste ; profil abîmé : sélection non débloquée retirée",
+	function()
+		local p = newProfile()
+		p.wardrobe.chain_silver = true
+		Achievements.setStyle(p, "neck", "chain_silver", ctx)
+		CombatRules.applyDeath(p, ctx)
+		finishRun(p)
+		Slots.applyRebirth(p, ctx)
+		eq(p.style.neck, "chain_silver", "porté après rebirth")
+		p.style.face = "chain_gold" -- mauvais emplacement et non débloqué
+		p.style.title = "baddie_expert"
+		p.wardrobe.ancien_objet = true
+		local issues = ProfileGuard.repair(p, ctx)
+		eq(p.style.face, nil)
+		eq(p.style.title, nil)
+		eq(p.style.neck, "chain_silver")
+		eq(p.wardrobe.ancien_objet, true, "objet inconnu archivé")
+		eq(#issues, 2)
+	end
+)
+
+test("configuration de la garde-robe cohérente (sources, récompenses, lot V1 figé)", function()
+	for _, id in Wardrobe.itemOrder do
+		local item = Wardrobe.items[id]
+		assert(item ~= nil and Wardrobe.slotLabels[item.slot] ~= nil, `objet {id}`)
+		assert(item.source == nil or Wardrobe.achievements[item.source] ~= nil, `source de {id}`)
+	end
+	for _, id in Wardrobe.achievementOrder do
+		local def = Wardrobe.achievements[id]
+		assert(def ~= nil and Achievements.conditions[id] ~= nil, `succès {id}`)
+		for _, item in def.rewards.items or {} do
+			assert(Wardrobe.items[item] ~= nil, `récompense {item}`)
+		end
+		for _, title in def.rewards.titles or {} do
+			assert(Wardrobe.titles[title] ~= nil, `titre {title}`)
+		end
+	end
+	eq(Catalog.lot, "V1")
+	eq(table.concat(Wardrobe.lotV1.baddies, ","), table.concat(Catalog.baddieOrder, ","), "lot V1 baddies")
+	eq(table.concat(Wardrobe.lotV1.crew, ","), table.concat(Catalog.crewOrder, ","), "lot V1 crew")
 end)
 
 print(`\n{passed} réussi(s), {failed} échec(s)`)

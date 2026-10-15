@@ -19,6 +19,23 @@ Le classement mondial reste hors V1.
 relancer (F4) jusqu'à une nouvelle baddie : en 2 s, la carte CLASSEMENT change dans les deux fenêtres.
 Égalité : les deux joueurs affichent le rang 1.
 
-## À venir
+## Garde-robe, titres et succès (§19) — branche `a/v1-wardrobe`
 
-- [ ] Garde-robe, titres et succès (§19) : déblocages permanents, « Collection V1 complète » acquise même si une V2 ajoute des personnages
+- [x] `Shared/Wardrobe` : 8 emplacements (cou, poignet, visage, tête, aura, trail, pose, cadre), 12 cosmétiques, 3 titres, 10 succès et leurs récompenses ; listes du lot V1 **figées**
+- [x] `Rules/Achievements` : conditions serveur, récompenses données une seule fois, « Collection V1 complète » conservée si une V2 ajoute des personnages ; un drop non accepté ne compte pas
+- [x] `WardrobeService` : vérification groupée toutes les 2 s, écriture prioritaire, Result `achievement` ; badges Roblox via `Config/BadgesConfig` (IDs à renseigner), réessayés sans redonner les récompenses, jamais dans Studio
+- [x] `SetStyle { slot, id? }` hors combat ; snapshot `style` ; attributs `BC_Title`, `BC_Style` ; garde-fous du profil (sélection non débloquée retirée)
+- [x] `CelebrationController` : bannière RGB « SUCCÈS : … » ; panneau de test : carte GARDE-ROBE
+- [x] 7 tests Lune (100 au total)
+- [x] Valider en Studio (15/10) : 6 succès sur 10 accordés au profil de test, cosmétiques et titre portés ou retirés depuis le panneau
+- [ ] Créer les 10 badges dans le Creator Dashboard et coller leurs IDs dans `src/server/Config/BadgesConfig.luau`
+
+Sans source pour l'instant (à annoncer : missions ou événement) : montre, lunettes, aura Neon, trail d'étoiles.
+
+**Côté codeur B** : écran Style (cosmétiques et titres, prévisualisation), titre au-dessus des avatars depuis
+`BC_Title` (distance limitée, couleur lisible, option pour masquer ceux des autres), accessoires depuis
+`BC_Style`, liste des succès depuis `snapshot.style`.
+
+**Tester dans Studio** : au lancement, ton profil de test remplit déjà plusieurs conditions (Malik, renaissance,
+parcours…) : les bannières « SUCCÈS » arrivent dans les 2 s. Carte GARDE-ROBE du panneau F4 : cliquer un
+cosmétique ou un titre le porte (✓), recliquer le retire. Stop puis Play : tout est conservé.

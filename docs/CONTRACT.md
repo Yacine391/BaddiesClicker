@@ -44,6 +44,7 @@ peut être découverte (dans le Baddies Book), possédée (dans un slot) ou expo
 | `SetLook` | `{ baddieId, look: number }` | 4/s | hors combat ; baddie découverte ; `look` ∈ `collection.looks[id].unlocked` |
 | `UpgradeCrew` | `{ crewId }` | 4/s | compagnon possédé, pas au niveau 10 ; dépense `niveau + 1` copies (`crewOwned[i].upgradeCost`) |
 | `EquipCrew` | `{ ids: { string } }` | 4/s | ≤ 2 compagnons **possédés**, sans doublon ; remplace la liste (vide = aucun) |
+| `SetStyle` | `{ slot, id? }` | 4/s | hors combat ; `slot` ∈ `Wardrobe.slots` ou `"title"` ; `id` débloqué et du bon emplacement ; `id` absent = retirer |
 | `DevSetMastery` 🧪 | `{ baddieId, xp }` | 4/s | **Studio uniquement** : fixe l'XP de maîtrise (tester les looks) |
 | `DevGrant` 🧪 | `{ what = "tickets" \| "crewTickets" \| "drop" \| "finishRun", baddieId? }` | 4/s | **Studio uniquement** : +10 tickets baddie, +5 tickets compagnon, un drop en attente, ou les 10 niveaux terminés |
 
@@ -169,6 +170,14 @@ Envoyé au chargement, sur `Hello`, puis à chaque changement (regroupé, au plu
 	saving = false,               -- true pendant l'écriture d'une décision durable
 	maintenance = { },            -- décisions coupées ("Roll", "AcceptDrop", "RefuseDrop", "Rebirth", "OpenChest") : griser
 	seq = 42,                     -- numéro croissant de ce snapshot : ignorer un snapshot plus ancien que le dernier reçu
+	style = {                     -- garde-robe, titres et succès (§19) ; noms et emplacements : Shared/Wardrobe
+		items = { "frame_simple", "headset_player" },   -- cosmétiques débloqués (ordre de Wardrobe.itemOrder)
+		titles = { "boss_manager" },                    -- titres débloqués
+		equipped = { frame = "frame_simple" },          -- emplacement -> cosmétique porté
+		title = "boss_manager",                         -- titre affiché au-dessus de l'avatar, ou nil
+		achievements = { "first_training", "first_crew", "first_boss" },
+		achievementTotal = 10,
+	},
 	ranking = {                   -- classement du lobby : joueurs PRÉSENTS, calculé par le serveur (§15)
 		lot = "V1", total = 8, crewTotal = 6, -- afficher « 7/8 » et le lot classé
 		baddies = {               -- trié ; rang partagé en cas d'égalité (1, 1, 3)
@@ -208,6 +217,7 @@ Noms, raretés, couleurs et looks : lire `Shared/Catalog` avec l'ID (`Catalog.ba
 | `discovery` | `baddieId` | nouvelle identité au Baddies Book (relance ou drop accepté), après l'écriture |
 | `rebirth` | `count` | renaissance confirmée |
 | `crewLevelUp` | `crewId`, `level` | compagnon amélioré (`UpgradeCrew`) |
+| `achievement` | `id`, `items`, `titles` | succès obtenu et ce qu'il débloque (noms : `Shared/Wardrobe`) |
 
 ## Flux `Combat` (rencontre individuelle, §08)
 
@@ -263,6 +273,8 @@ Pour afficher les suiveurs de **tous** les joueurs, pas seulement les siens :
 | `BC_Display` | string, IDs séparés par des virgules | `"nova,jade"` (exposition) |
 | `BC_BookCount` | number | `2` (identités publiques découvertes : score du classement) |
 | `BC_CrewCount` | number | `4` (compagnons possédés : score de l'onglet Crew) |
+| `BC_Title` | string | `"baddie_pro"` (titre affiché au-dessus de l'avatar, `""` si aucun) |
+| `BC_Style` | string | `"neck=chain_gold,frame=frame_v1"` (cosmétiques portés, par emplacement) |
 
 ## Outils de test (Studio uniquement)
 

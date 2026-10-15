@@ -19,6 +19,7 @@ local TweenService = game:GetService("TweenService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Catalog = require(Shared:WaitForChild("Catalog"))
 local Format = require(Shared:WaitForChild("Format"))
+local Wardrobe = require(Shared:WaitForChild("Wardrobe"))
 
 export type Celebration = { title: string, subtitle: string?, big: boolean }
 
@@ -269,6 +270,22 @@ local function onResult(event: { [string]: any })
 		})
 	elseif kind == "rebirth" then
 		CelebrationController.play({ title = `RENAISSANCE {event.count} !`, big = true })
+	elseif kind == "achievement" then
+		local def = Wardrobe.achievements[event.id]
+		local rewards = {}
+		for _, id in event.items or {} do
+			local item = Wardrobe.items[id]
+			table.insert(rewards, if item then item.name else id)
+		end
+		for _, id in event.titles or {} do
+			local title = Wardrobe.titles[id]
+			table.insert(rewards, `titre « {if title then title.name else id} »`)
+		end
+		CelebrationController.play({
+			title = `SUCCÈS : {if def then string.upper(def.name) else event.id}`,
+			subtitle = if #rewards > 0 then `Débloqué : {table.concat(rewards, " · ")}` else nil,
+			big = true,
+		})
 	elseif kind == "discovery" then
 		local def = Catalog.baddies[event.baddieId]
 		CelebrationController.play({

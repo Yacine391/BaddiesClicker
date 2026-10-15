@@ -37,13 +37,15 @@ function ProfileTemplate.new(ctx: any): { [string]: any }
 		equippedCrew = {}, -- liste ordonnée d'IDs, 2 maximum
 		displayBaddies = {}, -- exposition : liste d'IDs découverts, 3 max (§15)
 		selectedLooks = {}, -- baddieId -> index de look choisi (proposition contrat v2 du codeur B)
-		wardrobe = {},
-		titles = {},
+		wardrobe = {}, -- cosmétiques débloqués : itemId -> true (Shared/Wardrobe)
+		titles = {}, -- titres débloqués : titleId -> true
+		achievements = {}, -- succès obtenus : achievementId -> true
+		style = {}, -- sélection : emplacement -> itemId, et title -> titleId
 		tutorial = { crewUnlocked = false },
 		collectionAwards = {},
 		eventClaims = {},
 		settings = { reducedEffects = false },
-		pendingBadges = {},
+		pendingBadges = {}, -- succès dont le badge Roblox reste à attribuer : achievementId -> true
 		stats = { trainActions = 0, crewPowerEarned = 0 },
 		lastMutation = {}, -- reçu durable de la dernière décision (Rules/Receipts), vide au départ
 	}

@@ -30,6 +30,7 @@ local Net = {
 		SetLook = "SetLook", -- { baddieId, look }
 		UpgradeCrew = "UpgradeCrew", -- { crewId } (dépense niveau + 1 copies)
 		EquipCrew = "EquipCrew", -- { ids } (2 compagnons possédés maximum)
+		SetStyle = "SetStyle", -- { slot, id? } (cosmétique ou titre débloqué ; id absent = retirer)
 		DevSetMastery = "DevSetMastery", -- { baddieId, xp } (Studio uniquement)
 		DevGrant = "DevGrant", -- { what = "tickets" | "crewTickets" | "drop" | "finishRun", baddieId? } (Studio)
 	}),

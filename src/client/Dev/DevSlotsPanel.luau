@@ -8,6 +8,7 @@
 	- Renaissance : quand le niveau 10 est terminé, avec le texte de ce qui sera gardé ou effacé.
 	- Compagnons : OUVRIR UN COFFRE (1 ticket compagnon), AMÉLIORER (copies), ÉQUIPER / RETIRER.
 	- Classement du lobby (baddies et crew) tel que le serveur le calcule.
+	- Garde-robe : succès obtenus, cosmétiques et titres débloqués à porter ou retirer.
 	- Outils Studio : tickets baddie et compagnon, drop de Vega, finir le parcours, maîtrise 5.
 	- Réponses des décisions durables (Result kind = "mutation") ; RÉESSAYER renvoie le MÊME requestId.
 ]]
@@ -20,6 +21,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Catalog = require(Shared:WaitForChild("Catalog"))
 local TestCatalog = require(Shared:WaitForChild("TestCatalog"))
+local Wardrobe = require(Shared:WaitForChild("Wardrobe"))
 local Net = require(Shared:WaitForChild("Net"))
 
 local NUIT = Color3.fromHex("#242036")
@@ -431,6 +433,29 @@ function DevSlotsPanel.start(state)
 			)
 		end
 
+		local style = s.style
+		if style ~= nil then
+			local titleDef = if style.title then Wardrobe.titles[style.title] else nil
+			local header = `GARDE-ROBE · succès {#style.achievements}/{style.achievementTotal}`
+				.. ` · titre : {if titleDef then titleDef.name else "aucun"}`
+			local wardrobeCard = card(295, header, Color3.fromHex("#3B2A1F"))
+			for _, id in style.items do
+				local item = Wardrobe.items[id]
+				local worn = style.equipped[item.slot] == id
+				local label = `{if worn then "✓ " else ""}{item.name} ({Wardrobe.slotLabels[item.slot]})`
+				button(wardrobeCard, `style:{id}`, label, nil, if worn then OR else NUIT, function()
+					send(Net.Actions.SetStyle, { slot = item.slot, id = if worn then nil else id })
+				end)
+			end
+			for _, id in style.titles do
+				local worn = style.title == id
+				local label = `{if worn then "✓ " else ""}« {Wardrobe.titles[id].name} »`
+				button(wardrobeCard, `title:{id}`, label, nil, if worn then OR else NUIT, function()
+					send(Net.Actions.SetStyle, { slot = "title", id = if worn then nil else id })
+				end)
+			end
+		end
+
 		local tools = card(300, "Outils Studio", Color3.fromHex("#2E2A42"))
 		button(tools, "dev:tickets", "+10 TICKETS", nil, NUIT, function()
 			send(Net.Actions.DevGrant, { what = "tickets" })
@@ -475,6 +500,16 @@ function DevSlotsPanel.start(state)
 		end
 		for _, entry in (s.ranking and s.ranking.crew) or {} do
 			table.insert(parts, `c{entry.userId}:{entry.score}:{entry.rank}`)
+		end
+		if s.style ~= nil then
+			table.insert(
+				parts,
+				table.concat(s.style.items, ",") .. "/" .. table.concat(s.style.achievements, ",")
+			)
+			for _, slot in Wardrobe.slots do
+				table.insert(parts, `{slot}={s.style.equipped[slot]}`)
+			end
+			table.insert(parts, tostring(s.style.title))
 		end
 		table.insert(parts, tostring(s.active and s.active.baddieId))
 		table.insert(parts, `{s.tickets.crew}:{s.crewChest and s.crewChest.opened}`)

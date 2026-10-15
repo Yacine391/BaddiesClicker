@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Net = require(ReplicatedStorage.Shared.Net)
+local AchievementRules = require(script.Parent.Parent.Rules.Achievements)
 local CollectionRules = require(script.Parent.Parent.Rules.Collection)
 local CombatRules = require(script.Parent.Parent.Rules.Combat)
 local CrewRules = require(script.Parent.Parent.Rules.Crew)
@@ -143,6 +144,7 @@ function StateService.snapshot(player: Player, data): { [string]: any }
 		saving = session ~= nil and session.mutating == true,
 		maintenance = deps.Maintenance.disabledList(), -- décisions coupées : griser leurs boutons
 		ranking = deps.Ranking.view(), -- classement du lobby (joueurs présents), le même pour tous
+		style = AchievementRules.view(data, ctx), -- garde-robe, titres et succès (§19)
 		rebirth = {
 			count = data.rebirths,
 			available = SlotRules.rebirthAvailable(data, ctx),
@@ -190,6 +192,8 @@ function StateService.refreshAttributes(player: Player, data)
 	player:SetAttribute("BC_BookCount", (CollectionRules.bookCount(data, ctx)))
 	player:SetAttribute("BC_CrewCount", #ctx.Catalog.crewOrder - #CrewRules.missing(data, ctx))
 	player:SetAttribute("BC_EquippedCrew", table.concat(data.equippedCrew, ","))
+	player:SetAttribute("BC_Title", data.style.title or "")
+	player:SetAttribute("BC_Style", AchievementRules.publicStyle(data, ctx))
 	player:SetAttribute("BC_Ready", true)
 end
 

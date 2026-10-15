@@ -127,6 +127,14 @@ local Balance = {
 		maxDisplay = 3,
 	},
 
+	-- §19 : succès internes (vérifiés par lots) et badges Roblox (réessayés sans redonner les récompenses)
+	achievements = {
+		checkSeconds = 2,
+		trainActions = 20, -- « Premier entraînement »
+		lookMastery = 1, -- « Premier look » : Maya maîtrise 1
+		badgeRetrySeconds = 60,
+	},
+
 	-- §15 : classement des joueurs présents, rafraîchi par lots
 	ranking = {
 		refreshSeconds = 2,

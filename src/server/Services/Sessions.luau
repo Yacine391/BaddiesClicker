@@ -17,6 +17,8 @@ export type Session = {
 	unconfirmed: any?, -- décision appliquée dont l'écriture n'est pas encore confirmée
 	lastRollAt: number?, -- dernière relance acceptée (2 s minimum entre deux)
 	lastChestAt: number?, -- dernier coffre de compagnon ouvert (même délai)
+	badgeBusy: boolean, -- attribution de badges Roblox en cours
+	nextBadgeAt: number?, -- prochain essai après un échec de BadgeService
 }
 
 local Sessions = {}
@@ -35,6 +37,8 @@ function Sessions.create(player: Player): Session
 		unconfirmed = nil,
 		lastRollAt = nil,
 		lastChestAt = nil,
+		badgeBusy = false,
+		nextBadgeAt = nil,
 	}
 	byPlayer[player] = session
 	return session

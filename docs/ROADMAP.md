@@ -41,15 +41,24 @@ trouve la sortie du lobby ; fluide sur le téléphone de référence ; vidéo r�
 
 Détails : `docs/P1-COMBAT.md`.
 
-## P2 : slots, drops, rebirth, reprises (codeur A)
+## P2 : slots, drops, rebirth, reprises (codeur A) — fusionné le 15/10 (PR #3)
 
-- [ ] File unique de mutations durables (sauvegarde prioritaire avant confirmation, reçu de mutation)
-- [ ] `Roll`, `AcceptDrop`, `RefuseDrop`, `SetActive`, `Rebirth` + garanties 50 (baddies) / 20 (compagnons)
-- [ ] Promotion du temporaire aux rebirths 1/3/6, aucun transfert entre slots
-- [ ] Tests §30 : aucun cas connu de perte ou de duplication, arrêt serveur pendant une récupération
+- [x] File unique de mutations durables (sauvegarde prioritaire avant confirmation, reçu de mutation)
+- [x] `Roll`, `AcceptDrop`, `RefuseDrop`, `SetActive`, `Rebirth` + garanties 50 (baddies) / 20 (compagnons)
+- [x] Promotion du temporaire aux rebirths 1/3/6, aucun transfert entre slots
+- [x] Tests §30 : aucun cas connu de perte ou de duplication, arrêt serveur pendant une récupération
+- [x] Baddies Book, exposition et looks (proposition « collection » du codeur B), compagnons : coffres, niveaux, équipe
+- [x] Garde-fous du profil au chargement, interrupteurs de maintenance, outil de restauration (`docs/OPERATIONS.md`)
+- [x] Validé en Studio (15/10). Détails : `docs/P2-SLOTS.md`
+- [ ] Codeur B : écrans Slots, Drops, Renaissance, Crew (collection, coffres, niveaux, équipe), puis suppression du panneau de test F4
 
 ## V1 puis bêta
 
-- [ ] Dix rencontres configurées, cinq quartiers, catalogue validé
-- [ ] Sécurité, stockage, restauration testée, flags serveur de maintenance (§36)
+- [x] Dix rencontres configurées, cinq quartiers (paramètres de test, à régler en bêta)
+- [x] Classement du lobby, garde-robe, titres et 10 succès, statistiques serveur (PR #4 à #6, `docs/V1-CODEUR-A.md`)
+- [x] Flags serveur de maintenance (§36) ; outil de restauration écrit
+- [ ] Restauration répétée avec succès sur un compte de test
+- [ ] Badges Roblox : 5 sur 10 créés (les 5 autres : gratuits le 16/10)
+- [ ] Codeur B : tableau du lobby, écran Style, titres au-dessus des avatars, vraies arènes et rendu du combat (ajustements 2 et 3)
+- [ ] Catalogue validé (modèles et looks des 8 baddies et 6 compagnons)
 - [ ] Mobile, présentation, matrice de tests complète

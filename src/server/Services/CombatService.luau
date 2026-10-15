@@ -9,6 +9,9 @@
 	  d'un dégât, d'une victoire ni d'un drop.
 	- Mort : rencontre close sans récompense, portes refermées, retour au lobby.
 	- Victoire boss : récompenses + tirage UNIQUE à 10 % + sauvegarde prioritaire.
+	- Déplacements (§25, Rules/Movement) : chaque position lue pendant la rencontre (tick et attaque) est
+	  comparée à la précédente. Anomalie isolée : une ligne de journal, rien d'autre. Répétées : la rencontre
+	  est invalidée, ses gains (puissance et XP des sbires) sont retirés ; ni mort, ni bannissement.
 ]]
 
 local Players = game:GetService("Players")
@@ -17,6 +20,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Net = require(ReplicatedStorage.Shared.Net)
 local CombatRules = require(script.Parent.Parent.Rules.Combat)
 local Encounter = require(script.Parent.Parent.Rules.Encounter)
+local Movement = require(script.Parent.Parent.Rules.Movement)
 
 local CombatService = {}
 
@@ -44,22 +48,26 @@ local function send(player: Player, message: { [string]: any })
 	combatRemote:FireClient(player, message)
 end
 
--- Position d'un joueur vivant, ou nil (pas de personnage, ou mort)
-local function livePosition(player: Player): Vector3?
+-- HumanoidRootPart et Humanoid d'un joueur vivant, ou nil (pas de personnage, ou mort)
+local function liveCharacter(player: Player): (BasePart?, Humanoid?)
 	local character = player.Character
 	if character == nil then
-		return nil
+		return nil, nil
 	end
 	local root = character:FindFirstChild("HumanoidRootPart")
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	if root == nil or not root:IsA("BasePart") or humanoid == nil or humanoid.Health <= 0 then
-		return nil
+		return nil, nil
 	end
-	return root.Position
+	return root, humanoid
 end
 
 local function flat(position: Vector3): Encounter.Vec2
 	return { x = position.X, z = position.Z }
+end
+
+local function point(position: Vector3): Movement.Point
+	return { x = position.X, y = position.Y, z = position.Z }
 end
 
 local function notifyMastery(player: Player, baddieId: string?, level: number?)
@@ -78,17 +86,121 @@ local function endEncounter(player: Player, session, reason: string)
 	session.inCombat = false
 	session.hp = ctx.Balance.combat.playerHP -- PV restaurés hors combat
 	session.outsideSince = nil
+	session.movement = nil
+	session.movementRoot = nil
+	session.combatGains = nil
 	send(player, { t = "end", encounterId = encounter.id, reason = reason })
 	deps.State.markDirty(player)
+end
+
+local function describe(observation: Movement.Observation): string
+	local seconds = string.format("%.2f", observation.seconds)
+	local limit = ctx.Balance.combat.movement.maxStrikes
+	return `anomalie {observation.strikes}/{limit}, {math.round(observation.distance)} studs en {seconds} s`
+end
+
+-- Rencontre impossible (déplacements) : fermée sans récompense, gains des sbires retirés (§25)
+local function invalidate(player: Player, session, data, observation: Movement.Observation)
+	local encounter = session.encounter
+	if encounter == nil then
+		return
+	end
+	local gains = session.combatGains
+	local removedPower = 0
+	if gains ~= nil then
+		local before = data.power
+		data.power = math.max(ctx.Balance.power.start, data.power - gains.power)
+		removedPower = before - data.power
+		for baddieId, xp in gains.xp do
+			data.masteryXP[baddieId] = math.max(0, (data.masteryXP[baddieId] or 0) - xp)
+		end
+	end
+	local levelId = encounter.levelId
+	endEncounter(player, session, "invalid")
+	session.combatBlockedUntil = os.clock() + ctx.Balance.combat.movement.restartDelaySeconds
+	print(
+		`[Movement] {player.UserId} rencontre invalidée (niveau {levelId}) : {describe(observation)} ; `
+			.. `{math.round(removedPower)} puissance retirée`
+	)
+	deps.State.refreshAttributes(player, data)
+	deps.State.notify(player, { kind = "combatInvalid", level = levelId })
+	deps.Metrics.encounterInvalid(player, data, levelId)
+end
+
+-- Compare la position actuelle à la précédente ; false si la rencontre vient d'être invalidée
+local function checkMovement(
+	player: Player,
+	session,
+	data,
+	root: BasePart,
+	humanoid: Humanoid,
+	now: number
+): boolean
+	local tracker = session.movement
+	local cfg = ctx.Balance.combat.movement
+	if tracker == nil or session.movementRoot ~= root then
+		-- nouveau personnage pendant la rencontre : on repart de sa position
+		session.movement = Movement.new(point(root.Position), now, humanoid.WalkSpeed, cfg)
+		session.movementRoot = root
+		return true
+	end
+	local observation = Movement.observe(tracker, point(root.Position), now, humanoid.WalkSpeed, cfg)
+	if observation.status == "ok" then
+		return true
+	end
+	if observation.status == "strike" then
+		print(`[Movement] {player.UserId} {describe(observation)} (sans effet)`)
+		return true
+	end
+	invalidate(player, session, data, observation)
+	return false
+end
+
+-- Le jeu déplace lui-même le joueur (téléporteur, outil de test) : pas une anomalie
+function CombatService.forgiveMovement(player: Player)
+	local session = deps.Sessions.get(player)
+	local root, humanoid = liveCharacter(player)
+	if session == nil or session.movement == nil or root == nil or humanoid == nil then
+		return
+	end
+	Movement.reset(
+		session.movement,
+		point(root.Position),
+		os.clock(),
+		humanoid.WalkSpeed,
+		ctx.Balance.combat.movement
+	)
+	session.movementRoot = root
+end
+
+local function addGains(session, power: number, baddieId: string?, xp: number)
+	local gains = session.combatGains
+	if gains == nil then
+		return
+	end
+	gains.power += power
+	if baddieId ~= nil then
+		gains.xp[baddieId] = (gains.xp[baddieId] or 0) + xp
+	end
 end
 
 function CombatService.startEncounter(player: Player, session, data, levelId: number): boolean
 	if session.encounter ~= nil or not CombatRules.isAccessible(data, levelId, ctx) then
 		return false
 	end
+	if session.combatBlockedUntil ~= nil and os.clock() < session.combatBlockedUntil then
+		return false -- juste après une invalidation
+	end
 	local arena = deps.World.arena(levelId)
-	local position = livePosition(player)
-	if arena == nil or position == nil or not deps.World.isInside(arena, position) then
+	local root, humanoid = liveCharacter(player)
+	local position = if root ~= nil then root.Position else nil
+	if
+		arena == nil
+		or root == nil
+		or humanoid == nil
+		or position == nil
+		or not deps.World.isInside(arena, position)
+	then
 		return false -- il faut être physiquement dans l'arène de ce niveau
 	end
 	local cfg = CombatRules.levelConfig(levelId, ctx)
@@ -98,10 +210,15 @@ function CombatService.startEncounter(player: Player, session, data, levelId: nu
 
 	serial += 1
 	local id = `{player.UserId}-{serial}`
-	session.encounter = Encounter.new(id, levelId, cfg, arena.bounds, os.clock())
+	local now = os.clock()
+	session.encounter = Encounter.new(id, levelId, cfg, arena.bounds, now)
 	session.inCombat = true
 	session.hp = ctx.Balance.combat.playerHP
 	session.outsideSince = nil
+	session.combatBlockedUntil = nil
+	session.movement = Movement.new(point(position), now, humanoid.WalkSpeed, ctx.Balance.combat.movement)
+	session.movementRoot = root
+	session.combatGains = { power = 0, xp = {} }
 
 	deps.Metrics.encounterStarted(player, data, session, levelId)
 	send(player, {
@@ -177,10 +294,14 @@ function CombatService.onAttack(player: Player, payload: { [any]: any }?)
 	if targetId ~= nil and type(targetId) ~= "string" then
 		return
 	end
-	local position = livePosition(player)
-	if position == nil then
+	local root, humanoid = liveCharacter(player)
+	if root == nil or humanoid == nil then
 		return
 	end
+	if not checkMovement(player, session, data, root, humanoid, os.clock()) then
+		return -- rencontre invalidée : cette attaque ne compte pas
+	end
+	local position = root.Position
 
 	local C = ctx.Balance.combat
 	local damage = CombatRules.attackDamage(data, ctx)
@@ -202,6 +323,7 @@ function CombatService.onAttack(player: Player, payload: { [any]: any }?)
 			onBossVictory(player, session, data, encounter)
 		else
 			local reward = CombatRules.applyMinionKill(data, encounter.levelId, ctx)
+			addGains(session, reward.power, reward.masteryBaddie, reward.xp)
 			notifyMastery(player, reward.masteryBaddie, reward.masteryUp)
 		end
 	end
@@ -226,7 +348,8 @@ local function tickPlayer(player: Player, session, now: number)
 	if data == nil then
 		return
 	end
-	local position = livePosition(player)
+	local root, humanoid = liveCharacter(player)
+	local position = if root ~= nil then root.Position else nil
 	local encounter = session.encounter
 
 	if encounter == nil then
@@ -240,8 +363,11 @@ local function tickPlayer(player: Player, session, now: number)
 		return
 	end
 
-	if position == nil then
+	if root == nil or humanoid == nil or position == nil then
 		onDeath(player, session, data, false) -- chute ou reset : Roblox fait respawn le personnage
+		return
+	end
+	if not checkMovement(player, session, data, root, humanoid, now) then
 		return
 	end
 

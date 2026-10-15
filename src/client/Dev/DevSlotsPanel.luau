@@ -9,7 +9,8 @@
 	- Compagnons : OUVRIR UN COFFRE (1 ticket compagnon), AMÉLIORER (copies), ÉQUIPER / RETIRER.
 	- Classement du lobby (baddies et crew) tel que le serveur le calcule.
 	- Garde-robe : succès obtenus, cosmétiques et titres débloqués à porter ou retirer.
-	- Outils Studio : tickets baddie et compagnon, drop de Vega, finir le parcours, maîtrise 5.
+	- Outils Studio : tickets baddie et compagnon, +5 000 puissance, drop de Vega, finir le parcours, maîtrise 5,
+	  TÉLÉPORT en combat (tester le contrôle des déplacements §25).
 	- Réponses des décisions durables (Result kind = "mutation") ; RÉESSAYER renvoie le MÊME requestId.
 ]]
 
@@ -463,12 +464,21 @@ function DevSlotsPanel.start(state)
 		button(tools, "dev:crewTickets", "+5 TICKETS CREW", nil, NUIT, function()
 			send(Net.Actions.DevGrant, { what = "crewTickets" })
 		end)
+		button(tools, "dev:power", "+5 000 PUISSANCE", nil, NUIT, function()
+			send(Net.Actions.DevGrant, { what = "power" })
+		end)
 		button(tools, "dev:drop", "DROP VEGA", nil, NUIT, function()
 			send(Net.Actions.DevGrant, { what = "drop", baddieId = "vega" })
 		end)
 		button(tools, "dev:run", "FINIR LE PARCOURS", nil, NUIT, function()
 			send(Net.Actions.DevGrant, { what = "finishRun" })
 		end)
+		if s.mode == "combat" then
+			-- §25 : 1 clic = 1 anomalie (rien de visible) ; 3 clics en 20 s = combat invalidé
+			button(tools, "dev:teleport", "TÉLÉPORT (anti-triche)", nil, NUIT, function()
+				send(Net.Actions.DevGrant, { what = "teleport" })
+			end)
+		end
 		if s.active and s.active.baddieId then
 			button(tools, "dev:mastery", "MAÎTRISE 5", nil, NUIT, function()
 				send(Net.Actions.DevSetMastery, { baddieId = s.active.baddieId, xp = 250 })
@@ -530,6 +540,13 @@ function DevSlotsPanel.start(state)
 	end)
 
 	state.onResult(function(event)
+		if event.kind == "combatInvalid" then
+			lastMessage =
+				`Combat du niveau {event.level} invalidé (déplacements impossibles) : gains de la vague retirés`
+			canRetry = false
+			render()
+			return
+		end
 		if event.kind ~= "mutation" then
 			return
 		end

@@ -9,7 +9,7 @@
 ]]
 
 local Balance = {
-	version = "v4-p0",
+	version = "v4-p1", -- p1 : équilibrage du 15/10 (docs/BALANCE.md, tools/simulate.luau)
 
 	power = {
 		start = 1, -- puissance de départ (et après rebirth)
@@ -86,9 +86,23 @@ local Balance = {
 		leaveArenaGraceSeconds = 3, -- sortir de l'arène plus longtemps abandonne le combat
 		dodgeTolerance = 0.75, -- marge en faveur du joueur sur les zones de danger (latence)
 		respawnDelay = 1.5,
-		minionPowerPerLevel = 2, -- sbire = 2 × niveau
-		bossPowerPerLevel = 10, -- boss = 10 × niveau
+		-- §12 : récompenses « à équilibrer contre l'entraînement ». Le dossier proposait 2 × et 10 × niveau ;
+		-- rejouer une vague devenait alors 30 % plus rapide que s'entraîner (simulateur). Ici, à égalité.
+		minionPowerPerLevel = 1, -- sbire = 1 × niveau
+		bossPowerPerLevel = 5, -- boss = 5 × niveau
 		bossDropChance = 0.10, -- RÈGLE CONFIRMÉE : 10 %, sans pity ni garantie
+		recommendedAttacks = 60, -- §09 : puissance conseillée = finir la rencontre en ~60 coups (~15 s)
+		-- §25 : déplacements contrôlés pendant un combat (Rules/Movement). Tolérant : un pic de latence
+		-- donne au plus UNE anomalie ; seule la répétition invalide la rencontre (aucun bannissement).
+		movement = {
+			speedTolerance = 1.25, -- × WalkSpeed du Humanoid lue côté serveur (16 par défaut)
+			extraStudsPerSecond = 4, -- marge fixe : sauts, glissades, arrondis de réplication
+			burstSeconds = 2, -- réserve : rattrape 2 s de positions retenues par la latence
+			slackStuds = 8, -- dépassement toléré au-delà de la réserve
+			strikeWindowSeconds = 20,
+			maxStrikes = 3, -- 3 anomalies en 20 s : rencontre invalidée, ses gains retirés
+			restartDelaySeconds = 5, -- délai avant qu'une nouvelle vague puisse démarrer
+		},
 		-- Sbire : frappe lente sur la position du joueur
 		minion = {
 			speed = 10,
@@ -97,7 +111,7 @@ local Balance = {
 			recoverySeconds = 1.6,
 			radius = 6,
 			damageBase = 10,
-			damagePerLevel = 5,
+			damagePerLevel = 4, -- 14 au niveau 1, 50 au niveau 10 : deux erreurs avant la troisième fatale
 		},
 		-- Boss : frappe en cercle autour de lui
 		boss = {
@@ -107,7 +121,7 @@ local Balance = {
 			recoverySeconds = 2.2,
 			radius = 11,
 			damageBase = 20,
-			damagePerLevel = 8,
+			damagePerLevel = 6, -- 26 au niveau 1, 80 au niveau 10 : jamais mort d'un seul coup à PV pleins
 		},
 	},
 
@@ -161,18 +175,21 @@ local Balance = {
 		promotionAt = { 1, 3, 6 }, -- rebirths qui promeuvent le slot temporaire
 	},
 
-	-- §09 : dix niveaux dans cinq quartiers (paramètres de test, pas l'équilibre final)
+	-- §09 : dix niveaux dans cinq quartiers. Le niveau 1 garde 3 × 50 et 250 (demandé par le dossier).
+	-- Ensuite, PV ≈ ce qu'un joueur occasionnel atteint en s'entraînant (3/s) pour un parcours de ~27 min :
+	-- puissance visée ≈ 8 × secondes écoulées, sbire ≈ 6,5 × et boss ≈ 33 × cette puissance (×1,2 aux
+	-- paliers 5 et 10), soit une rencontre d'environ 60 coups. Réglage à confirmer par les statistiques.
 	levels = {
 		{ district = "Street Block", minions = 3, minionHP = 50, boss = "jade", bossHP = 250 },
-		{ district = "Street Block", minions = 3, minionHP = 90, boss = "iris", bossHP = 450 },
-		{ district = "Shopping Avenue", minions = 4, minionHP = 150, boss = "jade", bossHP = 800 },
-		{ district = "Shopping Avenue", minions = 4, minionHP = 250, boss = "iris", bossHP = 1400 },
-		{ district = "Festival Park", minions = 4, minionHP = 400, boss = "sienna", bossHP = 2500 },
-		{ district = "Festival Park", minions = 4, minionHP = 650, boss = "nova", bossHP = 4000 },
-		{ district = "Skyline Rooftop", minions = 5, minionHP = 1000, boss = "sienna", bossHP = 6500 },
-		{ district = "Skyline Rooftop", minions = 5, minionHP = 1600, boss = "nova", bossHP = 10000 },
-		{ district = "World Stage", minions = 5, minionHP = 2500, boss = "zuri", bossHP = 16000 },
-		{ district = "World Stage", minions = 5, minionHP = 4000, boss = "vega", bossHP = 25000 },
+		{ district = "Street Block", minions = 3, minionHP = 6200, boss = "iris", bossHP = 32000 },
+		{ district = "Shopping Avenue", minions = 4, minionHP = 14000, boss = "jade", bossHP = 71000 },
+		{ district = "Shopping Avenue", minions = 4, minionHP = 23000, boss = "iris", bossHP = 119000 },
+		{ district = "Festival Park", minions = 4, minionHP = 34000, boss = "sienna", bossHP = 209000 },
+		{ district = "Festival Park", minions = 4, minionHP = 45000, boss = "nova", bossHP = 230000 },
+		{ district = "Skyline Rooftop", minions = 5, minionHP = 56000, boss = "sienna", bossHP = 285000 },
+		{ district = "Skyline Rooftop", minions = 5, minionHP = 69000, boss = "nova", bossHP = 348000 },
+		{ district = "World Stage", minions = 5, minionHP = 81000, boss = "zuri", bossHP = 412000 },
+		{ district = "World Stage", minions = 5, minionHP = 94000, boss = "vega", bossHP = 570000 },
 	},
 }
 

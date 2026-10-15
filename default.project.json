@@ -11,7 +11,8 @@
         "$className": "Folder",
         "Intent": { "$className": "RemoteEvent" },
         "State": { "$className": "RemoteEvent" },
-        "Result": { "$className": "RemoteEvent" }
+        "Result": { "$className": "RemoteEvent" },
+        "Combat": { "$className": "RemoteEvent" }
       },
       "Visuals": {
         "$className": "Folder",

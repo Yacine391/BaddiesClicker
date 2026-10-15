@@ -21,11 +21,11 @@ du codeur B ; à reporter dans la feuille de route après fusion des deux branch
 - [x] Valider en Studio : parcours complet des 10 niveaux (vagues, boss, portes), « rejouer » (15/10)
 - [ ] Valider en Studio : mort (retour lobby, portes refermées) et drop à 10 % (drops en attente)
 - [ ] Régler les chiffres (PV, dégâts, cadence) après les premiers combats réels
-- [ ] Après fusion avec la PR #1 : déclarer le remote `Combat` dans `default.project.json`, reporter ces cases dans `ROADMAP.md`
+- [x] Après fusion de la PR #1 : remote `Combat` déclaré dans `default.project.json`, cases reportées dans `ROADMAP.md` (15/10)
 
 ## Côté codeur B (P1)
 
-- [ ] `Input` : envoyer `Attack { encounterId }` quand `snapshot.combat.active` (au lieu de `Train`)
+- [x] `Input` : envoyer `Attack { encounterId }` quand `snapshot.combat.active` (au lieu de `Train`) — PR #1, `Logic/PrimaryAction`
 - [ ] Retirer la barrière « lot P1 » de la rue dans `assets/world/Lobby.rbxm` ; arènes réelles aux noms du contrat (`Levels/LevelN/Arena`, `Door`)
 - [ ] Rendu du combat (ennemis, cercles de danger lisibles en qualité basse, PV) via `StateController.onCombat` ; démarrer `DoorController` depuis l'App ; supprimer `CombatBootstrap.client.luau`
 

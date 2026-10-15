@@ -16,7 +16,7 @@ Déclarés dans `default.project.json`, ils existent avant tout script : `Replic
 | `Intent` | client → serveur | `FireServer(action: string, payload: table?)` |
 | `State` | serveur → client | snapshot complet (ci-dessous) |
 | `Result` | serveur → client | événement ponctuel `{ kind = ..., ... }` |
-| `Combat` | serveur → client | flux de la rencontre en cours `{ t = ..., ... }` (ci-dessous). Créé au démarrage par `CombatService` tant que la PR #1 est ouverte ; à déclarer ensuite dans `default.project.json` |
+| `Combat` | serveur → client | flux de la rencontre en cours `{ t = ..., ... }` (ci-dessous) |
 
 Côté client, **ne pas brancher les remotes à la main** : passer par
 `Controllers/StateController` (`onState`, `onResult`, `onCombat`, `send`).

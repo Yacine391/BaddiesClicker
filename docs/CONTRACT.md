@@ -1,4 +1,4 @@
-# Contrat réseau client ↔ serveur (v2, lots P0 + P1)
+# Contrat réseau client ↔ serveur (v3, lots P0 + P1 + P2 — snapshot `v = 2`)
 
 Ce fichier est la frontière entre le **codeur A** (serveur) et le **codeur B** (HUD, suiveurs, carte).
 Tout changement passe par une PR relue par les deux.
@@ -33,19 +33,75 @@ peut être découverte (dans le Baddies Book), possédée (dans un slot) ou expo
 | `Train` | aucun | 8/s (rafale 8) | profil chargé, hors combat |
 | `Attack` | `{ encounterId: string, targetId: string? }` | 8/s (rafale 8) | rencontre en cours ; cible à portée (25 studs + marge) ; sans `targetId` valide, le serveur prend l'ennemi le plus proche |
 | `StartWave` | `{ levelId: number }` | 1/s | rejouer un niveau **terminé**, en étant dans son arène, hors combat |
+| `Roll` ⏳ | `{ requestId, slotId, slotRevision }` | 4/s + 2 s entre deux relances | hors combat ; `slotRevision` = révision du slot affichée à la confirmation ; slot non verrouillé ; 1 ticket baddie |
+| `AcceptDrop` ⏳ | `{ requestId, baddieId, slotRevision, pendingRevision }` | 4/s | hors combat ; au moins 1 drop de cette baddie ; `slotRevision` = révision du **temporaire** affiché |
+| `RefuseDrop` ⏳ | `{ requestId, baddieId, pendingRevision }` | 4/s | à tout moment ; retire **une** unité |
+| `Rebirth` ⏳ | `{ requestId, expectedRunId }` | 1/s | hors combat ; niveau 10 terminé dans le parcours `run.id = expectedRunId` |
+| `OpenChest` ⏳ | `{ requestId }` | 4/s + 2 s entre deux coffres | hors combat ; 1 ticket compagnon |
+| `SetActive` | `{ slotId }` | 4/s | hors combat ; slot rempli. Change seulement la principale, **aucun déplacement** de baddie |
+| `SetRollLock` | `{ slotId, locked: boolean }` | 4/s | verrou de relance (le temporaire est quand même vidé au rebirth) |
+| `SetDisplay` | `{ ids: { string } }` | 4/s | hors combat ; ≤ 3 IDs connus, **découverts**, sans doublon ; remplace toute la liste |
+| `SetLook` | `{ baddieId, look: number }` | 4/s | hors combat ; baddie découverte ; `look` ∈ `collection.looks[id].unlocked` |
+| `UpgradeCrew` | `{ crewId }` | 4/s | compagnon possédé, pas au niveau 10 ; dépense `niveau + 1` copies (`crewOwned[i].upgradeCost`) |
+| `EquipCrew` | `{ ids: { string } }` | 4/s | ≤ 2 compagnons **possédés**, sans doublon ; remplace la liste (vide = aucun) |
+| `DevSetMastery` 🧪 | `{ baddieId, xp }` | 4/s | **Studio uniquement** : fixe l'XP de maîtrise (tester les looks) |
+| `DevGrant` 🧪 | `{ what = "tickets" \| "crewTickets" \| "drop" \| "finishRun", baddieId? }` | 4/s | **Studio uniquement** : +10 tickets baddie, +5 tickets compagnon, un drop en attente, ou les 10 niveaux terminés |
+
+⏳ = **décision durable** (ci-dessous) : réponse `Result { kind = "mutation" }` après l'écriture.
+Les autres intentions invalides sont ignorées sans réponse : le client se fie au snapshot suivant.
+🧪 = déclarée seulement dans Studio (`RunService:IsStudio()`), absente en production.
 
 Le client peut afficher `Balance.training.holdActionsPerSecond` (3/s) pour le maintien accessible.
 En combat, le bouton principal envoie `Attack` ; au repos, `Train`. Jamais les deux (§07).
 Le premier passage d'un niveau démarre tout seul quand le joueur entre dans son arène.
-À venir en P2 : `Roll`, `AcceptDrop`, `RefuseDrop`, `SetActive`, `Rebirth` (§25).
 
-## Snapshot `State` (v = 1)
+## Décisions durables (P2 : relance, drop, renaissance, coffre — §25 à §27)
+
+1. Le client génère un `requestId` (chaîne de 1 à 64 caractères, ex. `HttpService:GenerateGUID(false)`)
+   **par décision**, et le **réutilise** s'il doit renvoyer la même décision (pas de réponse, `saving`,
+   `error` ou `confirmed = false`). Jamais un nouveau `requestId` pour une décision déjà envoyée.
+2. Le serveur traite une décision à la fois par joueur, tire le hasard **une seule fois**, enregistre un
+   reçu dans le profil puis attend l'écriture DataStore. Un renvoi du même `requestId` rend **le même
+   résultat** (`replay = true`), sans nouvel effet.
+3. Pendant l'écriture, `snapshot.saving = true` et les snapshots suivants sont retenus : afficher la
+   révélation (roulette, bannière) **à la réception de la réponse**, jamais avant.
+
+Réponse `Result` :
+
+```lua
+{
+	kind = "mutation",
+	action = "Roll",              -- "Roll" | "AcceptDrop" | "RefuseDrop" | "Rebirth" | "OpenChest"
+	requestId = "…",              -- celui de la demande
+	ok = true,
+	reason = nil,                 -- si ok = false (voir ci-dessous)
+	confirmed = true,             -- false : appliquée mais écriture non confirmée → renvoyer le même requestId
+	replay = nil,                 -- true : renvoi d'une décision déjà traitée
+	result = {                    -- selon l'action :
+		-- Roll       : slotId, baddieId, previousId?, guaranteed, isNew, slotRevision, rollNumber
+		-- AcceptDrop : slotId, baddieId, previousId?, isNew, slotRevision, remaining, isActive
+		-- RefuseDrop : baddieId, remaining
+		-- Rebirth    : count, runId, promotedSlotId?, newSlotId?, clearedSlotId?, lostBaddieId?,
+		--              activeSlotId, fallback? ("conserved" | "maya"), baddieTickets, crewTickets
+		-- OpenChest  : crewId, isNew, equipped, level, copies, guaranteed, openNumber
+	},
+}
+```
+
+Raisons de refus : `busy` (une décision est déjà en cours), `saving` (l'écriture précédente est encore
+incertaine), `cooldown` (2 s entre deux relances), `in_combat`, `stale` (révision ou parcours périmé :
+resynchroniser et redemander confirmation), `locked`, `no_ticket`, `no_drop`, `no_temporary`,
+`not_finished` (niveau 10 non terminé), `unknown_slot`, `invalid`, `duplicate`, `error`,
+`maintenance` (décision coupée temporairement par l'équipe, voir `snapshot.maintenance` ; rien n'est modifié).
+Après une renaissance confirmée, le serveur renvoie le joueur au lobby (1,5 s).
+
+## Snapshot `State` (v = 2)
 
 Envoyé au chargement, sur `Hello`, puis à chaque changement (regroupé, au plus toutes les 0,1 s).
 
 ```lua
 {
-	v = 1,
+	v = 2,
 	mode = "rest",                -- "rest" | "combat" (le bouton change de libellé et de couleur)
 	power = 12.4,                 -- puissance actuelle (peut être décimale)
 	gainPerTrain = 1,             -- gain d'une action d'entraînement
@@ -59,9 +115,21 @@ Envoyé au chargement, sur `Hello`, puis à chaque changement (regroupé, au plu
 		multiplier = 1,
 		masteryLevel = 0,
 		damagePerClick = 12.4,
+		look = 1,                 -- look porté par la principale (1 à 3)
 	},
 	crew = {                      -- compagnons équipés, dans l'ordre (2 max)
 		{ id = "malik", level = 1, copies = 0, perSecond = 0.6 },
+	},
+	crewOwned = {                 -- toute la collection possédée, ordre du catalogue (P2)
+		{ id = "malik", level = 2, copies = 1, upgradeCost = 3, canUpgrade = false,
+		  equipped = true, perSecond = 0.66 },   -- upgradeCost nil au niveau 10
+	},
+	crewChest = {
+		opened = 7,               -- coffres ouverts (compteur global, séparé des relances)
+		guaranteeEvery = 20,
+		untilGuarantee = 13,      -- 1 = le prochain coffre donne un compagnon manquant
+		missing = { "kenji", "amine" },
+		complete = false,
 	},
 	stats = { trainActions = 14, crewPowerEarned = 2.4 },
 	settings = { reducedEffects = false }, -- effets réduits (§21)
@@ -76,7 +144,37 @@ Envoyé au chargement, sur `Hello`, puis à chaque changement (regroupé, au plu
 	},
 	clearedLevels = { 1, 2 },     -- portes ouvertes pour CE joueur (refermées à la mort)
 	run = { id = 1, attempt = 1 },
-	pendingDrops = { jade = 1 },  -- drops de boss en attente de décision (P2 : accepter / refuser)
+	pendingDrops = { jade = 1 },  -- drops de boss en attente de décision (accepter / refuser 1)
+	pendingRevision = 3,          -- à renvoyer avec AcceptDrop / RefuseDrop
+	slots = {                     -- ordonnés ; un seul temporaire ; baddieId nil = slot vide
+		{ id = "s1", order = 1, conserved = true, temporary = false, baddieId = "nova",
+		  revision = 4, rollLocked = true, active = true },
+		{ id = "s2", order = 2, conserved = false, temporary = true, baddieId = "lina",
+		  revision = 2, rollLocked = false, active = false },
+	},
+	rolls = {
+		baddie = 12,              -- relances effectuées (compteur global, garde la garantie)
+		guaranteeEvery = 50,
+		untilGuarantee = 38,      -- 1 = la prochaine relance est une ouverture garantie
+		bookComplete = false,     -- Book complet : la table standard s'applique toujours
+		missing = { "zuri", "vega" }, -- ouverture garantie : chance égale pour chacune
+	},
+	collection = {                -- Baddies Book (proposition contrat v2 du codeur B)
+		discovered = { "maya", "nova" },  -- ordre du catalogue ; identités de test en dernier (Studio)
+		display = { "nova" },             -- exposition, 3 max (apparence uniquement)
+		looks = { maya = { unlocked = { 1, 2 }, selected = 2 }, nova = { unlocked = { 1 }, selected = 1 } },
+		bookCount = 2, bookTotal = 8,     -- identités publiques seulement
+	},
+	saving = false,               -- true pendant l'écriture d'une décision durable
+	maintenance = { },            -- décisions coupées ("Roll", "AcceptDrop", "RefuseDrop", "Rebirth", "OpenChest") : griser
+	seq = 42,                     -- numéro croissant de ce snapshot : ignorer un snapshot plus ancien que le dernier reçu
+	rebirth = {
+		count = 1,                -- renaissances déjà faites
+		available = false,        -- niveau 10 terminé dans ce parcours
+		promotesNext = false,     -- la prochaine promeut le temporaire (paliers 1, 3, 6)
+		temporarySlotId = "s2",
+		baddieTickets = 5, crewTickets = 1, -- récompenses de la prochaine
+	},
 	tutorial = { crewUnlocked = true, progress = 10, needed = 10 },
 }
 ```
@@ -88,7 +186,7 @@ Noms, raretés, couleurs et looks : lire `Shared/Catalog` avec l'ID (`Catalog.ba
 
 | `kind` | Champs | Usage suggéré |
 |---|---|---|
-| `crewJoined` | `crewId`, `isNew`, `equipped` | annonce du nouveau compagnon (tutoriel : Malik) |
+| `crewJoined` | `crewId`, `isNew`, `equipped` | nouveau compagnon (tutoriel : Malik, ou coffre) ; `isNew = false` : doublon d'un coffre, +1 copie |
 | `ticket` | `ticket` = `"baddie"`/`"crew"`, `amount` | toast +1 ticket |
 | `passiveTick` | `amount` (puissance réellement gagnée) | petit « +0,6 » au-dessus du compagnon, chaque seconde |
 
@@ -96,9 +194,10 @@ Noms, raretés, couleurs et looks : lire `Shared/Catalog` avec l'ID (`Catalog.ba
 | `masteryUp` | `baddieId`, `level` | la principale monte en maîtrise |
 | `death` | — | « Retour au lobby. Ta puissance et tes baddies restent ; les portes se referment. » |
 | `combatLeft` | — | sorti de l'arène plus de 3 s : combat abandonné, aucune récompense |
-
-Prévus (P2), déjà gérés par `CelebrationController` : `crewLevelUp` {`crewId`, `level`}, `rebirth` {`count`},
-`discovery` {`baddieId`}.
+| `mutation` | voir « Décisions durables » | réponse à `Roll`, `AcceptDrop`, `RefuseDrop`, `Rebirth` |
+| `discovery` | `baddieId` | nouvelle identité au Baddies Book (relance ou drop accepté), après l'écriture |
+| `rebirth` | `count` | renaissance confirmée |
+| `crewLevelUp` | `crewId`, `level` | compagnon amélioré (`UpgradeCrew`) |
 
 ## Flux `Combat` (rencontre individuelle, §08)
 
@@ -150,6 +249,19 @@ Pour afficher les suiveurs de **tous** les joueurs, pas seulement les siens :
 | `BC_Ready` | boolean | `true` quand le profil est chargé |
 | `BC_ActiveBaddie` | string | `"maya"` |
 | `BC_EquippedCrew` | string, IDs séparés par des virgules | `"malik"` ou `"malik,enzo"` |
+| `BC_ActiveLook` | number | `1` (look de la principale) |
+| `BC_Display` | string, IDs séparés par des virgules | `"nova,jade"` (exposition) |
+| `BC_BookCount` | number | `2` (identités publiques découvertes, pour un futur classement) |
+
+## Outils de test (Studio uniquement)
+
+- `Shared/TestCatalog` : identité `test_b99` (silhouette grise, ×1, un look). Dans Studio, le serveur
+  l'ajoute au catalogue (`TestCatalog.merge`) et au Baddies Book du profil Studio. Jamais tirée en
+  relance, jamais « manquante », jamais comptée dans `bookCount`. Côté client, `Shared/Catalog` ne la
+  contient pas : afficher l'ID tel quel si `Catalog.baddies[id]` est nil.
+- `DevSetMastery`, `DevGrant` : voir les intentions.
+- `Dev/DevSlotsPanel` (touche F4), lancé par `DevToolsBootstrap.client.luau` : slots, relances, drops,
+  renaissance et outils, en attendant les écrans Slots / Drops / Rebirth du codeur B.
 
 Les suiveurs sont **purement visuels et locaux** (§28) : aucune physique serveur, aucune collision,
 arrêter une animation ne change rien aux gains.

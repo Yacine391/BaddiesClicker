@@ -4,12 +4,19 @@
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 
+-- Dans Studio seulement, le catalogue inclut les identités de test (Shared/TestCatalog, jamais en relance)
+local Catalog = require(Shared.Catalog)
+if RunService:IsStudio() then
+	Catalog = require(Shared.TestCatalog).merge(Catalog)
+end
+
 local ctx = table.freeze({
 	Balance = require(Shared.Balance),
-	Catalog = require(Shared.Catalog),
+	Catalog = Catalog,
 	Formulas = require(Shared.Formulas),
 })
 
@@ -22,22 +29,39 @@ local Crew = require(Services.CrewService)
 local IntentRouter = require(Services.IntentRouter)
 local World = require(Services.WorldService)
 local Combat = require(Services.CombatService)
+local Mutations = require(Services.MutationService)
+local Maintenance = require(Services.MaintenanceService)
+local Slots = require(Services.SlotService)
+local Book = require(Services.BookService)
+local Dev = require(Services.DevService)
 
 local deps = table.freeze({
 	Profiles = Profiles,
 	Sessions = Sessions,
 	State = State,
 	World = World,
+	Mutations = Mutations,
+	Maintenance = Maintenance,
 })
 
 Profiles.init(ctx)
+Maintenance.init(ctx)
 World.init(ctx)
 State.init(ctx, deps)
 Training.init(ctx, deps)
 Crew.init(ctx, deps)
 Combat.init(ctx, deps)
+Mutations.init(ctx, deps)
+Slots.init(ctx, deps)
+Book.init(ctx, deps)
+Dev.init(ctx, deps)
 
-IntentRouter.init(ctx, deps, {
+-- Décisions durables : la file de MutationService les sérialise ; la cadence ne fait que borner le spam
+local MUTATION_RATE = 4
+-- Choix immédiats (principale, verrou, exposition, look) : 4/s (§25)
+local CHOICE_RATE = 4
+
+local routes: { [string]: IntentRouter.Route } = {
 	Hello = {
 		rate = ctx.Balance.net.helloPerSecond,
 		burst = 2,
@@ -58,10 +82,27 @@ IntentRouter.init(ctx, deps, {
 		burst = 2,
 		handler = Combat.onStartWave,
 	},
-})
+	Roll = { rate = MUTATION_RATE, burst = MUTATION_RATE, handler = Slots.onRoll },
+	AcceptDrop = { rate = MUTATION_RATE, burst = MUTATION_RATE, handler = Slots.onAcceptDrop },
+	RefuseDrop = { rate = MUTATION_RATE, burst = MUTATION_RATE, handler = Slots.onRefuseDrop },
+	Rebirth = { rate = 1, burst = 1, handler = Slots.onRebirth },
+	OpenChest = { rate = MUTATION_RATE, burst = MUTATION_RATE, handler = Crew.onOpenChest },
+	SetActive = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Slots.onSetActive },
+	SetRollLock = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Slots.onSetRollLock },
+	SetDisplay = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Book.onSetDisplay },
+	SetLook = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Book.onSetLook },
+	UpgradeCrew = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Crew.onUpgrade },
+	EquipCrew = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Crew.onEquip },
+}
+if Dev.enabled() then
+	routes.DevSetMastery = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Dev.onSetMastery }
+	routes.DevGrant = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Dev.onGrant }
+end
+IntentRouter.init(ctx, deps, routes)
 
 Profiles.onLoaded(function(player, data)
 	Sessions.create(player)
+	Dev.onProfileLoaded(player, data)
 	State.onPlayerReady(player, data)
 end)
 
@@ -70,6 +111,7 @@ Profiles.onReleasing(function(player)
 	State.forget(player)
 end)
 
+Maintenance.start()
 Crew.start()
 Combat.start()
 Profiles.start()

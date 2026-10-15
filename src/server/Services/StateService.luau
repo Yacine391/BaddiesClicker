@@ -3,6 +3,8 @@
 	- markDirty() regroupe les changements ; l'envoi part au plus toutes les 0,1 s.
 	- notify() envoie un événement ponctuel (toast, ticket, nouveau compagnon…).
 	- Les attributs BC_* du Player servent à afficher les suiveurs de TOUS les joueurs.
+	- Pendant une décision durable (MutationService), les snapshots attendent la fin de l'écriture :
+	  le joueur ne voit le résultat d'une relance qu'après sa confirmation (§26).
 	Le client ne décide jamais de rien : il affiche ce que le serveur calcule.
 ]]
 
@@ -10,8 +12,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Net = require(ReplicatedStorage.Shared.Net)
+local CollectionRules = require(script.Parent.Parent.Rules.Collection)
 local CombatRules = require(script.Parent.Parent.Rules.Combat)
 local CrewRules = require(script.Parent.Parent.Rules.Crew)
+local SlotRules = require(script.Parent.Parent.Rules.Slots)
 
 local StateService = {}
 
@@ -20,6 +24,7 @@ local deps
 local stateRemote: RemoteEvent
 local resultRemote: RemoteEvent
 local dirty: { [Player]: boolean } = {}
+local sequence: { [Player]: number } = {}
 
 function StateService.init(context, dependencies)
 	ctx = context
@@ -35,8 +40,11 @@ function StateService.init(context, dependencies)
 		end
 		elapsed = 0
 		for player in dirty do
-			dirty[player] = nil
-			StateService.pushNow(player)
+			local session = deps.Sessions.get(player)
+			if session == nil or not session.mutating then
+				dirty[player] = nil
+				StateService.pushNow(player)
+			end
 		end
 	end)
 end
@@ -46,7 +54,7 @@ function StateService.snapshot(player: Player, data): { [string]: any }
 	local session = deps.Sessions.get(player)
 
 	local slot = data.slots[data.activeSlotId]
-	local baddieId = if slot then slot.baddieId else nil
+	local baddieId = if slot and not SlotRules.isEmpty(slot) then slot.baddieId else nil
 	local baddie = if baddieId then C.baddies[baddieId] else nil
 	local multiplier = if baddie then baddie.multiplier else 0
 	local masteryLevel = F.masteryLevel(if baddieId then data.masteryXP[baddieId] or 0 else 0, B.mastery)
@@ -82,14 +90,15 @@ function StateService.snapshot(player: Player, data): { [string]: any }
 		combat = { active = false, hp = maxHP, maxHP = maxHP }
 	end
 
-	local pendingDrops = {}
-	for dropId, count in data.pendingDrops do
-		pendingDrops[dropId] = count
-	end
+	local pendingDrops = table.clone(data.pendingDrops)
+
+	local missing = SlotRules.missingBaddies(data, ctx)
+	local crewMissing = CrewRules.missing(data, ctx)
+	local promotesNext = SlotRules.rebirthPromotes(data.rebirths + 1, ctx)
 
 	local needed = B.tutorial.crewUnlockAfterTrainActions
 	return {
-		v = 1,
+		v = 2,
 		mode = if session and session.inCombat then "combat" else "rest",
 		power = data.power,
 		gainPerTrain = F.manualGain(data.rebirths, B.training),
@@ -103,14 +112,44 @@ function StateService.snapshot(player: Player, data): { [string]: any }
 			multiplier = multiplier,
 			masteryLevel = masteryLevel,
 			damagePerClick = F.damagePerClick(data.power, multiplier, masteryLevel, B.mastery),
+			look = if baddieId then CollectionRules.selectedLook(data, baddieId, ctx) else 1,
 		},
-		crew = crew,
+		crew = crew, -- compagnons ÉQUIPÉS (inchangé depuis le v1)
+		crewOwned = CrewRules.ownedView(data, ctx), -- toute la collection possédée (P2)
+		crewChest = {
+			opened = data.rolls.crew, -- coffres ouverts (compteur global)
+			guaranteeEvery = B.rolls.crewGuaranteeEvery,
+			untilGuarantee = CrewRules.untilChestGuarantee(data, ctx), -- 1 = le prochain est garanti
+			missing = crewMissing,
+			complete = #crewMissing == 0,
+		},
 		stats = { trainActions = data.stats.trainActions, crewPowerEarned = data.stats.crewPowerEarned },
 		settings = { reducedEffects = data.settings.reducedEffects == true },
 		combat = combat,
 		clearedLevels = CombatRules.clearedList(data),
 		run = { id = data.run.id, attempt = data.run.attempt },
 		pendingDrops = pendingDrops,
+		pendingRevision = data.pendingRevision,
+		-- Lot P2 : slots, relances, Baddies Book, renaissance
+		slots = SlotRules.view(data),
+		rolls = {
+			baddie = data.rolls.baddie, -- relances effectuées (compteur global)
+			guaranteeEvery = B.rolls.baddieGuaranteeEvery,
+			untilGuarantee = SlotRules.untilGuarantee(data, ctx), -- 1 = la prochaine est garantie
+			bookComplete = #missing == 0,
+			missing = missing, -- ouverture garantie : chance égale pour chacune
+		},
+		collection = CollectionRules.view(data, ctx),
+		saving = session ~= nil and session.mutating == true,
+		maintenance = deps.Maintenance.disabledList(), -- décisions coupées : griser leurs boutons
+		rebirth = {
+			count = data.rebirths,
+			available = SlotRules.rebirthAvailable(data, ctx),
+			promotesNext = promotesNext,
+			temporarySlotId = SlotRules.temporaryId(data),
+			baddieTickets = B.rebirth.baddieTickets,
+			crewTickets = B.rebirth.crewTickets,
+		},
 		tutorial = {
 			crewUnlocked = data.tutorial.crewUnlocked,
 			progress = math.min(data.stats.trainActions, needed),
@@ -124,7 +163,10 @@ function StateService.pushNow(player: Player)
 	if data == nil then
 		return
 	end
-	stateRemote:FireClient(player, StateService.snapshot(player, data))
+	local snapshot = StateService.snapshot(player, data)
+	sequence[player] = (sequence[player] or 0) + 1
+	snapshot.seq = sequence[player] -- croissant : le client ignore un état plus ancien que le dernier reçu
+	stateRemote:FireClient(player, snapshot)
 end
 
 function StateService.markDirty(player: Player)
@@ -137,7 +179,14 @@ end
 
 function StateService.refreshAttributes(player: Player, data)
 	local slot = data.slots[data.activeSlotId]
-	player:SetAttribute("BC_ActiveBaddie", if slot then slot.baddieId else "")
+	local baddieId = if slot and not SlotRules.isEmpty(slot) then slot.baddieId else ""
+	player:SetAttribute("BC_ActiveBaddie", baddieId)
+	player:SetAttribute(
+		"BC_ActiveLook",
+		if baddieId ~= "" then CollectionRules.selectedLook(data, baddieId, ctx) else 1
+	)
+	player:SetAttribute("BC_Display", table.concat(CollectionRules.displayList(data, ctx), ","))
+	player:SetAttribute("BC_BookCount", (CollectionRules.bookCount(data, ctx)))
 	player:SetAttribute("BC_EquippedCrew", table.concat(data.equippedCrew, ","))
 	player:SetAttribute("BC_Ready", true)
 end
@@ -149,6 +198,7 @@ end
 
 function StateService.forget(player: Player)
 	dirty[player] = nil
+	sequence[player] = nil
 end
 
 -- Intention « Hello » : le client vient de brancher ses écouteurs

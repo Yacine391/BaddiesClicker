@@ -230,10 +230,11 @@ local function onResult(event: { [string]: any })
 	local kind = event.kind
 	if kind == "crewJoined" then
 		local def = Catalog.crew[event.crewId]
+		local isCopy = event.isNew == false -- doublon d'un coffre : une copie de plus
 		CelebrationController.play({
-			title = "NOUVEAU CREW !",
+			title = if isCopy then "+1 COPIE" else "NOUVEAU CREW !",
 			subtitle = if def then `{def.name} · {def.role}` else event.crewId,
-			big = true,
+			big = not isCopy,
 		})
 	elseif kind == "ticket" then
 		local what = if event.ticket == "baddie" then "BADDIE" else "COMPAGNON"

@@ -3,7 +3,7 @@
 Jeu Roblox : on s'entraîne, on affronte sbires et baddies boss, on collectionne et on renaît.
 La référence des règles est le **dossier de production v4** (14 octobre 2026).
 
-## État actuel : P0 validé, P1 (combat) écrit côté codeur A
+## État actuel : P0, P1 et P2 validés ; garde-fous, maintenance et restauration écrits
 
 | Fait | Où |
 |---|---|
@@ -14,8 +14,13 @@ La référence des règles est le **dossier de production v4** (14 octobre 2026)
 | Combat individuel : vague de sbires, boss, télégraphies, esquive, mort, portes, drop à 10 % | `Rules/Combat.luau`, `Rules/Encounter.luau`, `Services/CombatService.luau` |
 | Carte grise de test (10 arènes + portes, Studio uniquement, placée après le lobby s'il existe) | `src/server/World/DevWorld.luau` |
 | Contrat réseau Intent / State / Result / Combat pour le codeur B | `docs/CONTRACT.md` |
-| HUD, vue et panneau de combat de test (temporaires, Studio) | `src/client/Dev/`, `src/client/CombatBootstrap.client.luau` |
-| 40 tests des règles (exemples chiffrés et cas §30 du dossier) | `tests/run.luau` |
+| Slots, relances (garantie toutes les 50), drops acceptés/refusés, renaissance et paliers 1/3/6 | `Rules/Slots.luau`, `Services/SlotService.luau` |
+| Baddies Book, exposition 3 places, looks débloqués par la maîtrise | `Rules/Collection.luau`, `Services/BookService.luau` |
+| Décisions durables : une à la fois, tirage unique, reçu, réponse après la sauvegarde | `Rules/Receipts.luau`, `Services/MutationService.luau` |
+| Coffres de compagnons (garantie toutes les 20), niveaux par copies, équipe de 2 | `Rules/Crew.luau`, `Services/CrewService.luau` |
+| Garde-fous du profil au chargement (migrations, invariants), maintenance, restauration | `Rules/ProfileGuard.luau`, `Services/MaintenanceService.luau`, `Admin/`, `docs/OPERATIONS.md` |
+| HUD, vue et panneaux de test (temporaires, Studio) | `src/client/Dev/`, `CombatBootstrap.client.luau`, `DevToolsBootstrap.client.luau` |
+| 90 tests des règles, des pannes et des profils (cas §30 du dossier) | `tests/run.luau`, `tests/fixtures/` |
 
 **Vocabulaire :** le **Baddies Book** est la collection des baddies découvertes.
 
@@ -59,6 +64,9 @@ Ce que tu dois voir :
 - vers le nord, la carte grise de test : entre dans l'arène du niveau 1 et le combat commence.
   Un panneau de combat de test apparaît à droite : **ATTAQUER** (ou touche **F**). Sors des cercles
   rouges avant l'impact, bats Jade, la porte s'ouvre. Détails : `docs/P1-COMBAT.md`.
+- en haut à droite, le panneau **SLOTS · P2** (touche **F4**) : relancer un slot, accepter ou refuser
+  un drop, renaître, ouvrir un coffre de compagnon, améliorer ou équiper le crew, et des outils de test.
+  Détails : `docs/P2-SLOTS.md`.
 
 **Sauvegarde dans Studio :** tant que le place n'est pas publié avec **Game Settings → Security → Enable Studio Access to API Services**, ProfileStore tourne en mode mock et rien n'est gardé entre deux Play. C'est normal. Une fois l'accès activé, Studio écrit dans `BC_Profiles_STUDIO_v1`, jamais dans les profils des vrais joueurs.
 
@@ -81,9 +89,12 @@ src/shared/   → ReplicatedStorage.Shared   (lu par le serveur et le client)
   Formulas      calculs purs (§12)
   Net           noms des remotes et des intentions
   Format, Flags affichage des nombres, interrupteurs de dev
+  TestCatalog   identités de test, chargées dans Studio uniquement
 src/server/   → ServerScriptService.Server
   Bootstrap     ordre d'initialisation, intentions acceptées
-  Services/     Profiles, Sessions, StateService, TrainingService, CrewService, IntentRouter
+  Services/     Profiles, Sessions, StateService, TrainingService, CrewService, CombatService,
+                MutationService, SlotService, BookService, MaintenanceService, DevService (Studio), IntentRouter
+  Admin/        ProfileAdmin : versions et restauration de profils (responsables, docs/OPERATIONS.md)
   Rules/        règles pures, testées sans Studio
   Util/         RateLimiter
   Packages/     ProfileStore (Apache-2.0, voir licenses/)

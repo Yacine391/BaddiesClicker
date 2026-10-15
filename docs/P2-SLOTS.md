@@ -41,7 +41,7 @@ Contrat réseau : `docs/CONTRACT.md` (v3, snapshot `v = 2`).
 
 - [x] Valider en Studio : slots, relances, drops, renaissance (15/10)
 - [x] Valider en Studio : coffres, niveaux et équipe des compagnons (15/10)
-- [ ] Valider en Studio : maintenance (étape 9 ci-dessous)
+- [x] Valider en Studio : maintenance (étape 9 ci-dessous) ; profil de test chargé sans correction (15/10)
 - [ ] Répéter une restauration sur un compte de test (`docs/OPERATIONS.md` §3)
 - [ ] Après fusion des PR #1 et #2 : déclarer le remote `Combat` dans `default.project.json`, reporter P1 et P2 dans `ROADMAP.md`
 

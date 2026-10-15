@@ -13,7 +13,8 @@
 
 	Invariants (§24) : nombres finis et bornés (ni NaN ni infini) ; un seul temporaire ; la principale est un
 	slot rempli d'une identité connue ; toute baddie possédée est découverte ; exposition = 3 identités
-	découvertes sans doublon ; équipe = 2 compagnons possédés distincts ; quantités jamais négatives.
+	découvertes sans doublon ; équipe = 2 compagnons possédés distincts ; quantités jamais négatives ;
+	cosmétiques et titre portés = débloqués et au bon emplacement.
 ]]
 
 export type Migration = (data: any, ctx: any) -> ()
@@ -359,6 +360,39 @@ function ProfileGuard.repair(data: any, ctx: any): { string }
 		table.insert(issues, `equippedCrew : {#rawEquipped} → {#equipped} compagnon(s)`)
 	end
 	data.equippedCrew = equipped
+
+	-- Garde-robe (§19) : déblocages = maps à true (IDs inconnus archivés) ; sélection possédée et au bon emplacement
+	for _, field in { "wardrobe", "titles", "achievements", "pendingBadges" } do
+		local map = tableOr(issues, field, data[field])
+		data[field] = map
+		for id, value in map do
+			if value ~= true then
+				table.insert(issues, `{field}[{tostring(id)}] = {tostring(value)} → retiré`)
+				map[id] = nil
+			end
+		end
+	end
+	data.style = tableOr(issues, "style", data.style)
+	local W = ctx.Wardrobe
+	if W ~= nil then
+		for slot, id in data.style do
+			local valid
+			if slot == "title" then
+				valid = type(id) == "string" and W.titles[id] ~= nil and data.titles[id] == true
+			else
+				local item = if type(id) == "string" then W.items[id] else nil
+				valid = type(slot) == "string"
+					and W.slotLabels[slot] ~= nil
+					and item ~= nil
+					and item.slot == slot
+					and data.wardrobe[id] == true
+			end
+			if not valid then
+				table.insert(issues, `style.{tostring(slot)} = {tostring(id)} non débloqué → retiré`)
+				data.style[slot] = nil
+			end
+		end
+	end
 
 	if type(data.lastMutation) ~= "table" then
 		data.lastMutation = {}

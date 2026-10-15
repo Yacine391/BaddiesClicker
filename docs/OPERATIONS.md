@@ -71,7 +71,15 @@ connecté ; au retour, son profil repasse par les garde-fous. La version remplac
 **À répéter avant la bêta** sur un compte de test (§36 « restauration répétée avec succès ») :
 noter la version, faire une relance, restaurer la version notée, vérifier que la relance a disparu.
 
-## 4. Mise à jour du schéma de profil
+## 4. Badges Roblox
+
+Les 10 succès donnent leurs récompenses internes tout de suite ; leur badge Roblox est mis en attente
+(`pendingBadges`). Pour les activer : créer les badges (Creator Dashboard → l'expérience → Associated Items →
+Badges), coller chaque ID dans `src/server/Config/BadgesConfig.luau`, publier. Les joueurs qui avaient déjà le
+succès reçoivent le badge à leur prochaine connexion. Un échec de BadgeService est réessayé toutes les 60 s,
+sans jamais redonner les récompenses internes. Rien n'est attribué depuis Studio.
+
+## 5. Mise à jour du schéma de profil
 
 `Balance.save.schemaVersion` = 4. Pour passer à 5 : écrire `ProfileGuard.migrations[4]`, une fixture
 `tests/fixtures/profile_v4_*.luau` et son test, puis augmenter `schemaVersion`. Un serveur plus ancien refuse

@@ -18,6 +18,7 @@ local ctx = table.freeze({
 	Balance = require(Shared.Balance),
 	Catalog = Catalog,
 	Formulas = require(Shared.Formulas),
+	Wardrobe = require(Shared.Wardrobe),
 })
 
 local Services = script.Parent.Services
@@ -32,6 +33,7 @@ local Combat = require(Services.CombatService)
 local Mutations = require(Services.MutationService)
 local Maintenance = require(Services.MaintenanceService)
 local Ranking = require(Services.RankingService)
+local Wardrobe = require(Services.WardrobeService)
 local Slots = require(Services.SlotService)
 local Book = require(Services.BookService)
 local Dev = require(Services.DevService)
@@ -58,6 +60,7 @@ Slots.init(ctx, deps)
 Book.init(ctx, deps)
 Dev.init(ctx, deps)
 Ranking.init(ctx, deps)
+Wardrobe.init(ctx, deps)
 
 -- Décisions durables : la file de MutationService les sérialise ; la cadence ne fait que borner le spam
 local MUTATION_RATE = 4
@@ -96,6 +99,7 @@ local routes: { [string]: IntentRouter.Route } = {
 	SetLook = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Book.onSetLook },
 	UpgradeCrew = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Crew.onUpgrade },
 	EquipCrew = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Crew.onEquip },
+	SetStyle = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Wardrobe.onSetStyle },
 }
 if Dev.enabled() then
 	routes.DevSetMastery = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Dev.onSetMastery }
@@ -116,6 +120,7 @@ end)
 
 Maintenance.start()
 Ranking.start()
+Wardrobe.start()
 Crew.start()
 Combat.start()
 Profiles.start()

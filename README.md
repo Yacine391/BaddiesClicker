@@ -3,7 +3,7 @@
 Jeu Roblox : on s'entraîne, on affronte sbires et baddies boss, on collectionne et on renaît.
 La référence des règles est le **dossier de production v4** (14 octobre 2026).
 
-## État actuel : P0, P1 et P2 validés ; V1 en cours (classement du lobby)
+## État actuel : P0, P1 et P2 validés ; V1 en cours (classement, garde-robe et succès)
 
 | Fait | Où |
 |---|---|
@@ -19,9 +19,10 @@ La référence des règles est le **dossier de production v4** (14 octobre 2026)
 | Décisions durables : une à la fois, tirage unique, reçu, réponse après la sauvegarde | `Rules/Receipts.luau`, `Services/MutationService.luau` |
 | Coffres de compagnons (garantie toutes les 20), niveaux par copies, équipe de 2 | `Rules/Crew.luau`, `Services/CrewService.luau` |
 | Classement du lobby (Book public et crew, rangs partagés), rafraîchi par lots | `Rules/Ranking.luau`, `Services/RankingService.luau` |
+| Garde-robe, titres et 10 succès (badges Roblox prêts à brancher) | `Shared/Wardrobe.luau`, `Rules/Achievements.luau`, `Services/WardrobeService.luau` |
 | Garde-fous du profil au chargement (migrations, invariants), maintenance, restauration | `Rules/ProfileGuard.luau`, `Services/MaintenanceService.luau`, `Admin/`, `docs/OPERATIONS.md` |
 | HUD, vue et panneaux de test (temporaires, Studio) | `src/client/Dev/`, `CombatBootstrap.client.luau`, `DevToolsBootstrap.client.luau` |
-| 93 tests des règles, des pannes et des profils (cas §30 du dossier) | `tests/run.luau`, `tests/fixtures/` |
+| 100 tests des règles, des pannes et des profils (cas §30 du dossier) | `tests/run.luau`, `tests/fixtures/` |
 
 **Vocabulaire :** le **Baddies Book** est la collection des baddies découvertes.
 
@@ -91,11 +92,13 @@ src/shared/   → ReplicatedStorage.Shared   (lu par le serveur et le client)
   Net           noms des remotes et des intentions
   Format, Flags affichage des nombres, interrupteurs de dev
   TestCatalog   identités de test, chargées dans Studio uniquement
+  Wardrobe      cosmétiques, titres et succès (noms, emplacements, récompenses)
 src/server/   → ServerScriptService.Server
   Bootstrap     ordre d'initialisation, intentions acceptées
   Services/     Profiles, Sessions, StateService, TrainingService, CrewService, CombatService,
                 MutationService, SlotService, BookService, MaintenanceService, RankingService,
-                DevService (Studio), IntentRouter
+                WardrobeService, DevService (Studio), IntentRouter
+  Config/       BadgesConfig : IDs des badges Roblox (à renseigner)
   Admin/        ProfileAdmin : versions et restauration de profils (responsables, docs/OPERATIONS.md)
   Rules/        règles pures, testées sans Studio
   Util/         RateLimiter

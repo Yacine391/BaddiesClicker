@@ -8,9 +8,9 @@ local Theme = require(script.Parent.Parent.Theme)
 
 export type Props = {
 	Name: string, -- clé de Theme.Icons (book, crew, style, settings, chevron, bolt, arm, ticket, door, lock, eye, crown)
-	Size: UDim2,
-	Position: UDim2?,
-	AnchorPoint: Vector2?,
+	Size: any, -- UDim2 ou état
+	Position: any?,
+	AnchorPoint: any?,
 	Color: any?, -- Color3 ou état ; nil = couleurs d'origine (arm, ticket)
 	ZIndex: number?,
 }

@@ -13,7 +13,9 @@ export type Props = {
 	Position: any?,
 	AnchorPoint: Vector2?,
 	Glow: any?, -- Color3 ou état de Color3 (nil = pas de halo)
-	Line: any?, -- couleur du contour (défaut PanelLine)
+	Line: any?, -- couleur du contour (défaut PanelLine), Color3 ou état
+	LineTransparency: any?, -- nombre ou état (défaut : 0 si Line/Glow, sinon PanelLine)
+	GlowVisible: any?, -- état de boolean : halo allumé/éteint (défaut : toujours si Glow)
 	Children: { any }?,
 	Name: string?,
 	ZIndex: number?,
@@ -25,8 +27,17 @@ export type Props = {
 return function(scope: any, props: Props): Frame
 	local hasGlowImage = Theme.Glow ~= ""
 	local lineColor = props.Line or props.Glow or Theme.Colors.PanelLine
-	local lineTransparency = if props.Line or props.Glow then 0 else Theme.Transparency.PanelLine
-	local thickness = if props.Glow and not hasGlowImage then 3 else 2
+	local lineTransparency = props.LineTransparency
+		or (if props.Line or props.Glow then 0 else Theme.Transparency.PanelLine)
+	local glowOn = props.GlowVisible
+	local thickness: any = 2
+	if props.Glow and not hasGlowImage then
+		thickness = if glowOn
+			then scope:Computed(function(use)
+				return if use(glowOn) then 3 else 2
+			end)
+			else 3
+	end
 
 	local children: { any } = {
 		scope:New("UICorner")({ CornerRadius = UDim.new(0, Theme.Radius.Panel) }),
@@ -52,6 +63,7 @@ return function(scope: any, props: Props): Frame
 				Position = UDim2.fromScale(0.5, 0.5),
 				Size = UDim2.new(1, 24, 1, 24),
 				ZIndex = (props.ZIndex or 1) - 1,
+				Visible = if glowOn then glowOn else true,
 			})
 		)
 	end

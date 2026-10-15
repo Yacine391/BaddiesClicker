@@ -8,6 +8,13 @@
 
 export type Tab = { id: "looks" | "aura" | "title", label: string }
 export type Row = { id: string, name: string, equipped: boolean }
+export type LookRow = {
+	index: number,
+	name: string,
+	state: "worn" | "unlocked" | "locked",
+	mastery: number, -- maîtrise requise
+	canWear: boolean,
+}
 
 local StyleModel = {}
 
@@ -44,6 +51,40 @@ function StyleModel.titleRows(snapshot: any, wardrobe: any): { Row }
 		if owned[id] and title then
 			table.insert(rows, { id = id, name = title.name, equipped = style.title == id })
 		end
+	end
+	return rows
+end
+
+-- Actions de style (SetLook, SetStyle) : hors combat seulement
+function StyleModel.canAct(snapshot: any): boolean
+	return type(snapshot) == "table" and snapshot.mode ~= "combat"
+end
+
+-- Looks de la principale. Sans collection.looks (contrat v1) : look 1 porté, aucune action.
+function StyleModel.lookRows(snapshot: any, catalog: any, thresholds: { number }): { LookRow }
+	local active = if type(snapshot) == "table" then snapshot.active else nil
+	local id = if type(active) == "table" then active.baddieId else nil
+	local def = if type(id) == "string" then catalog.baddies[id] else nil
+	if def == nil then
+		return {}
+	end
+	local collection = snapshot.collection
+	local looks = if type(collection) == "table" and type(collection.looks) == "table"
+		then collection.looks[id]
+		else nil
+	local unlocked: { number } = if looks and type(looks.unlocked) == "table" then looks.unlocked else { 1 }
+	local selected: number = if looks and looks.selected then looks.selected else 1
+	local rows: { LookRow } = {}
+	for index, lookName in def.looks do
+		local isUnlocked = table.find(unlocked, index) ~= nil
+		local state = if index == selected then "worn" elseif isUnlocked then "unlocked" else "locked"
+		table.insert(rows, {
+			index = index,
+			name = string.upper(lookName),
+			state = state,
+			mastery = thresholds[index] or 0,
+			canWear = state == "unlocked" and looks ~= nil and StyleModel.canAct(snapshot),
+		})
 	end
 	return rows
 end

@@ -500,7 +500,10 @@ function DevSlotsPanel.start(state)
 		end
 		local r = event.result or {}
 		if not event.ok then
-			lastMessage = `{event.action} refusé : {REASONS[event.reason] or event.reason}`
+			local reason = if event.action == "OpenChest" and event.reason == "no_ticket"
+				then "pas de ticket compagnon"
+				else REASONS[event.reason] or event.reason
+			lastMessage = `{event.action} refusé : {reason}`
 			canRetry = event.reason == "saving" or event.reason == "error"
 		else
 			local saved = if event.confirmed then "sauvegardé ✓" else "écriture NON confirmée"

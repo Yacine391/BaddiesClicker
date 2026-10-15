@@ -10,7 +10,7 @@ conflit avec le codeur B ; à reporter dans la feuille de route après fusion.
 - [x] `RankingService` : rafraîchissement groupé toutes les 2 s, état renvoyé aux joueurs seulement si le classement change ; calculé par le serveur, aucun score venant du client
 - [x] Snapshot `ranking` (lot, total, `baddies`, `crew`) ; attributs `BC_BookCount`, `BC_CrewCount`
 - [x] Panneau de test (F4) : carte CLASSEMENT ; 3 tests Lune (93 au total)
-- [ ] Valider en Studio à 2 joueurs (ci-dessous)
+- [x] Valider en Studio à 2 joueurs (15/10) : Player1 2/8 devant Player2 1/8, onglet Crew séparé ; vérifie aussi le test « 2 joueurs » du P0
 
 **Côté codeur B** : tableau du lobby (3D ou HUD) depuis `snapshot.ranking`, « Alex - 7/8 », onglets Baddies / Crew.
 Le classement mondial reste hors V1.

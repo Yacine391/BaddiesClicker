@@ -89,8 +89,9 @@ Réponse `Result` :
 ```
 
 Raisons de refus : `busy` (une décision est déjà en cours), `saving` (l'écriture précédente est encore
-incertaine), `cooldown` (2 s entre deux relances), `in_combat`, `stale` (révision ou parcours périmé :
-resynchroniser et redemander confirmation), `locked`, `no_ticket`, `no_drop`, `no_temporary`,
+incertaine), `cooldown` (2 s entre deux relances ou deux coffres), `in_combat`, `stale` (révision ou parcours périmé :
+resynchroniser et redemander confirmation), `locked`, `no_ticket` (ticket baddie, ou compagnon pour
+`OpenChest`), `no_drop`, `no_temporary`,
 `not_finished` (niveau 10 non terminé), `unknown_slot`, `invalid`, `duplicate`, `error`,
 `maintenance` (décision coupée temporairement par l'équipe, voir `snapshot.maintenance` ; rien n'est modifié).
 Après une renaissance confirmée, le serveur renvoie le joueur au lobby (1,5 s).

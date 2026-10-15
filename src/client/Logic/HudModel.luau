@@ -14,6 +14,9 @@ export type Principal = {
 	slotText: string,
 }
 
+export type Progress =
+	{ visible: boolean, kind: "tutorial" | "run", title: string, value: number, max: number }
+
 export type HudView = {
 	ready: boolean,
 	powerText: string,
@@ -21,7 +24,8 @@ export type HudView = {
 	ticketText: string,
 	principal: Principal?,
 	tutorial: { visible: boolean, text: string, ratio: number },
-	button: { label: string, colorKey: "Action" | "Fermer" },
+	button: { label: string, colorKey: "Accent" | "Accent2" },
+	progress: Progress,
 	bookCount: { discovered: number, total: number },
 }
 
@@ -77,6 +81,36 @@ local function discoveredCount(snapshot: any, catalog: any): number
 	return 0
 end
 
+-- Carte de progression : tutoriel (Malik) d'abord, puis parcours des 10 niveaux (spec refonte §4)
+local LEVEL_COUNT = 10
+local function progressOf(snapshot: any, tutorial: any, progress: number, needed: number): Progress
+	if tutorial.crewUnlocked == false then
+		return { visible = true, kind = "tutorial", title = "MALIK ARRIVE", value = progress, max = needed }
+	end
+	if type(snapshot.clearedLevels) == "table" then
+		return {
+			visible = true,
+			kind = "run",
+			title = "PARCOURS",
+			value = #snapshot.clearedLevels,
+			max = LEVEL_COUNT,
+		}
+	end
+	return { visible = false, kind = "run", title = "", value = 0, max = 0 }
+end
+
+-- Texte d'un toast pour un événement Result, ou nil (accord avec le codeur A, CONTRACT.md « Effets RGB »)
+function HudModel.toastFor(event: { [string]: any }, catalog: any): string?
+	if event.kind == "crewJoined" and event.isNew == false then
+		local def = catalog.crew[event.crewId]
+		return "+1 copie : " .. (if def then def.name else "compagnon")
+	elseif event.kind == "ticket" then
+		local what = if event.ticket == "crew" then "compagnon" else "baddie"
+		return `+{tonumber(event.amount) or 1} ticket {what}`
+	end
+	return nil
+end
+
 function HudModel.build(snapshot: { [string]: any }?, catalog: any, format: (number) -> string): HudView
 	local total = #catalog.baddieOrder
 	if snapshot == nil then
@@ -87,7 +121,8 @@ function HudModel.build(snapshot: { [string]: any }?, catalog: any, format: (num
 			ticketText = "—",
 			principal = nil,
 			tutorial = { visible = false, text = "", ratio = 0 },
-			button = { label = "ENTRAÎNER", colorKey = "Action" },
+			button = { label = "ENTRAÎNER", colorKey = "Accent" },
+			progress = { visible = false, kind = "run", title = "", value = 0, max = 0 },
 			bookCount = { discovered = 0, total = total },
 		}
 	end
@@ -110,8 +145,9 @@ function HudModel.build(snapshot: { [string]: any }?, catalog: any, format: (num
 			ratio = if needed > 0 then math.clamp(progress / needed, 0, 1) else 0,
 		},
 		button = if combat
-			then { label = "ATTAQUER", colorKey = "Fermer" }
-			else { label = "ENTRAÎNER", colorKey = "Action" },
+			then { label = "ATTAQUER", colorKey = "Accent2" }
+			else { label = "ENTRAÎNER", colorKey = "Accent" },
+		progress = progressOf(snapshot, tutorial, progress, needed),
 		bookCount = { discovered = discoveredCount(snapshot, catalog), total = total },
 	}
 end

@@ -11,7 +11,7 @@ On la jette (ou on la recrée) quand les PR sont fusionnées dans l'ordre.
   démarre avant `StateController` ; puis `DevHUD` si `Flags.DEV_HUD`, sinon l'`App` du codeur B (cas actuel).
 - `default.project.json` : remote `Combat` déclaré (étape prévue après les fusions ; `CombatService` le crée
   encore lui-même s'il manque).
-- Vérifié : 105 tests serveur + 32 tests client (Lune), stylua, rojo build.
+- Vérifié : 105 tests serveur + 37 tests client (Lune), stylua, rojo build.
 
 ## Jouer
 
@@ -24,10 +24,10 @@ Studio → Rojo → Connect → F5. On voit le **HUD du codeur B** (le HUD DEV d
 `Flags.DEV_HUD = false`), plus, dans Studio uniquement, le panneau de combat (droite, touche F) et le panneau
 SLOTS · P2 (haut droite, F4).
 
-## Limites connues (en attente des 3 ajustements du codeur B)
+## Limites connues (en attente des ajustements 2 et 3 du codeur B)
 
-- Le bouton du HUD envoie encore `Train` en combat : attaquer avec le panneau de combat de test (bouton ATTAQUER
-  ou touche F). Ajustement 1 : envoyer `Attack { encounterId }` quand `snapshot.combat.active`.
+- ~~Ajustement 1~~ fait (PR #1 à jour, 15/10) : le bouton principal du HUD envoie `Attack { encounterId }` en combat
+  et `Train` au repos (`Logic/PrimaryAction`, 37 tests client).
 - La barrière de rue du lobby est ouverte par la carte grise de test dans Studio seulement. Ajustement 2 :
   la retirer de `Lobby.rbxm` et placer les vraies arènes `Levels/LevelN/Arena` + `Door`.
 - Ennemis rendus par la vue de test du codeur A. Ajustement 3 : rendu via `StateController.onCombat`,

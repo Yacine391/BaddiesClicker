@@ -4,7 +4,7 @@ Branche `a/p2-slots`, construite sur `a/p1-combat` (PR #2). Fiche séparée de `
 créer de conflit avec la PR #1 du codeur B ; à reporter dans la feuille de route après fusion.
 Contrat réseau : `docs/CONTRACT.md` (v3, snapshot `v = 2`).
 
-## Fait (testé hors Studio : 71 tests Lune, dont 31 pour le P2)
+## Fait (testé hors Studio : 90 tests Lune, dont 50 pour le P2)
 
 - [x] `Rules/Slots` : slots à identité fixe (aucun transfert), un seul temporaire, slot vide = `""`
 - [x] Relance : 1 ticket, remplace le contenu du slot choisi (conservé ou non), `slotRevision` +1, découverte au Baddies Book
@@ -21,6 +21,14 @@ Contrat réseau : `docs/CONTRACT.md` (v3, snapshot `v = 2`).
 - [x] Niveaux des compagnons (`UpgradeCrew`) : L → L+1 coûte L+1 copies, niveau 10 max, copies gardées au maximum ; écriture prioritaire
 - [x] Équipe (`EquipCrew`) : 2 compagnons possédés maximum, sans doublon ; snapshot `crewOwned` et `crewChest`
 
+### Robustesse (§24, §27, §30, §36)
+
+- [x] `Rules/ProfileGuard` au chargement : migrations explicites (refus d'un schéma plus récent ou d'une migration manquante), nombres finis et bornés, un seul temporaire, principale valide, possédée = découverte, exposition et équipe nettoyées ; identités inconnues archivées, jamais supprimées ; fixture de profil P0/P1
+- [x] Protocole des décisions durables testable (`Receipts.run`) : tests de panne avec un faux DataStore (arrêt serveur avant et après l'écriture, même `requestId` répété, écriture incertaine qui bloque la suivante)
+- [x] Interrupteurs de maintenance (`MaintenanceService`, DataStore `BC_Ops_v1` + attribut Studio) ; `snapshot.maintenance` et `snapshot.seq`
+- [x] Journal des décisions (durée d'écriture, échecs), outil de restauration `Admin/ProfileAdmin`, procédure `docs/OPERATIONS.md`
+- [x] Cas restants §30/§37 : drop non accepté, mort + reconnexion + rebirth avec drop, relance d'un conservé, rebirth 1 avec Nova, deux slots Nova, Vega maîtrise 10 = 6 dégâts
+
 ## Choix proposés (à valider)
 
 - Principale perdue au rebirth : le slot conservé rempli **au plus fort multiplicateur** (le dossier dit « un slot rempli conservé »).
@@ -32,7 +40,9 @@ Contrat réseau : `docs/CONTRACT.md` (v3, snapshot `v = 2`).
 ## Reste
 
 - [x] Valider en Studio : slots, relances, drops, renaissance (15/10)
-- [ ] Valider en Studio : coffres, niveaux et équipe des compagnons (étape 8 ci-dessous)
+- [x] Valider en Studio : coffres, niveaux et équipe des compagnons (15/10)
+- [ ] Valider en Studio : maintenance (étape 9 ci-dessous)
+- [ ] Répéter une restauration sur un compte de test (`docs/OPERATIONS.md` §3)
 - [ ] Après fusion des PR #1 et #2 : déclarer le remote `Combat` dans `default.project.json`, reporter P1 et P2 dans `ROADMAP.md`
 
 ## Côté codeur B (P2)
@@ -59,3 +69,6 @@ Contrat réseau : `docs/CONTRACT.md` (v3, snapshot `v = 2`).
 8. **Compagnons** : +5 TICKETS CREW, puis OUVRIR UN COFFRE plusieurs fois (2 s entre deux) : nouveau compagnon
    (équipé s'il reste une place) ou +1 copie. AMÉLIORER apparaît quand les copies suffisent (2 pour le niveau 2) ;
    la production par seconde monte de 10 %. ÉQUIPER / RETIRER change les 2 compagnons actifs.
+9. **Maintenance** : onglet **Serveur**, barre de commande : `game.ServerScriptService:SetAttribute("BC_Maintenance", "Roll")`.
+   Le panneau affiche « MAINTENANCE : Roll » et une relance répond « coupé pour maintenance » sans dépenser de ticket.
+   Remettre `""` pour rouvrir.

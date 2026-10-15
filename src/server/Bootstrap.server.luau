@@ -30,6 +30,7 @@ local IntentRouter = require(Services.IntentRouter)
 local World = require(Services.WorldService)
 local Combat = require(Services.CombatService)
 local Mutations = require(Services.MutationService)
+local Maintenance = require(Services.MaintenanceService)
 local Slots = require(Services.SlotService)
 local Book = require(Services.BookService)
 local Dev = require(Services.DevService)
@@ -40,9 +41,11 @@ local deps = table.freeze({
 	State = State,
 	World = World,
 	Mutations = Mutations,
+	Maintenance = Maintenance,
 })
 
 Profiles.init(ctx)
+Maintenance.init(ctx)
 World.init(ctx)
 State.init(ctx, deps)
 Training.init(ctx, deps)
@@ -108,6 +111,7 @@ Profiles.onReleasing(function(player)
 	State.forget(player)
 end)
 
+Maintenance.start()
 Crew.start()
 Combat.start()
 Profiles.start()

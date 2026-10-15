@@ -45,6 +45,7 @@ local REASONS = {
 	duplicate = "requestId déjà utilisé pour une autre action",
 	error = "erreur serveur : réessaie",
 	invalid = "demande invalide",
+	maintenance = "coupé pour maintenance (aucune donnée touchée)",
 }
 
 local DevSlotsPanel = {}
@@ -255,11 +256,13 @@ function DevSlotsPanel.start(state)
 		local guarantee = if rolls.bookComplete
 			then "Book complet : table standard"
 			else `garantie dans {rolls.untilGuarantee} (1 chance sur {#(rolls.missing or {})})`
+		local saving = if s.saving then " · SAUVEGARDE…" else ""
+		local maintenance = if s.maintenance and #s.maintenance > 0
+			then `\nMAINTENANCE : {table.concat(s.maintenance, ", ")} coupé(s)`
+			else ""
 		text(
 			body,
-			`Tickets {s.tickets.baddie} · relances {rolls.baddie} · {guarantee}{if s.saving
-				then " · SAUVEGARDE…"
-				else ""}`,
+			`Tickets {s.tickets.baddie} · relances {rolls.baddie} · {guarantee}{saving}{maintenance}`,
 			12,
 			CREME,
 			1
@@ -401,7 +404,8 @@ function DevSlotsPanel.start(state)
 				table.insert(ids, entry.id)
 				label = "ÉQUIPER"
 			else
-				label = `ÉQUIPER (remplace {ids[#ids]})`
+				local replaced = Catalog.crew[ids[#ids]]
+				label = `ÉQUIPER (remplace {if replaced then replaced.name else ids[#ids]})`
 				ids[#ids] = entry.id
 			end
 			button(actions, `equip:{entry.id}`, label, nil, CYAN, function()
@@ -447,6 +451,7 @@ function DevSlotsPanel.start(state)
 		end
 		local rolls = s.rolls or {}
 		table.insert(parts, `{rolls.baddie}:{s.run and s.run.id}:{s.rebirth and s.rebirth.available}`)
+		table.insert(parts, table.concat(s.maintenance or {}, ","))
 		table.insert(parts, tostring(s.active and s.active.baddieId))
 		table.insert(parts, `{s.tickets.crew}:{s.crewChest and s.crewChest.opened}`)
 		for _, entry in s.crewOwned or {} do

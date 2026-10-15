@@ -3,6 +3,7 @@
 	ProfileStore gère le verrou de session, l'autosave et la sauvegarde à la fermeture.
 
 	- Chargement impossible → on expulse ; jamais de profil neuf de remplacement.
+	- Au chargement : migrations explicites, Reconcile, puis Rules/ProfileGuard (invariants §24).
 	- Studio → DataStore de test séparé (BC_Profiles_STUDIO_v1).
 	- Sans « Studio Access to API Services », ProfileStore passe tout seul en mode
 	  mock : le jeu tourne, mais rien n'est sauvegardé entre deux Play.
@@ -12,6 +13,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 local ProfileStore = require(script.Parent.Parent.Packages.ProfileStore)
+local ProfileGuard = require(script.Parent.Parent.Rules.ProfileGuard)
 local ProfileTemplate = require(script.Parent.Parent.Rules.ProfileTemplate)
 
 local Profiles = {}
@@ -116,8 +118,20 @@ local function loadPlayer(player: Player)
 		return
 	end
 
+	-- Migrations explicites (§24), puis champs ajoutés depuis (Reconcile), puis garde-fous
+	local migrated, reason = ProfileGuard.migrate(profile.Data, ctx)
+	if not migrated then
+		warn(`[Profiles] profil {player.UserId} refusé : {reason}`)
+		profile:EndSession()
+		player:Kick("Ton profil n'a pas pu être ouvert sur ce serveur. Réessaie dans un instant.")
+		return
+	end
 	profile:AddUserId(player.UserId)
 	profile:Reconcile()
+	local issues = ProfileGuard.repair(profile.Data, ctx)
+	if #issues > 0 then
+		warn(`[Profiles] profil {player.UserId} corrigé ({#issues}) : {table.concat(issues, " ; ")}`)
+	end
 
 	profile.OnSessionEnd:Connect(function()
 		active[player] = nil

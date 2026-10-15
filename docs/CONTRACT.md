@@ -91,7 +91,8 @@ Réponse `Result` :
 Raisons de refus : `busy` (une décision est déjà en cours), `saving` (l'écriture précédente est encore
 incertaine), `cooldown` (2 s entre deux relances), `in_combat`, `stale` (révision ou parcours périmé :
 resynchroniser et redemander confirmation), `locked`, `no_ticket`, `no_drop`, `no_temporary`,
-`not_finished` (niveau 10 non terminé), `unknown_slot`, `invalid`, `duplicate`, `error`.
+`not_finished` (niveau 10 non terminé), `unknown_slot`, `invalid`, `duplicate`, `error`,
+`maintenance` (décision coupée temporairement par l'équipe, voir `snapshot.maintenance` ; rien n'est modifié).
 Après une renaissance confirmée, le serveur renvoie le joueur au lobby (1,5 s).
 
 ## Snapshot `State` (v = 2)
@@ -165,6 +166,8 @@ Envoyé au chargement, sur `Hello`, puis à chaque changement (regroupé, au plu
 		bookCount = 2, bookTotal = 8,     -- identités publiques seulement
 	},
 	saving = false,               -- true pendant l'écriture d'une décision durable
+	maintenance = { },            -- décisions coupées ("Roll", "AcceptDrop", "RefuseDrop", "Rebirth", "OpenChest") : griser
+	seq = 42,                     -- numéro croissant de ce snapshot : ignorer un snapshot plus ancien que le dernier reçu
 	rebirth = {
 		count = 1,                -- renaissances déjà faites
 		available = false,        -- niveau 10 terminé dans ce parcours

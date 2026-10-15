@@ -24,6 +24,7 @@ local deps
 local stateRemote: RemoteEvent
 local resultRemote: RemoteEvent
 local dirty: { [Player]: boolean } = {}
+local sequence: { [Player]: number } = {}
 
 function StateService.init(context, dependencies)
 	ctx = context
@@ -140,6 +141,7 @@ function StateService.snapshot(player: Player, data): { [string]: any }
 		},
 		collection = CollectionRules.view(data, ctx),
 		saving = session ~= nil and session.mutating == true,
+		maintenance = deps.Maintenance.disabledList(), -- décisions coupées : griser leurs boutons
 		rebirth = {
 			count = data.rebirths,
 			available = SlotRules.rebirthAvailable(data, ctx),
@@ -161,7 +163,10 @@ function StateService.pushNow(player: Player)
 	if data == nil then
 		return
 	end
-	stateRemote:FireClient(player, StateService.snapshot(player, data))
+	local snapshot = StateService.snapshot(player, data)
+	sequence[player] = (sequence[player] or 0) + 1
+	snapshot.seq = sequence[player] -- croissant : le client ignore un état plus ancien que le dernier reçu
+	stateRemote:FireClient(player, snapshot)
 end
 
 function StateService.markDirty(player: Player)
@@ -193,6 +198,7 @@ end
 
 function StateService.forget(player: Player)
 	dirty[player] = nil
+	sequence[player] = nil
 end
 
 -- Intention « Hello » : le client vient de brancher ses écouteurs

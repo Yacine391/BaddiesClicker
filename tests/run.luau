@@ -22,6 +22,8 @@ local Slots = require("../src/server/Rules/Slots")
 local Collection = require("../src/server/Rules/Collection")
 local Receipts = require("../src/server/Rules/Receipts")
 local TestCatalog = require("../src/shared/TestCatalog")
+local ProfileGuard = require("../src/server/Rules/ProfileGuard")
+local profileV4P0 = require("./fixtures/profile_v4_p0")
 
 local ctx = { Balance = Balance, Catalog = Catalog, Formulas = Formulas }
 
@@ -1042,6 +1044,397 @@ test("vue de la collection : ordre du catalogue, coût, amélioration possible, 
 	near(view[1].perSecond, 0.66, "bonus de rebirth inclus")
 	eq(view[2].id, "amine")
 	eq(view[2].canUpgrade, false)
+end)
+
+print("Garde-fous du profil (§24, §36)")
+
+-- Même comportement que Profile:Reconcile() de ProfileStore : complète les clés absentes, récursivement
+local function reconcile(target, template)
+	for key, value in template do
+		if target[key] == nil then
+			target[key] = if type(value) == "table" then table.clone(value) else value
+		elseif type(target[key]) == "table" and type(value) == "table" then
+			reconcile(target[key], value)
+		end
+	end
+	return target
+end
+
+local function load(raw)
+	local data = reconcile(raw, newProfile())
+	local ok, err = ProfileGuard.migrate(data, ctx)
+	assert(ok, err)
+	return data, ProfileGuard.repair(data, ctx)
+end
+
+test("fixture P0/P1 (schéma 4) : ouverte sans correction ni perte", function()
+	local data, issues = load(profileV4P0())
+	eq(#issues, 0, `corrections : {table.concat(issues, " ; ")}`)
+	near(data.power, 76.9, "puissance")
+	eq(data.slots.s1.baddieId, "jade", "principale")
+	eq(data.pendingDrops.jade, 1, "drop en attente")
+	eq(data.crew.malik.level, 1)
+	eq(type(data.lastMutation), "table", "reçu ajouté par Reconcile")
+	eq(type(data.selectedLooks), "table", "looks ajoutés par Reconcile")
+	eq(#ProfileGuard.repair(data, ctx), 0, "idempotent")
+end)
+
+test("migrations : schéma plus récent ou migration manquante → chargement refusé", function()
+	local data = newProfile()
+	data.schemaVersion = 5
+	eq((ProfileGuard.migrate(data, ctx)), false, "plus récent")
+	data.schemaVersion = 3
+	eq((ProfileGuard.migrate(data, ctx)), false, "3 → 4 inconnue")
+	data.schemaVersion = "4"
+	eq((ProfileGuard.migrate(data, ctx)), false, "type")
+	-- une migration déclarée est appliquée puis la version avance
+	ProfileGuard.migrations[3] = function(d)
+		d.migratedFrom3 = true
+	end
+	data.schemaVersion = 3
+	local ok = ProfileGuard.migrate(data, ctx)
+	ProfileGuard.migrations[3] = nil
+	eq(ok, true)
+	eq(data.schemaVersion, 4)
+	eq(data.migratedFrom3, true)
+end)
+
+test("nombres impossibles : NaN, infini, négatifs et décimales corrigés", function()
+	local raw = profileV4P0()
+	raw.power = 0 / 0
+	raw.tickets.baddie = math.huge
+	raw.tickets.crew = -4
+	raw.rolls.baddie = 2.7
+	raw.masteryXP.jade = -1
+	raw.crew.malik = { level = 15, copies = -3 }
+	local data, issues = load(raw)
+	near(data.power, 1, "puissance de départ")
+	eq(data.tickets.baddie, 0)
+	eq(data.tickets.crew, 0)
+	eq(data.rolls.baddie, 2)
+	eq(data.masteryXP.jade, 0)
+	eq(data.crew.malik.level, 10)
+	eq(data.crew.malik.copies, 0)
+	assert(#issues >= 6, `journal : {#issues}`)
+end)
+
+test("slots : un seul temporaire, principale remplie, possédée = découverte", function()
+	local raw = profileV4P0()
+	raw.rebirths = 1
+	raw.slots.s1.conserved = false
+	raw.slots.s2 = { order = 2, conserved = false, baddieId = "nova", slotRevision = 0, rollLocked = false }
+	raw.activeSlotId = "s3" -- n'existe pas
+	local data = load(raw)
+	eq(data.slots.s1.conserved, true, "le plus ancien devient conservé")
+	eq(data.slots.s2.conserved, false, "le plus récent reste temporaire")
+	eq(data.discoveredBaddies.nova, true, "Nova possédée → découverte")
+	eq(data.activeSlotId, "s2", "principale : plus fort multiplicateur (Nova ×2,5)")
+end)
+
+test("slots : aucun temporaire → un temporaire vide s'ouvre", function()
+	local raw = profileV4P0()
+	raw.slots.s1.conserved = true
+	local data, issues = load(raw)
+	eq(data.slots.s2.conserved, false)
+	eq(data.slots.s2.baddieId, "")
+	eq(data.activeSlotId, "s1")
+	assert(string.find(table.concat(issues, " "), "capacité"), "capacité signalée")
+end)
+
+test("identité inconnue : archivée dans son slot, jamais principale ; Maya de secours", function()
+	local raw = profileV4P0()
+	raw.rebirths = 1
+	raw.slots.s1 =
+		{ order = 1, conserved = true, baddieId = "ancienne_b42", slotRevision = 0, rollLocked = false }
+	raw.slots.s2 = { order = 2, conserved = false, baddieId = "", slotRevision = 0, rollLocked = false }
+	raw.discoveredBaddies.ancienne_b42 = true
+	raw.pendingDrops.ancienne_b42 = 2
+	local data = load(raw)
+	eq(data.discoveredBaddies.ancienne_b42, true, "découverte conservée")
+	eq(data.pendingDrops.ancienne_b42, 2, "drop conservé")
+	eq(data.slots.s1.baddieId, "ancienne_b42", "conservé non vidé")
+	eq(data.slots.s2.baddieId, "maya", "Maya dans le temporaire vide")
+	eq(data.activeSlotId, "s2")
+	assert(CombatRules.attackDamage(data, ctx) > 0, "progression possible")
+	-- seul slot = le temporaire : la procédure de secours y installe Maya (journalisé)
+	local single = profileV4P0()
+	single.slots.s1.baddieId = "ancienne_b42"
+	local data2, issues = load(single)
+	eq(data2.slots.s1.baddieId, "maya")
+	assert(string.find(table.concat(issues, " "), "installée"), "secours journalisé")
+end)
+
+test("listes : exposition, équipe, drops, portes et looks nettoyés", function()
+	local raw = profileV4P0()
+	raw.displayBaddies = { "jade", "jade", "vega", "bob", "maya", "lina" }
+	raw.equippedCrew = { "malik", "malik", "amine", "enzo" }
+	raw.pendingDrops = { jade = 2.5, iris = 0, nova = -1, sienna = 0 / 0 }
+	raw.run.clearedLevels = { ["1"] = true, ["11"] = true, ["2"] = false, x = true }
+	raw.selectedLooks = { maya = 2, jade = 7 }
+	local data = load(raw)
+	eq(table.concat(data.displayBaddies, ","), "jade,maya", "découvertes, sans doublon")
+	eq(table.concat(data.equippedCrew, ","), "malik", "possédés, sans doublon")
+	eq(data.pendingDrops.jade, 2)
+	eq(data.pendingDrops.iris, nil)
+	eq(data.pendingDrops.nova, nil)
+	eq(data.pendingDrops.sienna, nil)
+	eq(table.concat(CombatRules.clearedList(data), ","), "1")
+	eq(data.selectedLooks.maya, 2)
+	eq(data.selectedLooks.jade, nil)
+end)
+
+print("Décisions durables : renvois et pannes (§26, §27, §30)")
+
+local function deepCopy(value)
+	if type(value) ~= "table" then
+		return value
+	end
+	local copy = {}
+	for k, v in value do
+		copy[k] = deepCopy(v)
+	end
+	return copy
+end
+
+-- Faux DataStore : `saved` est la dernière copie écrite ; crash() recharge le serveur depuis elle
+local function harness()
+	local h: any = { replies = {}, saveOk = true, disabled = {}, confirmed = 0 }
+	h.data = newProfile()
+	h.saved = deepCopy(h.data)
+	h.session = { mutating = false }
+	h.env = {
+		getData = function()
+			return h.data
+		end,
+		save = function(id)
+			if not h.saveOk then
+				return false
+			end
+			h.saved = deepCopy(h.data)
+			return Receipts.isSaved(h.saved, id)
+		end,
+		reply = function(event)
+			table.insert(h.replies, event)
+		end,
+		isDisabled = function(action)
+			return h.disabled[action] == true
+		end,
+		clock = function()
+			return 0
+		end,
+	}
+	function h.crash()
+		h.data = deepCopy(h.saved)
+		h.session = { mutating = false }
+	end
+	function h.last()
+		return h.replies[#h.replies]
+	end
+	function h.onConfirmed()
+		h.confirmed += 1
+	end
+	return h
+end
+
+-- Mêmes étapes que SlotService.onRoll / onAcceptDrop (le client n'envoie jamais de résultat)
+local function sendRoll(h, requestId: string, slotRevision: number, rollValue: number)
+	Receipts.run(h.env, h.session, "Roll", requestId, function(data)
+		local reason = Slots.checkRoll(data, "s1", slotRevision)
+		if reason ~= nil then
+			return reason
+		end
+		return nil, Slots.applyRoll(data, "s1", rollValue, ctx)
+	end, h.onConfirmed)
+end
+
+local function sendAccept(h, requestId: string, slotRevision: number, pendingRevision: number)
+	Receipts.run(h.env, h.session, "AcceptDrop", requestId, function(data)
+		local reason = Slots.checkAcceptDrop(data, "vega", slotRevision, pendingRevision, ctx)
+		if reason ~= nil then
+			return reason
+		end
+		return nil, Slots.applyAcceptDrop(data, "vega", ctx)
+	end, h.onConfirmed)
+end
+
+test("même requestId de relance répété : même résultat, un seul ticket", function()
+	local h = harness()
+	sendRoll(h, "r1", 0, rollFor("nova"))
+	local first = h.last()
+	eq(first.ok, true)
+	eq(first.confirmed, true)
+	eq(first.result.baddieId, "nova")
+	eq(h.confirmed, 1, "annonce après écriture")
+	sendRoll(h, "r1", 0, rollFor("vega")) -- un second tirage ne doit jamais avoir lieu
+	local again = h.last()
+	eq(again.replay, true)
+	eq(again.result.baddieId, "nova", "même résultat")
+	eq(h.data.tickets.baddie, Balance.tickets.startBaddie - 1, "un seul ticket")
+	eq(h.confirmed, 1, "pas de seconde annonce")
+	sendRoll(h, "r2", 0, rollFor("vega"))
+	eq(h.last().reason, "stale", "nouvelle demande sur une révision périmée")
+end)
+
+test("une décision à la fois ; maintenance ; erreur", function()
+	local h = harness()
+	h.session.mutating = true
+	sendRoll(h, "r1", 0, 0)
+	eq(h.last().reason, "busy")
+	h.session.mutating = false
+	h.disabled.Roll = true
+	sendRoll(h, "r1", 0, 0)
+	eq(h.last().reason, "maintenance")
+	eq(h.data.tickets.baddie, Balance.tickets.startBaddie, "aucun ticket dépensé")
+	h.disabled.Roll = nil
+	Receipts.run(h.env, h.session, "Roll", "r3", function()
+		error("panne simulée")
+	end)
+	eq(h.last().reason, "error")
+	eq(h.session.mutating, false, "file libérée")
+	sendRoll(h, "r4", 0, 0)
+	eq(h.last().ok, true)
+	h.disabled.Roll = true
+	sendRoll(h, "r4", 0, 0)
+	eq(h.last().replay, true, "un reçu reste servi pendant la maintenance")
+end)
+
+test(
+	"arrêt serveur pendant une récupération (écriture perdue) : ni double consommation ni double personnage",
+	function()
+		local h = harness()
+		h.data.pendingDrops.vega = 1
+		h.data.pendingRevision = 1
+		h.saved = deepCopy(h.data)
+		h.saveOk = false
+		sendAccept(h, "a1", 0, 1)
+		eq(h.last().ok, true)
+		eq(h.last().confirmed, false, "écriture incertaine")
+		eq(h.confirmed, 0, "pas d'annonce sans écriture")
+		h.crash() -- le serveur tombe : la mémoire est perdue
+		eq(h.data.pendingDrops.vega, 1, "le drop est toujours là")
+		eq(h.data.slots.s1.baddieId, "maya", "temporaire inchangé")
+		h.saveOk = true
+		sendAccept(h, "a1", 0, 1) -- le client renvoie la même décision
+		eq(h.last().ok, true)
+		eq(h.last().confirmed, true)
+		eq(h.data.pendingDrops.vega, nil, "une seule unité consommée")
+		eq(h.data.slots.s1.baddieId, "vega", "un seul personnage")
+		eq(h.saved.slots.s1.baddieId, "vega", "écrit")
+	end
+)
+
+test("arrêt serveur après l'écriture (réponse perdue) : le renvoi rend le même reçu", function()
+	local h = harness()
+	h.data.pendingDrops.vega = 2
+	h.data.pendingRevision = 1
+	h.saved = deepCopy(h.data)
+	sendAccept(h, "a1", 0, 1)
+	h.crash() -- la réponse n'est jamais arrivée au client
+	sendAccept(h, "a1", 0, 1)
+	eq(h.last().replay, true)
+	eq(h.data.pendingDrops.vega, 1, "une seule unité consommée sur deux")
+	eq(h.data.slots.s1.slotRevision, 1, "un seul remplacement")
+end)
+
+test("écriture incertaine : la décision suivante attend sa confirmation", function()
+	local h = harness()
+	h.saveOk = false
+	sendRoll(h, "r1", 0, rollFor("jade"))
+	eq(h.last().confirmed, false)
+	sendRoll(h, "r2", 1, rollFor("iris"))
+	eq(h.last().reason, "saving", "bloquée tant que r1 n'est pas écrite")
+	eq(h.data.slots.s1.baddieId, "jade", "r2 sans effet")
+	h.saveOk = true
+	sendRoll(h, "r2", 1, rollFor("iris"))
+	eq(h.confirmed, 2, "r1 confirmée puis r2")
+	eq(h.last().ok, true)
+	eq(h.last().result.baddieId, "iris")
+	eq(h.saved.lastMutation.requestId, "r2")
+end)
+
+print("Cas restants du dossier (§30, §37)")
+
+test("§37 : poids positifs et finis, codes uniques, catalogues non vides", function()
+	local codes = {}
+	for _, id in Catalog.baddieOrder do
+		local chance = Catalog.baddies[id].rollChance
+		assert(chance > 0 and chance < math.huge, `chance de {id}`)
+		assert(codes[Catalog.baddies[id].code] == nil, `code en double : {id}`)
+		codes[Catalog.baddies[id].code] = true
+	end
+	for _, id in Catalog.crewOrder do
+		local chance = Catalog.crew[id].chestChance
+		assert(chance > 0 and chance < math.huge, `chance de {id}`)
+		assert(codes[Catalog.crew[id].code] == nil, `code en double : {id}`)
+		codes[Catalog.crew[id].code] = true
+	end
+	assert(#Catalog.baddieOrder > 0 and #Catalog.crewOrder > 0, "catalogues vides")
+end)
+
+test(
+	"§37 : Maya puissance 1 maîtrise 0 = 1 dégât ; Vega puissance 1 maîtrise 10 = 6 dégâts",
+	function()
+		local p = newProfile()
+		near(CombatRules.attackDamage(p, ctx), 1, "Maya")
+		p.slots.s1.baddieId = "vega"
+		p.masteryXP.vega = 1000
+		near(CombatRules.attackDamage(p, ctx), 6, "Vega")
+		p.rebirths = 20
+		near(CombatRules.attackDamage(p, ctx), 6, "le rebirth ne multiplie pas les dégâts")
+	end
+)
+
+test("drop non accepté : aucun multiplicateur, exposition ni score de Book", function()
+	local p = newProfile()
+	p.pendingDrops.vega = 1
+	near(CombatRules.attackDamage(p, ctx), 1, "dégâts")
+	eq(Collection.setDisplay(p, { "vega" }, ctx), "undiscovered", "exposition")
+	eq(Collection.view(p, ctx).bookCount, 1, "Book")
+end)
+
+test("mort, reconnexion puis rebirth avec un drop : le drop reste en attente", function()
+	local p = newProfile()
+	p.pendingDrops.vega = 1
+	CombatRules.applyDeath(p, ctx)
+	local reloaded = newProfile()
+	for key, value in p do
+		reloaded[key] = value -- reconnexion : même profil sauvegardé
+	end
+	eq(#ProfileGuard.repair(reloaded, ctx), 0, "profil sain")
+	finishRun(reloaded)
+	Slots.applyRebirth(reloaded, ctx)
+	eq(reloaded.pendingDrops.vega, 1)
+end)
+
+test("relance d'un conservé : ancienne baddie remplacée, Book intact", function()
+	local p = newProfile()
+	p.slots.s1.baddieId = "nova"
+	p.discoveredBaddies.nova = true
+	finishRun(p)
+	Slots.applyRebirth(p, ctx) -- s1 conservé avec Nova
+	local r = Slots.applyRoll(p, "s1", rollFor("lina"), ctx)
+	eq(r.previousId, "nova")
+	eq(p.slots.s1.baddieId, "lina", "conservé ≠ protégé d'une relance")
+	eq(p.discoveredBaddies.nova, true, "Nova reste au Book")
+end)
+
+test("rebirth 1 avec Nova en s1 : Nova reste en s1 conservé, s2 temporaire ouvert", function()
+	local p = newProfile()
+	p.slots.s1.baddieId = "nova"
+	finishRun(p)
+	Slots.applyRebirth(p, ctx)
+	eq(p.slots.s1.baddieId, "nova")
+	eq(p.slots.s1.conserved, true)
+	eq(p.slots.s2.conserved, false)
+end)
+
+test("deux slots avec Nova : une seule principale, pas de cumul", function()
+	local p = newProfile()
+	finishRun(p)
+	Slots.applyRebirth(p, ctx)
+	p.slots.s1.baddieId = "nova"
+	p.slots.s2.baddieId = "nova"
+	near(CombatRules.attackDamage(p, ctx), 2.5, "×2,5 une seule fois")
 end)
 
 print(`\n{passed} réussi(s), {failed} échec(s)`)

@@ -64,6 +64,9 @@ local Balance = {
 		autosaveSeconds = 60,
 		storeName = "BC_Profiles_v1",
 		studioStoreName = "BC_Profiles_STUDIO_v1", -- profils de test séparés
+		opsStoreName = "BC_Ops_v1", -- interrupteurs de maintenance (§36)
+		studioOpsStoreName = "BC_Ops_STUDIO_v1",
+		maintenancePollSeconds = 60,
 	},
 
 	net = {
@@ -122,6 +125,16 @@ local Balance = {
 	-- §15 : exposition = apparence seulement, aucun multiplicateur
 	collection = {
 		maxDisplay = 3,
+	},
+
+	-- §24 : bornes vérifiées au chargement de chaque profil (Rules/ProfileGuard) ; ni NaN ni infini
+	limits = {
+		maxPower = 1e15,
+		maxTickets = 1e6,
+		maxCopies = 1e6,
+		maxCounter = 1e9, -- compteurs de relances, d'entraînements, révisions, parcours
+		maxMasteryXP = 1e9,
+		maxPendingPerBaddie = 1e4,
 	},
 
 	-- §27 : une décision durable (relance, drop, renaissance) n'est confirmée qu'après écriture

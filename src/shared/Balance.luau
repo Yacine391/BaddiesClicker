@@ -71,14 +71,41 @@ local Balance = {
 		helloPerSecond = 2,
 	},
 
-	-- Lots P1 / P2 : données posées pour la suite, pas encore utilisées par le code.
+	-- §08, §25, §26 : combat individuel (lot P1). Valeurs proposées, à régler en test.
 	combat = {
-		playerHP = 100,
-		attackRange = 25,
+		playerHP = 100, -- restaurés hors combat
+		attackRange = 25, -- portée de départ (studs)
+		rangeTolerance = 3, -- marge réseau sur la portée
 		maxActionsPerSecond = 8,
+		tickSeconds = 0.1, -- cadence de simulation des ennemis côté serveur
+		maxSimultaneousMinions = 2, -- « un ou deux sbires simultanés »
+		minionSpawnDelay = 0.8,
+		leaveArenaGraceSeconds = 3, -- sortir de l'arène plus longtemps abandonne le combat
+		dodgeTolerance = 0.75, -- marge en faveur du joueur sur les zones de danger (latence)
+		respawnDelay = 1.5,
 		minionPowerPerLevel = 2, -- sbire = 2 × niveau
 		bossPowerPerLevel = 10, -- boss = 10 × niveau
 		bossDropChance = 0.10, -- RÈGLE CONFIRMÉE : 10 %, sans pity ni garantie
+		-- Sbire : frappe lente sur la position du joueur
+		minion = {
+			speed = 10,
+			engageDistance = 5,
+			telegraphSeconds = 1.0,
+			recoverySeconds = 1.6,
+			radius = 6,
+			damageBase = 10,
+			damagePerLevel = 5,
+		},
+		-- Boss : frappe en cercle autour de lui
+		boss = {
+			speed = 7,
+			engageDistance = 7,
+			telegraphSeconds = 1.3,
+			recoverySeconds = 2.2,
+			radius = 11,
+			damageBase = 20,
+			damagePerLevel = 8,
+		},
 	},
 
 	rolls = {

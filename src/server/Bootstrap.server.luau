@@ -20,17 +20,22 @@ local State = require(Services.StateService)
 local Training = require(Services.TrainingService)
 local Crew = require(Services.CrewService)
 local IntentRouter = require(Services.IntentRouter)
+local World = require(Services.WorldService)
+local Combat = require(Services.CombatService)
 
 local deps = table.freeze({
 	Profiles = Profiles,
 	Sessions = Sessions,
 	State = State,
+	World = World,
 })
 
 Profiles.init(ctx)
+World.init(ctx)
 State.init(ctx, deps)
 Training.init(ctx, deps)
 Crew.init(ctx, deps)
+Combat.init(ctx, deps)
 
 IntentRouter.init(ctx, deps, {
 	Hello = {
@@ -42,6 +47,16 @@ IntentRouter.init(ctx, deps, {
 		rate = ctx.Balance.training.maxActionsPerSecond,
 		burst = ctx.Balance.training.burst,
 		handler = Training.onTrain,
+	},
+	Attack = {
+		rate = ctx.Balance.combat.maxActionsPerSecond,
+		burst = ctx.Balance.combat.maxActionsPerSecond,
+		handler = Combat.onAttack,
+	},
+	StartWave = {
+		rate = 1,
+		burst = 2,
+		handler = Combat.onStartWave,
 	},
 })
 
@@ -56,6 +71,7 @@ Profiles.onReleasing(function(player)
 end)
 
 Crew.start()
+Combat.start()
 Profiles.start()
 
 print(`[BaddieClicker] serveur prêt (balance {ctx.Balance.version})`)

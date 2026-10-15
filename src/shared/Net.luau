@@ -10,10 +10,13 @@ local Net = {
 	INTENT = "Intent", -- client → serveur : FireServer(action, payload?)
 	STATE = "State", -- serveur → client : snapshot complet de l'état du joueur
 	RESULT = "Result", -- serveur → client : événement ponctuel { kind = ..., ... }
+	COMBAT = "Combat", -- serveur → client : flux de la rencontre en cours { t = ..., ... }
 
 	Actions = table.freeze({
 		Hello = "Hello", -- « je suis prêt, envoie-moi mon état »
 		Train = "Train", -- une action d'entraînement (hors combat)
+		Attack = "Attack", -- une attaque { encounterId, targetId? } (en combat)
+		StartWave = "StartWave", -- relancer un niveau depuis son arène { levelId }
 	}),
 }
 

@@ -244,6 +244,15 @@ local function onResult(event: { [string]: any })
 			subtitle = "La porte s'ouvre",
 			big = true,
 		})
+		if event.drop ~= nil then
+			local def = Catalog.baddies[event.drop]
+			local rarity = if def then Catalog.rarities[def.rarity] else nil
+			CelebrationController.play({
+				title = `DROP : {if def then string.upper(def.name) else event.drop} !`,
+				subtitle = `{if rarity then rarity.label else ""} · dans tes drops en attente`,
+				big = true,
+			})
+		end
 	elseif kind == "masteryUp" then
 		local def = Catalog.baddies[event.baddieId]
 		CelebrationController.play({

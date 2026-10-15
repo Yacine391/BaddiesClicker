@@ -81,6 +81,7 @@ function StateService.snapshot(player: Player, data): { [string]: any }
 		},
 		crew = crew,
 		stats = { trainActions = data.stats.trainActions, crewPowerEarned = data.stats.crewPowerEarned },
+		settings = { reducedEffects = data.settings.reducedEffects == true },
 		tutorial = {
 			crewUnlocked = data.tutorial.crewUnlocked,
 			progress = math.min(data.stats.trainActions, needed),

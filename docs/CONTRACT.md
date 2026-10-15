@@ -55,6 +55,7 @@ Envoyé au chargement, sur `Hello`, puis à chaque changement (regroupé, au plu
 		{ id = "malik", level = 1, copies = 0, perSecond = 0.6 },
 	},
 	stats = { trainActions = 14, crewPowerEarned = 2.4 },
+	settings = { reducedEffects = false }, -- effets réduits (§21)
 	tutorial = { crewUnlocked = true, progress = 10, needed = 10 },
 }
 ```
@@ -69,6 +70,16 @@ Noms, raretés, couleurs et looks : lire `Shared/Catalog` avec l'ID (`Catalog.ba
 | `crewJoined` | `crewId`, `isNew`, `equipped` | annonce du nouveau compagnon (tutoriel : Malik) |
 | `ticket` | `ticket` = `"baddie"`/`"crew"`, `amount` | toast +1 ticket |
 | `passiveTick` | `amount` (puissance réellement gagnée) | petit « +0,6 » au-dessus du compagnon, chaque seconde |
+
+Prévus (P1/P2), déjà gérés par `CelebrationController` : `levelCleared` {`level`}, `masteryUp`
+{`baddieId`, `level`}, `crewLevelUp` {`crewId`, `level`}, `rebirth` {`count`}, `discovery` {`baddieId`}.
+
+## Effets RGB (`Controllers/CelebrationController`)
+
+Bannière arc-en-ciel, gerbe de particules RGB autour du personnage, onde au sol et flash d'écran
+quand le joueur franchit un cap : nouveau compagnon, ticket, palier de puissance (10, 25, 50, 100,
+250…), puis niveaux, maîtrise, renaissance. Si `settings.reducedEffects` est vrai, seule la bannière
+reste. Le HUD final peut réutiliser `rainbowGradient(guiObjectOuStroke)` et `play({ title, subtitle?, big })`.
 
 ## Attributs du Player (visibles par tous les clients)
 

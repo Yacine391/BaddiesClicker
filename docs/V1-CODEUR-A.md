@@ -27,7 +27,7 @@ relancer (F4) jusqu'à une nouvelle baddie : en 2 s, la carte CLASSEMENT change 
 - [x] `SetStyle { slot, id? }` hors combat ; snapshot `style` ; attributs `BC_Title`, `BC_Style` ; garde-fous du profil (sélection non débloquée retirée)
 - [x] `CelebrationController` : bannière RGB « SUCCÈS : … » ; panneau de test : carte GARDE-ROBE
 - [x] 7 tests Lune (100 au total)
-- [ ] Valider en Studio (ci-dessous)
+- [x] Valider en Studio (15/10) : 6 succès sur 10 accordés au profil de test, cosmétiques et titre portés ou retirés depuis le panneau
 - [ ] Créer les 10 badges dans le Creator Dashboard et coller leurs IDs dans `src/server/Config/BadgesConfig.luau`
 
 Sans source pour l'instant (à annoncer : missions ou événement) : montre, lunettes, aura Neon, trail d'étoiles.

@@ -18,7 +18,8 @@ du codeur B ; à reporter dans la feuille de route après fusion des deux branch
 
 ## Reste
 
-- [ ] Valider en Studio : vague, boss Jade, porte, mort, rejouer, drop
+- [x] Valider en Studio : parcours complet des 10 niveaux (vagues, boss, portes), « rejouer » (15/10)
+- [ ] Valider en Studio : mort (retour lobby, portes refermées) et drop à 10 % (drops en attente)
 - [ ] Régler les chiffres (PV, dégâts, cadence) après les premiers combats réels
 - [ ] Après fusion avec la PR #1 : déclarer le remote `Combat` dans `default.project.json`, reporter ces cases dans `ROADMAP.md`
 

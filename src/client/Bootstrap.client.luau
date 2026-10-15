@@ -12,10 +12,15 @@ local Controllers = script.Parent:WaitForChild("Controllers")
 local StateController = require(Controllers:WaitForChild("StateController"))
 local CelebrationController = require(Controllers:WaitForChild("CelebrationController"))
 
+-- Effets RGB (codeur A) : écoutent l'état et les événements avant le premier snapshot
 CelebrationController.start(StateController)
 StateController.start()
 
 if Flags.DEV_HUD then
 	local DevHUD = require(script.Parent:WaitForChild("Dev"):WaitForChild("DevHUD"))
 	DevHUD.start(StateController, CelebrationController)
+else
+	-- Vrai client du codeur B : HUD V3, fenêtres, suiveurs (src/client/App)
+	local App = require(script.Parent:WaitForChild("App"))
+	App.start(StateController)
 end

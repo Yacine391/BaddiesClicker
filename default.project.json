@@ -11,8 +11,17 @@
         "$className": "Folder",
         "Intent": { "$className": "RemoteEvent" },
         "State": { "$className": "RemoteEvent" },
-        "Result": { "$className": "RemoteEvent" }
+        "Result": { "$className": "RemoteEvent" },
+        "Combat": { "$className": "RemoteEvent" }
+      },
+      "Visuals": {
+        "$className": "Folder",
+        "Characters": { "$path": "assets/visuals/Characters.rbxm" }
       }
+    },
+    "Workspace": {
+      "$className": "Workspace",
+      "Lobby": { "$path": "assets/world/Lobby.rbxm" }
     },
     "ServerScriptService": {
       "$className": "ServerScriptService",

@@ -1,47 +1,102 @@
 --!strict
 --[[
-	Theme : identité visuelle du HUD, style « simulateur Roblox » V3 validé sur maquette.
-	Palette du dossier (§20) + vert d'action et rouge de fermeture.
-	Icônes : `image` = asset du rendu Blender quand il existe, sinon `fallback` (emoji).
+	Theme : identité visuelle « mix A » (dominante cyan), validée sur prototypes
+	(spec docs/superpowers/specs/2026-10-15-ui-lobby-refonte-design.md §3).
+
+	Images : les PNG de assets/ui/png sont uploadés dans Roblox par l'utilisateur ; leurs IDs vont
+	dans `Icons`, `Logo` et `Glow`. Tant qu'un ID est vide, les composants affichent un repli simple.
+
+	TRANSITION : les clés de l'ancien style V3 (Nuit, Action, Fermer, Display, Body, bevel, Icons en
+	PascalCase…) restent le temps que tous les composants soient refaits ; elles sont retirées à la fin
+	de la refonte.
 ]]
 
 local Theme = {}
 
+local hex = Color3.fromHex
+
 Theme.Colors = table.freeze({
-	Nuit = Color3.fromHex("#242036"),
-	Violet = Color3.fromHex("#7642A3"),
-	Cyan = Color3.fromHex("#13A6B5"),
-	Or = Color3.fromHex("#D7A746"),
-	Creme = Color3.fromHex("#F4EEE7"),
-	Contour = Color3.fromHex("#1B1530"),
-	Action = Color3.fromHex("#33B84A"),
-	Fermer = Color3.fromHex("#E0233F"),
-	Gris = Color3.fromHex("#8A84A3"),
-	Orange = Color3.fromHex("#E06A1F"),
+	-- mix A
+	Panel = hex("#100E1E"),
+	PanelLine = hex("#A08CFF"),
+	Accent = hex("#3EE6C8"),
+	AccentLight = hex("#5FF3DA"),
+	AccentDeep = hex("#13A6B5"),
+	Accent2 = hex("#FF5FD2"),
+	Accent2Light = hex("#FF9BE3"),
+	Ink = hex("#0D0B16"),
+	Text = hex("#FFFFFF"),
+	TextDim = hex("#CFCAE6"),
+	Book = hex("#3EE6C8"),
+	Crew = hex("#B48CF0"),
+	Style = hex("#FF5FD2"),
+	Settings = hex("#CFCAE6"),
+	Close = hex("#E0233F"),
+	Principal = hex("#33B84A"),
+	-- ancien style V3 (transition)
+	Nuit = hex("#242036"),
+	Violet = hex("#7642A3"),
+	Cyan = hex("#13A6B5"),
+	Or = hex("#D7A746"),
+	Creme = hex("#F4EEE7"),
+	Contour = hex("#1B1530"),
+	Action = hex("#33B84A"),
+	Fermer = hex("#E0233F"),
+	Gris = hex("#8A84A3"),
+	Orange = hex("#E06A1F"),
 	Blanc = Color3.new(1, 1, 1),
 })
 
+Theme.Transparency = table.freeze({ Panel = 0.14, PanelLine = 0.72, Dim = 0.38 })
+Theme.Radius = table.freeze({ Panel = 10, Button = 12 })
+
+local function condensed(weight: Enum.FontWeight): Font
+	return Font.fromName("RobotoCondensed", weight)
+end
+
 Theme.Fonts = table.freeze({
-	Display = Font.fromName("LuckiestGuy"),
-	Body = Font.fromName("FredokaOne"),
+	Bold = condensed(Enum.FontWeight.Bold),
+	ExtraBold = condensed(Enum.FontWeight.ExtraBold),
+	Heavy = condensed(Enum.FontWeight.Heavy),
+	-- ancien style V3 (transition)
+	Display = condensed(Enum.FontWeight.Heavy),
+	Body = condensed(Enum.FontWeight.Bold),
 })
 
-Theme.Stroke = table.freeze({ Text = 3, Frame = 4 })
+Theme.Stroke = table.freeze({ Text = 2, Frame = 2 })
 Theme.BaseResolution = Vector2.new(1280, 720)
 Theme.MinTouch = 48
 
-Theme.Icons = table.freeze({
-	Power = { image = "", fallback = "💪" },
-	DJ = { image = "", fallback = "🎧" },
-	Ticket = { image = "", fallback = "🎟️" },
-	Book = { image = "", fallback = "📖" },
-	Crew = { image = "", fallback = "🎧" },
-	Style = { image = "", fallback = "👑" },
-	Settings = { image = "", fallback = "⚙️" },
-	Unknown = { image = "", fallback = "❔" },
-})
+-- IDs des images uploadées (assets/ui/README.md). "" = pas encore uploadée → repli.
+Theme.Logo = ""
+Theme.Glow = ""
+Theme.GlowSlice = Rect.new(48, 48, 80, 80)
 
--- Éclaircit (k > 0) ou assombrit (k < 0) une couleur, pour les dégradés en relief
+Theme.Icons = table.freeze({
+	book = "",
+	crew = "",
+	style = "",
+	settings = "",
+	chevron = "",
+	bolt = "",
+	arm = "",
+	ticket = "",
+	door = "",
+	lock = "",
+	eye = "",
+	crown = "",
+	-- ancien style V3 (transition) : plus d'emoji, le repli est une initiale
+	Power = { image = "", fallback = "P" },
+	DJ = { image = "", fallback = "DJ" },
+	Ticket = { image = "", fallback = "T" },
+	Book = { image = "", fallback = "B" },
+	Crew = { image = "", fallback = "C" },
+	Style = { image = "", fallback = "S" },
+	Settings = { image = "", fallback = "R" },
+	Unknown = { image = "", fallback = "?" },
+} :: any)
+
+-- Éclaircit (k > 0) ou assombrit (k < 0) une couleur
 function Theme.shade(color: Color3, k: number): Color3
 	if k >= 0 then
 		return color:Lerp(Color3.new(1, 1, 1), k)
@@ -49,13 +104,12 @@ function Theme.shade(color: Color3, k: number): Color3
 	return color:Lerp(Color3.new(0, 0, 0), -k)
 end
 
--- Enfants communs d'un bloc « en relief » : coins, contour sombre, dégradé vertical
--- `color` peut être une Color3 ou un état Fusion de Color3.
+-- Ancien style V3 (transition) : bloc « en relief »
 function Theme.bevel(scope: any, color: any, radius: number?): { Instance }
 	return {
-		scope:New("UICorner")({ CornerRadius = UDim.new(0, radius or 14) }),
+		scope:New("UICorner")({ CornerRadius = UDim.new(0, radius or Theme.Radius.Panel) }),
 		scope:New("UIStroke")({
-			Color = Theme.Colors.Contour,
+			Color = Theme.Colors.Ink,
 			Thickness = Theme.Stroke.Frame,
 			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 		}),
@@ -64,9 +118,8 @@ function Theme.bevel(scope: any, color: any, radius: number?): { Instance }
 			Color = scope:Computed(function(use)
 				local c: Color3 = use(color)
 				return ColorSequence.new({
-					ColorSequenceKeypoint.new(0, Theme.shade(c, 0.45)),
-					ColorSequenceKeypoint.new(0.5, c),
-					ColorSequenceKeypoint.new(1, Theme.shade(c, -0.25)),
+					ColorSequenceKeypoint.new(0, Theme.shade(c, 0.3)),
+					ColorSequenceKeypoint.new(1, Theme.shade(c, -0.2)),
 				})
 			end),
 		}),

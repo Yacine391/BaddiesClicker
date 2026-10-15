@@ -1,7 +1,8 @@
 --!strict
 --[[
-	Text : texte « Roblox » du style V3 — blanc, gros contour sombre, ombre portée.
-	L'ombre est une copie décalée de 3 px vers le bas, sous le texte principal.
+	Text : texte du style mix A — Roboto Condensed, sans ombre ; la lisibilité vient du fond des panneaux.
+	`Stroke = true` ajoute un contour fin (2 px, Ink) pour les chiffres posés hors panneau (« +1 »).
+	Accepte encore les anciennes props V3 (Font, TextColor, StrokeSize) pendant la transition.
 ]]
 
 local Theme = require(script.Parent.Theme)
@@ -13,48 +14,49 @@ export type LabelProps = {
 	Size: any,
 	Position: any?,
 	AnchorPoint: any?,
+	Weight: ("Bold" | "ExtraBold" | "Heavy")?,
+	Color: any?,
+	XAlignment: Enum.TextXAlignment?,
+	YAlignment: Enum.TextYAlignment?,
+	Stroke: boolean?,
+	ZIndex: number?,
+	Name: string?,
+	-- transition (ancien style V3)
 	Font: Font?,
 	TextColor: any?,
 	StrokeSize: number?,
-	XAlignment: Enum.TextXAlignment?,
-	ZIndex: number?,
 }
 
-local function layer(scope: any, props: LabelProps, offsetY: number, color: any): Instance
-	return scope:New("TextLabel")({
-		BackgroundTransparency = 1,
-		Size = UDim2.fromScale(1, 1),
-		Position = UDim2.fromOffset(0, offsetY),
-		Text = props.Text,
-		FontFace = props.Font or Theme.Fonts.Display,
-		TextColor3 = color,
-		TextScaled = true,
-		TextXAlignment = props.XAlignment or Enum.TextXAlignment.Center,
-		ZIndex = (props.ZIndex or 1) + (if offsetY == 0 then 1 else 0),
-		[scope.Children] = {
+function Text.label(scope: any, props: LabelProps): TextLabel
+	local children = {}
+	if props.Stroke or props.StrokeSize then
+		table.insert(
+			children,
 			scope:New("UIStroke")({
-				Color = Theme.Colors.Contour,
-				Thickness = props.StrokeSize or Theme.Stroke.Text,
+				Color = Theme.Colors.Ink,
+				Thickness = if props.Stroke then Theme.Stroke.Text else math.min(props.StrokeSize or 2, 2),
 				ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual,
-			}),
-		},
-	})
-end
-
-function Text.label(scope: any, props: LabelProps): Frame
-	return scope:New("Frame")({
+			})
+		)
+	end
+	return scope:New("TextLabel")({
+		Name = props.Name or "Label",
 		BackgroundTransparency = 1,
 		Size = props.Size,
 		Position = props.Position or UDim2.new(),
 		AnchorPoint = props.AnchorPoint or Vector2.zero,
-		[scope.Children] = {
-			layer(scope, props, 3, Theme.Colors.Contour),
-			layer(scope, props, 0, props.TextColor or Theme.Colors.Blanc),
-		},
-	}) :: Frame
+		Text = props.Text,
+		FontFace = props.Font or Theme.Fonts[props.Weight or "ExtraBold"],
+		TextColor3 = props.Color or props.TextColor or Theme.Colors.Text,
+		TextScaled = true,
+		TextXAlignment = props.XAlignment or Enum.TextXAlignment.Center,
+		TextYAlignment = props.YAlignment or Enum.TextYAlignment.Center,
+		ZIndex = props.ZIndex or 1,
+		[scope.Children] = children,
+	}) :: TextLabel
 end
 
--- Icône : image du rendu Blender si elle existe, sinon emoji de secours
+-- Transition (ancien style V3) : icône image ou initiale de repli, jamais d'emoji
 function Text.icon(scope: any, icon: { image: string, fallback: string }, size: any, position: any?): Instance
 	if icon.image ~= "" then
 		return scope:New("ImageLabel")({
@@ -71,7 +73,8 @@ function Text.icon(scope: any, icon: { image: string, fallback: string }, size: 
 		Size = size,
 		Position = position or UDim2.new(),
 		Text = icon.fallback,
-		TextColor3 = Color3.new(1, 1, 1), -- sinon les emojis sont teintés par la couleur noire par défaut
+		FontFace = Theme.Fonts.Heavy,
+		TextColor3 = Theme.Colors.Text,
 		TextScaled = true,
 		ZIndex = 3,
 	})

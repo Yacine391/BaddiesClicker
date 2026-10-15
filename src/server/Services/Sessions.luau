@@ -21,6 +21,10 @@ export type Session = {
 	nextBadgeAt: number?, -- prochain essai après un échec de BadgeService
 	startedAt: number, -- début de la session (temps de jeu pour les statistiques)
 	lastDeathAt: number?, -- dernière mort (statistique « reprise après une mort »)
+	movement: any?, -- suivi des déplacements pendant la rencontre (Rules/Movement)
+	movementRoot: BasePart?, -- HumanoidRootPart suivi (un nouveau personnage relance le suivi)
+	combatGains: { power: number, xp: { [string]: number } }?, -- gains de la rencontre, retirés si invalidée
+	combatBlockedUntil: number?, -- pas de nouvelle vague avant cet instant (après une invalidation)
 }
 
 local Sessions = {}
@@ -43,6 +47,10 @@ function Sessions.create(player: Player): Session
 		nextBadgeAt = nil,
 		startedAt = os.clock(),
 		lastDeathAt = nil,
+		movement = nil,
+		movementRoot = nil,
+		combatGains = nil,
+		combatBlockedUntil = nil,
 	}
 	byPlayer[player] = session
 	return session

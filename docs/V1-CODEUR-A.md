@@ -39,3 +39,24 @@ Sans source pour l'instant (à annoncer : missions ou événement) : montre, lun
 **Tester dans Studio** : au lancement, ton profil de test remplit déjà plusieurs conditions (Malik, renaissance,
 parcours…) : les bannières « SUCCÈS » arrivent dans les 2 s. Carte GARDE-ROBE du panneau F4 : cliquer un
 cosmétique ou un titre le porte (✓), recliquer le retire. Stop puis Play : tout est conservé.
+
+## Statistiques de jeu (§29, §36) — branche `a/v1-metrics`
+
+Envoyées par le **serveur** à AnalyticsService (jamais par le client), sans donnée personnelle.
+À lire dans le Creator Hub → l'expérience → **Analytics** (onglets Onboarding, Progression, Economy, Custom).
+Dans Studio, rien n'est envoyé : chaque événement s'écrit dans la sortie (`[Metrics] …`) pour vérifier.
+
+| Onglet | Événement | Ce qu'il mesure |
+|---|---|---|
+| Onboarding | 1 Profil chargé → 2 Premier entraînement → 3 Malik obtenu → 4 Premier combat → 5 Premier boss vaincu → 6 Deuxième quartier → 7 Parcours terminé → 8 Première renaissance | où les nouveaux joueurs décrochent (une fois par joueur) |
+| Progression | « Parcours », niveaux 1 à 10 : début, échec (mort), réussite | morts par niveau, niveaux trop durs |
+| Economy | `TicketBaddie`, `TicketCrew` : gagnés (Entrainement, PremierPassage, Renaissance), dépensés (Relance, Coffre) | rythme des tickets |
+| Custom | `TempsPremierCombat`, `TempsPremierBoss`, `DureeParcours` (secondes de jeu) | temps jusqu'aux premiers moments forts |
+| Custom | `PuissanceALaMort` (niveau, tranche de puissance), `RepriseApresMort` (secondes avant de retenter) | difficulté, abandon après une mort |
+| Custom | `RelancesJusquaDecouverte` (baddie, garantie ou table), `NouveauCompagnon`, `DropBoss`, `DecisionDrop` (accepter / refuser) | collection et décisions |
+| Custom | `BaddieEffaceeAuRebirth` (baddie, rareté) | compréhension de la conservation |
+
+- [x] `Rules/Metrics` (étapes uniques, temps de jeu cumulé, relances jusqu'à découverte, tranches de puissance) ; profil `analytics` + garde-fous ; 5 tests Lune (105 au total)
+- [x] `MetricsService` branché sur l'entraînement, le combat, les relances, les drops, les coffres et la renaissance
+- [ ] Valider en Studio : les lignes `[Metrics]` apparaissent dans la sortie
+- [ ] Après publication : vérifier les premiers chiffres dans le Creator Hub (délai de quelques heures côté Roblox)

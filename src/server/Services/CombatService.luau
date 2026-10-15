@@ -103,6 +103,7 @@ function CombatService.startEncounter(player: Player, session, data, levelId: nu
 	session.hp = ctx.Balance.combat.playerHP
 	session.outsideSince = nil
 
+	deps.Metrics.encounterStarted(player, data, session, levelId)
 	send(player, {
 		t = "start",
 		encounterId = id,
@@ -118,8 +119,12 @@ function CombatService.startEncounter(player: Player, session, data, levelId: nu
 end
 
 local function onDeath(player: Player, session, data, respawn: boolean)
+	local levelId = if session.encounter ~= nil then session.encounter.levelId else nil
 	endEncounter(player, session, "death")
 	CombatRules.applyDeath(data, ctx)
+	if levelId ~= nil then
+		deps.Metrics.died(player, data, session, levelId)
+	end
 	deps.State.notify(player, { kind = "death" })
 	deps.State.markDirty(player)
 	if respawn then
@@ -151,6 +156,7 @@ local function onBossVictory(player: Player, session, data, encounter)
 		power = victory.power,
 	})
 	notifyMastery(player, victory.masteryBaddie, victory.masteryUp)
+	deps.Metrics.bossDefeated(player, data, encounter.levelId, victory)
 end
 
 -- Intention « Attack » : { encounterId: string, targetId: string? }

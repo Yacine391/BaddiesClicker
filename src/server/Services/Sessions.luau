@@ -19,6 +19,8 @@ export type Session = {
 	lastChestAt: number?, -- dernier coffre de compagnon ouvert (même délai)
 	badgeBusy: boolean, -- attribution de badges Roblox en cours
 	nextBadgeAt: number?, -- prochain essai après un échec de BadgeService
+	startedAt: number, -- début de la session (temps de jeu pour les statistiques)
+	lastDeathAt: number?, -- dernière mort (statistique « reprise après une mort »)
 }
 
 local Sessions = {}
@@ -39,6 +41,8 @@ function Sessions.create(player: Player): Session
 		lastChestAt = nil,
 		badgeBusy = false,
 		nextBadgeAt = nil,
+		startedAt = os.clock(),
+		lastDeathAt = nil,
 	}
 	byPlayer[player] = session
 	return session

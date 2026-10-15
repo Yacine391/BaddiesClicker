@@ -45,6 +45,7 @@ Sortie serveur (Developer Console → Server, ou journaux de l'expérience) :
 | `[Profiles] profil <UserId> corrigé (n) : …` | le chargement a réparé des valeurs impossibles (voir `Rules/ProfileGuard`) |
 | `[Profiles] profil <UserId> refusé : …` | schéma plus récent ou migration manquante : joueur expulsé, profil intact |
 | `[Maintenance] décisions coupées : …` | un interrupteur vient de changer |
+| `[Metrics] …` | Studio uniquement : statistique qui serait envoyée (en production, voir Creator Hub → Analytics) |
 
 Aucune donnée personnelle autre que l'identifiant Roblox n'est écrite.
 

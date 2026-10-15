@@ -394,6 +394,20 @@ function ProfileGuard.repair(data: any, ctx: any): { string }
 		end
 	end
 
+	-- Statistiques : jamais bloquantes, simplement remises à zéro si illisibles
+	data.analytics = tableOr(issues, "analytics", data.analytics)
+	local A = data.analytics
+	A.once = tableOr(issues, "analytics.once", A.once)
+	for key, value in A.once do
+		if value ~= true then
+			A.once[key] = nil
+		end
+	end
+	A.playSeconds = number(issues, "analytics.playSeconds", A.playSeconds, 0, L.maxCounter, false, 0)
+	A.rollsSinceDiscovery =
+		number(issues, "analytics.rollsSinceDiscovery", A.rollsSinceDiscovery, 0, L.maxCounter, true, 0)
+	A.runStartedAt = number(issues, "analytics.runStartedAt", A.runStartedAt, 0, L.maxCounter, false, 0)
+
 	if type(data.lastMutation) ~= "table" then
 		data.lastMutation = {}
 	end

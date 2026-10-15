@@ -28,7 +28,8 @@ relancer (F4) jusqu'à une nouvelle baddie : en 2 s, la carte CLASSEMENT change 
 - [x] `CelebrationController` : bannière RGB « SUCCÈS : … » ; panneau de test : carte GARDE-ROBE
 - [x] 7 tests Lune (100 au total)
 - [x] Valider en Studio (15/10) : 6 succès sur 10 accordés au profil de test, cosmétiques et titre portés ou retirés depuis le panneau
-- [ ] Créer les 10 badges dans le Creator Dashboard et coller leurs IDs dans `src/server/Config/BadgesConfig.luau`
+- [x] 5 badges créés le 15/10 (gratuits) et leurs IDs dans `BadgesConfig.luau`
+- [ ] 5 badges restants (Première renaissance, Book Baddies V1, Book Crew V1, Mythic découverte, Collection V1 complète) : gratuits après 2 h (heure de Paris)
 
 Sans source pour l'instant (à annoncer : missions ou événement) : montre, lunettes, aura Neon, trail d'étoiles.
 

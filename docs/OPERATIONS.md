@@ -76,7 +76,10 @@ noter la version, faire une relance, restaurer la version notée, vérifier que 
 
 Les 10 succès donnent leurs récompenses internes tout de suite ; leur badge Roblox est mis en attente
 (`pendingBadges`). Pour les activer : créer les badges (Creator Dashboard → l'expérience → Associated Items →
-Badges), coller chaque ID dans `src/server/Config/BadgesConfig.luau`, publier. Les joueurs qui avaient déjà le
+Badges), coller chaque ID dans `src/server/Config/BadgesConfig.luau`, publier. Icônes prêtes : `assets/badges/`
+(régénérables avec `python3 tools/make_badges.py`). Roblox : 5 badges gratuits par 24 h (GMT), 100 Robux au-delà.
+État au 15/10 : 5 badges créés (Premier entraînement, Premier look, Premier boss, Premier crew, Parcours terminé) ;
+restent Première renaissance, Book Baddies V1, Book Crew V1, Mythic découverte, Collection V1 complète. Les joueurs qui avaient déjà le
 succès reçoivent le badge à leur prochaine connexion. Un échec de BadgeService est réessayé toutes les 60 s,
 sans jamais redonner les récompenses internes. Rien n'est attribué depuis Studio.
 

@@ -14,3 +14,7 @@ sourcemap.json
 
 # Maquettes du brainstorming (compagnon visuel)
 .superpowers/
+
+# Outil d'export des images UI
+assets/ui/export/node_modules/
+assets/ui/export/package-lock.json

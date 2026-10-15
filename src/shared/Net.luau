@@ -17,6 +17,18 @@ local Net = {
 		Train = "Train", -- une action d'entraînement (hors combat)
 		Attack = "Attack", -- une attaque { encounterId, targetId? } (en combat)
 		StartWave = "StartWave", -- relancer un niveau depuis son arène { levelId }
+		-- Lot P2 (décisions durables, réponse par Result { kind = "mutation" }) :
+		Roll = "Roll", -- { requestId, slotId, slotRevision }
+		AcceptDrop = "AcceptDrop", -- { requestId, baddieId, slotRevision, pendingRevision }
+		RefuseDrop = "RefuseDrop", -- { requestId, baddieId, pendingRevision }
+		Rebirth = "Rebirth", -- { requestId, expectedRunId }
+		-- Lot P2 (choix immédiats, sans écriture prioritaire) :
+		SetActive = "SetActive", -- { slotId }
+		SetRollLock = "SetRollLock", -- { slotId, locked }
+		SetDisplay = "SetDisplay", -- { ids } (exposition, 3 max)
+		SetLook = "SetLook", -- { baddieId, look }
+		DevSetMastery = "DevSetMastery", -- { baddieId, xp } (Studio uniquement)
+		DevGrant = "DevGrant", -- { what = "tickets" | "drop" | "finishRun", baddieId? } (Studio uniquement)
 	}),
 }
 

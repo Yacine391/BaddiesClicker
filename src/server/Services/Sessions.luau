@@ -1,7 +1,7 @@
 --[[
 	Sessions : état serveur NON sauvegardé de chaque joueur (§24 « session serveur uniquement »).
-	Créée quand le profil est chargé, détruite au départ. En P1 elle portera aussi
-	les HP, la rencontre en cours, la cible, etc.
+	Créée quand le profil est chargé, détruite au départ. Elle porte les PV et la rencontre
+	en cours (P1), et la file des décisions durables (P2).
 ]]
 
 local RateLimiter = require(script.Parent.Parent.Util.RateLimiter)
@@ -13,6 +13,9 @@ export type Session = {
 	hp: number, -- PV de combat (jamais sauvegardés)
 	encounter: any?, -- rencontre en cours (Rules/Encounter)
 	outsideSince: number?, -- depuis quand le joueur est hors de son arène
+	mutating: boolean, -- une décision durable est en cours d'écriture (MutationService)
+	unconfirmed: any?, -- décision appliquée dont l'écriture n'est pas encore confirmée
+	lastRollAt: number?, -- dernière relance acceptée (2 s minimum entre deux)
 }
 
 local Sessions = {}
@@ -27,6 +30,9 @@ function Sessions.create(player: Player): Session
 		hp = 0,
 		encounter = nil,
 		outsideSince = nil,
+		mutating = false,
+		unconfirmed = nil,
+		lastRollAt = nil,
 	}
 	byPlayer[player] = session
 	return session

@@ -109,8 +109,24 @@ local Balance = {
 	},
 
 	rolls = {
-		baddieGuaranteeEvery = 50,
+		baddieGuaranteeEvery = 50, -- §13 : toutes les 50 relances, une identité manquante si le Baddies Book est incomplet
 		crewGuaranteeEvery = 20,
+		minIntervalSeconds = 2, -- §25 : une relance à la fois, 2 s minimum entre deux relances
+	},
+
+	-- §03 : look 1 à la découverte, look 2 à maîtrise 1, look 3 à maîtrise 5 (proposition contrat v2 du codeur B)
+	looks = {
+		unlockAtMastery = { 0, 1, 5 },
+	},
+
+	-- §15 : exposition = apparence seulement, aucun multiplicateur
+	collection = {
+		maxDisplay = 3,
+	},
+
+	-- §27 : une décision durable (relance, drop, renaissance) n'est confirmée qu'après écriture
+	mutations = {
+		saveTimeoutSeconds = 12,
 	},
 
 	rebirth = {

@@ -65,6 +65,34 @@ function Profiles.saveNow(player: Player)
 	end
 end
 
+--[[
+	Écriture prioritaire CONFIRMÉE (§26-27) : lance une sauvegarde et attend qu'une écriture
+	réussie contienne la mutation (`isSaved(copieSauvegardée)`), dans la limite de `timeout` secondes.
+	Une autosave déjà en vol avec l'ancienne copie ne compte pas : seul le contenu écrit fait foi.
+	En mode mock (Studio sans accès API), ProfileStore confirme aussi ses écritures simulées.
+	Renvoie false si l'écriture n'est pas confirmée à temps (erreur ambiguë : la mutation reste
+	appliquée en mémoire, l'autosave et la sauvegarde de départ la reprendront).
+]]
+function Profiles.saveAndWait(player: Player, isSaved: (any) -> boolean, timeout: number): boolean
+	local profile = active[player]
+	if profile == nil or not profile:IsActive() then
+		return false
+	end
+	local confirmed = false
+	local connection = profile.OnAfterSave:Connect(function(lastSaved)
+		if isSaved(lastSaved) then
+			confirmed = true
+		end
+	end)
+	profile:Save()
+	local deadline = os.clock() + timeout
+	while not confirmed and os.clock() < deadline and profile:IsActive() do
+		task.wait(0.05)
+	end
+	connection:Disconnect()
+	return confirmed
+end
+
 local function loadPlayer(player: Player)
 	local profile = store:StartSessionAsync(`Player_{player.UserId}`, {
 		Cancel = function()

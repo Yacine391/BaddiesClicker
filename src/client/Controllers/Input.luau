@@ -1,6 +1,7 @@
 --!strict
 --[[
-	Input : l'entraînement côté client. Envoie seulement l'intention « Train » (aucun montant).
+	Input : le bouton principal côté client. Envoie seulement des intentions, jamais de montant :
+	« Train » au repos, « Attack » en combat.
 	Rien n'est envoyé sans snapshot ni quand une fenêtre est ouverte (§21).
 	Maintien accessible : Balance.training.holdActionsPerSecond actions/s (§07). Il s'arrête au
 	relâchement réel de l'entrée qui l'a commencé (souris ou doigt, où qu'il soit relâché),
@@ -10,6 +11,7 @@
 local UserInputService = game:GetService("UserInputService")
 
 local HoldPolicy = require(script.Parent.Parent.Logic.HoldPolicy)
+local PrimaryAction = require(script.Parent.Parent.Logic.PrimaryAction)
 
 local Input = {}
 
@@ -39,13 +41,21 @@ function Input.init(dependencies: any, scope: any)
 	)
 end
 
+-- Bouton principal : « Train » au repos, « Attack » en combat (PrimaryAction, §07)
 function Input.train()
 	local peek = deps.peek
-	if peek(deps.Store.snapshot) == nil or peek(deps.UiState.openWindow) ~= nil then
+	if peek(deps.UiState.openWindow) ~= nil then
 		return
 	end
-	deps.StateController.send(deps.Actions.Train)
-	deps.UiState.trainPulse:set(peek(deps.UiState.trainPulse) + 1)
+	local intent = PrimaryAction.intent(peek(deps.Store.snapshot))
+	if intent == nil then
+		return
+	end
+	-- Net.Actions.Attack n'existe qu'à partir du P1 du codeur A : le nom du contrat sert de repli
+	deps.StateController.send(deps.Actions[intent.action] or intent.action, intent.payload)
+	if intent.action == "Train" then
+		deps.UiState.trainPulse:set(peek(deps.UiState.trainPulse) + 1)
+	end
 end
 
 local function keepHolding(): boolean

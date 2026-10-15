@@ -1,0 +1,1951 @@
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4                                                              CONCEPTION · PRODUCTION
+
+BADDIE CLICKER
+Dossier de production unifié
+
+Conception · Combat · Art · Code · Tests · Présentation vidéo
+
+Fusion V3 + V4 • Documents du 14 octobre 2026
+Un seul dossier organisé par thème, avec les règles de la V4 comme référence et les compléments utiles de
+la V3 intégrés. Les divergences historiques sont isolées en fin de document pour éviter toute confusion.
+
+Production immédiate                              Maya : 3 looks · Malik DJ · Lobby compact
+Étape suivante                                    Une arène, un sbire, un boss, une porte et la mort
+Équipe                                            2 codeurs · 1 marketing · 1 bêta-testeur
+Limite                                            Document de conception, pas un projet Roblox livré.
+
+Sources : baddie_clicker_dossier_production.pdf (V3, 32 pages) et baddie_clicker_dossier_production_v4.pdf (V4, 38 pages).
+
+Règles V4 prioritaires • Compléments V3 intégrés                                                                            1
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4                 CONCEPTION · PRODUCTION
+                                                                                                   2
+ Sommaire
+
+  01. Cadre du projet et mode de lecture
+  02. Premier objectif : un prototype très ciblé
+  03. Maya : brief des trois looks
+  04. Malik : compagnon DJ de référence
+  05. Lobby : petit, lisible et extensible
+  06. Claude Code, Blender et Roblox Studio
+  07. Boucle de jeu et états du joueur
+  08. Combat individuel, sbires et boss
+  09. Dix niveaux dans cinq quartiers
+  10. Mort et renaissance : deux transitions
+  11. Slots, principale et conservation
+  12. Puissance, dégâts et maîtrise
+  13. Relances et garantie de découverte
+  14. Boss : drop à 10 % et inventaire en attente
+  15. Book, exposition et classement du lobby
+  16. Compagnons : collection et entraînement
+  17. Catalogue futur : Common et Silver
+  18. Catalogue futur : Gold à Mythic
+  19. Avatar, titres, auras et succès
+  20. Direction artistique et inventaire des assets
+  21. Interface : entraînement et combat
+  22. Écrans, confirmations et messages
+  23. Architecture et responsabilités
+  24. Données persistantes et états temporaires
+  25. Contrats réseau et combat sécurisé
+  26. Transactions : victoire, drop et rebirth
+  27. Sauvegarde et récupération après panne
+  28. Performance, art et combats personnels
+  29. Équilibrage : fichier séparé et vérifications
+  30. Tests avant de produire tout le catalogue
+  31. Feuille de route pour deux codeurs
+  32. Mises à jour et rendez-vous du mercredi
+  33. TikTok : stratégie de présentation
+  34. Higgsfield : pipeline vidéo à partir des assets
+  35. Premier storyboard : Maya, DJ et lobby
+  36. Publication et critères de livraison
+  37. Fonctions pures Luau et tests de configuration
+  38. Arbitrages de fusion : anciennes règles remplacées
+  39. Paramètres ouverts et références conservées
+
+Règles V4 prioritaires • Compléments V3 intégrés
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4         CONCEPTION · PRODUCTION
+
+01. Cadre du projet et mode de lecture
+
+Origine : V3 p. 1–3 ; V4 p. 1–2
+
+Dossier unique consolidé à partir des versions 3.0 (32 pages) et 4.0 (38 pages), datées du 14 octobre 2026.
+Les informations communes sont regroupées ; les détails complémentaires de la V3 sont intégrés dans leurs
+rubriques. La V4 indique expressément remplacer la V3 : ses décisions structurelles priment. Les
+paramètres restent des propositions lorsqu'ils étaient présentés ainsi dans les sources.
+
+Promesse : s'entraîner, affronter des sbires et des baddies boss, collectionner les personnages, montrer son
+équipe et renaître avec davantage de slots conservés. L'avatar Roblox reste le personnage contrôlé.
+
+Équipe : deux codeurs, une personne marketing et un bêta-testeur. Aucun artiste dédié, budget,
+disponibilité hebdomadaire ou date de sortie n'est renseigné. Aucun code ni projet Studio existant n'a été
+audité. Les briefs, schémas et extraits ne constituent ni des assets livrés ni un jeu prêt à publier.
+
+Périmètre et objectifs
+
+Cible V1 : une carte commune, cinq quartiers et dix niveaux linéaires, huit baddies, six compagnons, trois
+looks par baddie, trois places d'exposition, deux compagnons actifs, relances, Book, drops boss en attente,
+renaissance, garde-robe, classement local et sauvegarde. Priorité immédiate : Maya, Malik DJ et un morceau
+du lobby, puis une arène de test.
+
+Hors V1 : monétisation, transferts et échanges de personnages, logement personnel, chat personnalisé,
+génération de personnages par IA en direct, production hors connexion, compétition classée mondiale et
+concours avec votes. Le combat est désormais inclus par la V4. Finir le parcours, compléter le lot V1 et
+progresser en renaissances sont des objectifs distincts ; un ajout de contenu n'annule pas un succès déjà
+acquis.
+
+Terme                                             Définition
+Baddie                                            Personnage adulte féminin ; une principale possédée fournit le multiplicateur
+                                                  de dégâts.
+Compagnon                                         Personnage adulte masculin ; entraînement automatique, aucune attaque en
+                                                  V1.
+Slot                                              Emplacement fixe, un personnage au maximum, sans transfert.
+Conservé                                          Survit au rebirth, mais son contenu peut être remplacé par une relance.
+Book                                              Historique permanent des découvertes et des looks débloqués.
+Exposition                                        Apparence d’une découverte ; aucune puissance.
+Drop en attente                                   Unité de personnage inutilisable avant acceptation dans le temporaire.
+Badge Roblox                                      Succès de plateforme, distinct du personnage et du score du Book.
+
+Risques prioritaires
+
+Critiques : perte ou duplication de données ; exposition utilisée par erreur comme source de puissance.
+Risques élevés : confusion conservé/verrouillé, coût des modèles et des suiveurs, mauvaise compréhension
+d'un remplacement. Réponses : calcul serveur depuis la principale possédée, mutations durables uniques,
+libellés explicites et validation mobile avant multiplication des assets. Le plaisir de jeu, les performances
+réelles et les délais restent à mesurer.
+
+Règles V4 prioritaires • Compléments V3 intégrés                                                                                 3
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4                                      CONCEPTION · PRODUCTION
+
+02. Premier objectif : un prototype très ciblé
+
+Origine : V4 p. 3 ; V3 p. 4
+
+Lot P0 - valider l'identité avant de multiplier les personnages
+
+À réaliser maintenant                             Quantité                     Preuve attendue
+
+Maya                                              1 identité, 3 looks          Reconnaissable à chaque étape et en
+                                                                               mouvement
+
+Malik DJ                                          1 compagnon                  Production automatique visible et
+                                                                               lisible
+
+Lobby                                             1 morceau compact            Spawn, podium, entraînement, sortie
+                                                                               dans l'axe
+
+Book / Style                                      Fiches Maya et Malik         Possession et exposition bien distinctes
+
+Effets                                            Aura Maya et aura Malik      Lisibles avec qualité basse
+
+Capture                                           1 séquence réelle verticale  Présentable sans cacher le jeu
+
+Ne pas produire les huit baddies en parallèle. Les emplacements non fonctionnels du lobby restent signalés
+comme prototypes ou absents, sans faux boutons utilisables.
+
+Lot P1 - valider le fonctionnement du jeu Ajouter une arène grise, un sbire simple, Maya utilisée comme
+boss de test, une porte et la mort. Les trois looks réutilisent le même personnage ; aucun nouveau
+personnage final n'est nécessaire. L'obtention de Maya en double teste le circuit du drop, même si elle est
+déjà dans le Book.
+
+Pour tester les relances et le Book, utiliser des IDs et silhouettes de test dans une configuration isolée. Ils ne
+deviennent pas des découvertes du catalogue public. Tester sauvegarde et rebirth avant la décoration des
+dix niveaux.
+
+Acceptation du lot P0
+
+Le bêta-testeur reconnaît les trois looks de Maya, distingue sa principale de son exposition, constate la
+production du DJ et trouve la sortie du lobby. Les modèles marchent sans pièces qui traversent le corps ; la
+scène reste fluide sur le téléphone de référence. Une vidéo réelle de 15 secondes montre le résultat.
+
+Tutoriel reprenable
+
+Le tutoriel reste reprenable après déconnexion, peut être masqué puis retrouvé depuis le HUD et n'exige
+jamais une rareté précise. Les anciens objectifs de rythme — premier look en moins de deux minutes,
+première relance en cinq minutes et exposition avant dix minutes — sont des cibles de test à réévaluer avec
+le combat, pas des observations.
+
+Règles V4 prioritaires • Compléments V3 intégrés                                                                    4
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4                                       CONCEPTION · PRODUCTION
+
+03. Maya : brief des trois looks
+
+Origine : V4 p. 4
+
+B01 / Maya / Common / multiplicateur proposé ×1. Personnage adulte, stylisé, expressif. Peau brune, carré
+bouclé et silhouette reconnaissable. Le visage reste cohérent entre les looks ; pas de transformation d'âge.
+
+Élément      Look 1 - Street Start                Look 2 - Street Match         Look 3 - Street Signature
+Tenue
+Coiffure     Veste ample simple, cargo            Ensemble denim coordonné      Veste avec motifs originaux
+Accessoires                                                                     et finitions
+Palette
+Aura         Carré bouclé naturel                 Même coupe, détails           Même silhouette, accessoire
+Pose                                              soignés                       discret
+
+             Bracelet simple                      Bracelet et baskets assortis  Bijoux géométriques et
+                                                                                chaussures signature
+
+             Denim, crème, orange doux            Mêmes couleurs mieux          Accent orange lumineux
+                                                  réparties
+
+             Lueur discrète                       Traits orange fins            Arcs graphiques lents,
+                                                                                intensité réglable
+
+             Attitude détendue                    Salut assuré                  Pose de présentation et
+                                                                                petit demi-tour
+
+Pipeline demandé
+
+Une planche face/profil/dos par look ; un corps et un squelette de référence ; vêtements interchangeables ;
+points d'attache identiques. Fournir les textures, objets nommés, animations et exports, pas uniquement
+une image finale.
+
+Déblocage proposé Look 1 à la découverte ; look 2 à maîtrise 1 ; look 3 à maîtrise 5. À maîtrise 10, ajouter
+une variation d'intensité de l'aura sans fabriquer un quatrième corps. Les looks déjà débloqués restent
+sélectionnables librement.
+
+Contrôles qualité Face lisible dans le Book ; coiffure visible de dos ; marche et pose sans clipping ; aucune
+pièce flottante involontaire ; tenue complète ; allure adulte sans sexualisation. Tester tous les looks dans la
+même lumière du lobby et sur le même fond. Valider Maya avant de décliner son rig vers les autres baddies.
+
+Règles V4 prioritaires • Compléments V3 intégrés                                                                 5
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4         CONCEPTION · PRODUCTION
+
+04. Malik : compagnon DJ de référence
+
+Origine : V4 p. 5
+
+C02 / Malik / Common / production proposée 0,6 puissance par seconde au niveau 1. Adulte musclé, épaules
+larges, bras développés, coiffure courte, veste streetwear et pantalon ample. Casque identifiable et
+chaussures simples.
+
+Palette : anthracite, cyan et argent. Aura : égaliseur cyan graphique, discret. Animation signature : quelques
+gestes de mixage sur un petit contrôleur uniquement pendant une pose ; le contrôleur n'est pas un objet
+physique de combat.
+
+Ce que le prototype doit montrer
+
+• Malik suit l'avatar, reste dans sa formation et joue une animation idle.
+
+• Le HUD affiche son taux de production et la puissance réellement gagnée.
+
+• Sa production vient du serveur ; arrêter l'animation ne change pas les gains.
+
+• Il n'attaque ni sbires ni boss. Il continue l'entraînement passif pendant les combats.
+
+• Une option réduit son aura et celles des autres joueurs. Livrables artistiques minimaux
+
+Un modèle, une tenue, un casque, une aura ; idle et marche partagés ; une animation signature. Pas de six
+variantes de costumes avant validation. Vérifier le casque et les bras pendant les mouvements et l'absence
+de collision avec le joueur.
+
+Obtention et niveau Malik est le compagnon de référence du prototype ; sa règle d'obtention figure dans la
+rubrique Compagnons. L'inventaire de compagnons est permanent ; un doublon augmente un compteur de
+copies utilisé pour les niveaux. Un seul Malik actif à la fois.
+
+Le second emplacement de compagnon existe dans le modèle de données, mais le lot P0 ne nécessite pas
+de créer son occupant. L'équipe pourra éprouver l'addition des taux avec un mannequin de test, sans lancer
+immédiatement la production d'un autre compagnon final.
+
+Règles V4 prioritaires • Compléments V3 intégrés                                                                6
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4                                                             CONCEPTION · PRODUCTION
+
+05. Lobby : petit, lisible et extensible
+
+Origine : V4 p. 6 ; V3 p. 11                      BOOK / CLASSEMENT
+                                                  RELANCES / STYLE
+Implantation proposée
+VERS LE NIVEAU 1
+
+  PODIUM / MAYA
+  NTRAÎNEMENT
+
+SPAWN
+
+Au spawn, la sortie vers le niveau 1 est visible immédiatement. Le podium, légèrement décalé, présente
+Maya ; les fonctions sont distribuées sur les côtés, sans bloquer l'axe de marche.
+
+Emplacement                                       Fonction                               Lot initial
+Podium
+Entraînement                                      Mannequins en poses lentes, rareté et  Maya, rotation de ses trois looks
+Relances                                          aura
+Garde-robe
+Classement                                        Bouton/action d'entraînement et gain   Fonctionnel
+Sortie                                            affiché
+
+                                                  Choisir un slot et lire les chances    Panneau de test au lot P1
+
+                                                  Look, aura, titre et exposition        Looks de Maya
+
+                                                  Découvertes du Book des joueurs        Fonctionnel avec données de test
+                                                  présents
+
+                                                  Départ à pied du parcours              Un segment de rue et une arène grise
+
+Échelle indicative : une place de 90 × 70 studs et une sortie large ; dimensions à adapter après parcours à
+pied. Prévoir un espace sans danger à l'arrivée et pas de retour automatique en arène.
+
+Les dix niveaux sont ensuite enchaînés sans téléportation de progression. La mort et la renaissance
+réapparaissent au spawn. Il reste possible de revenir à pied au lobby. Le premier décor doit déjà permettre
+une belle capture, mais n'a besoin ni de toute la ville ni de foule artificielle.
+
+Construction et circulation
+
+Chaque zone est jouable en greybox avant décoration. Réutiliser un kit de sols, murs, portes, bancs, néons
+et signalétique ; garder spawn dégagé et sol continu. Ne pas rallonger la marche avec des surfaces vides.
+Les suiveurs ne créent pas de collisions bloquantes. Prévoir un trajet accessible, sans saut précis imposé.
+
+Règles V4 prioritaires • Compléments V3 intégrés                                                                               7
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4         CONCEPTION · PRODUCTION
+
+06. Claude Code, Blender et Roblox Studio
+
+Origine : V4 p. 7                                 Responsabilité
+
+Répartition des outils                            Greybox, arènes, portes, scripts, interfaces, éclairage et particules
+
+  Outil                                           Corps, vêtements, cheveux, accessoires, rig et animations détaillées
+  Roblox Studio
+  Blender                                         Assistance aux modifications, scripts et tâches répétitives selon les outils
+  Claude Code connecté à Blender                  disponibles
+
+  Higgsfield                                      Séquences de présentation à partir de références validées ; pas fabrication du
+                                                  gameplay
+
+La connexion de Claude à Blender n'a pas été inspectée. Les capacités réelles dépendent du connecteur et
+doivent être vérifiées sur une scène de test. Un modèle visuellement beau ne garantit ni rig correct ni
+bonnes performances.
+
+Procédure pour Maya
+
+1. Partir d'une base de personnage compatible Roblox, avec squelette connu [R16].
+
+2. Faire une modification à la fois : silhouette, coiffure, tenue, accessoire.
+
+3. Enregistrer une version du fichier Blender avant chaque étape importante.
+
+4. Exporter un premier modèle très tôt et vérifier dimensions/orientation dans Studio [R17].
+
+5. Jouer idle, marche, pose et transformation ; corriger les déformations.
+
+6. Décliner les deux autres looks seulement après validation du premier. Exemple de brief pour l'assistant
+Blender
+
+Crée une variante vestimentaire de Maya à partir du rig validé. Conserve le squelette, les noms des os et les
+points d'attache. Sépare veste, pantalon, chaussures et accessoires. Respecte sa palette
+denim/crème/orange. Produis une version enregistrée et un aperçu face/profil/dos avant export.
+
+Ne pas lancer d'emblée « génère toutes les baddies ». Le codeur client est proposé comme responsable
+d'intégration artistique ; les deux codeurs vérifient ensemble le premier export. Garder licences, auteurs et
+versions pour tous les assets.
+
+Règles V4 prioritaires • Compléments V3 intégrés                                                                                  8
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4                                                  CONCEPTION · PRODUCTION
+
+07. Boucle de jeu et états du joueur
+
+Origine : V4 p. 8                                 02                               03
+  01                                              COMBATTRE                        VAINCRE LE BOSS
+  S'ENTRAÎNER                                     05                               06
+  04                                              EXPOSER                          RENAÎTRE
+  DÉCOUVRIR
+
+Hors combat : le clic entraîne et augmente la puissance. En combat : le clic attaque la cible sélectionnée. La
+même entrée ne doit jamais compter simultanément comme entraînement et attaque.
+
+États proposés
+
+État                                              Entrée principale                Sortie
+
+Lobby / repos                                     Entraîner, gérer équipe et Book  Marcher vers une arène
+
+Vague de sbires                                   Attaquer et esquiver             Tous les sbires vaincus
+
+Boss                                              Attaquer et esquiver             Victoire ou mort
+
+Zone terminée                                     Avancer, s'entraîner ou rejouer  Nouvelle vague ou niveau suivant
+
+Mort                                              Aucune attaque acceptée          Respawn lobby et nouvelle tentative
+
+Rebirth                                           Aperçu et confirmation           Nouveau parcours, puissance de base
+
+Première session Maya dans le slot 1 → quelques actions d'entraînement → explication du multiplicateur →
+découverte du DJ → trois sbires de niveau 1 → boss → porte ouverte → aperçu du Book et des drops
+éventuels. Aucun résultat rare n'est exigé pour continuer.
+
+Le tutoriel montre explicitement « ENTRAÎNEMENT : +1 puissance » puis « COMBAT : dégâts par clic ». Sur
+téléphone, le bouton principal change de libellé et de couleur selon l'état. Les cibles et attaques au sol
+restent visibles.
+
+Une option de maintien accessible, proposée à 3 actions/s, respecte le même rythme serveur que les autres
+entrées. Entraînement et combat ont des limites distinctes configurables. Le joueur ne peut pas changer de
+principale ni accepter un remplacement pendant un combat ; il peut décider ensuite sans perdre son drop
+en attente.
+
+Règles V4 prioritaires • Compléments V3 intégrés                                                                        9
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4         CONCEPTION · PRODUCTION
+
+08. Combat individuel, sbires et boss
+
+Origine : V4 p. 9
+
+Chaque niveau contient une arène, une vague de sbires, puis une baddie boss. Un ou deux sbires
+simultanés rendent les attaques lisibles. La victoire contre le boss ouvre le mur de ce niveau pour ce joueur
+seulement.
+
+Règles de combat proposées
+
+100 HP joueur, restaurés en dehors du combat. L'attaque cible l'ennemi sélectionné le plus proche autorisé,
+dans une portée de départ de 25 studs. Le joueur peut changer de cible par clic/toucher. Une seule
+application de dégâts par action serveur acceptée.
+
+Les ennemis annoncent leurs attaques pendant environ une seconde, puis frappent une zone identifiable. La
+position de danger, l'instant d'impact et les dégâts sont calculés côté serveur ; le cercle au sol est un rendu
+client. Les premiers ennemis ont un seul pattern.
+
+Pattern de référence Approche → télégraphie → impact → récupération. Vague : une frappe lente. Boss 1 :
+une frappe en cercle. Plus tard : charge, projectile puis zones combinées. Une attaque ratée doit être
+compréhensible ; les particules ne masquent pas les limites au sol.
+
+Partage de la carte sans vol de boss Les avatars des autres joueurs sont visibles, mais chaque joueur
+possède ses ennemis, HP et progression logiques. Afficher localement ses propres ennemis et effets de
+danger ; les autres joueurs ne peuvent ni tuer sa cible ni subir ses dégâts. Les coups d'un autre joueur
+peuvent sembler frapper le vide : limiter leurs effets près des arènes et expliquer le combat personnel.
+
+Rejouer une vague remet sbires et boss à zéro dans cette arène, sans refermer les portes déjà ouvertes. La
+mort referme toutes les portes. Une entrée en arène interdite n'octroie aucun combat ni gain, même si le
+client traverse visuellement le mur.
+
+Règles V4 prioritaires • Compléments V3 intégrés  10
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4                         CONCEPTION · PRODUCTION
+
+09. Dix niveaux dans cinq quartiers
+
+Origine : V4 p. 10
+
+Paramètres proposés pour le test, pas équilibre final. Le niveau 1 conserve les sbires à 50 HP demandés. Les
+boss réutilisent les modèles de baddies, avec patterns et HP différents selon le niveau. La baddie reçue
+garde les statistiques de son identité.
+
+Niveau / quartier  Sbires : nombre × HP           Boss / HP       Drop possible
+1 Street Block     3 × 50                         Jade / 250      Jade Silver, 10 %
+2 Street Block     3 × 90                         Iris / 450      Iris Silver, 10 %
+3 Shopping Avenue  4 × 150                        Jade / 800      Jade Silver, 10 %
+4 Shopping Avenue  4 × 250                        Iris / 1 400    Iris Silver, 10 %
+5 Festival Park    4 × 400                        Sienna / 2 500  Sienna Gold, 10 %
+6 Festival Park    4 × 650                        Nova / 4 000    Nova Gold, 10 %
+7 Skyline Rooftop  5 × 1 000                      Sienna / 6 500  Sienna Gold, 10 %
+8 Skyline Rooftop  5 × 1 600                      Nova / 10 000   Nova Gold, 10 %
+9 World Stage      5 × 2 500                      Zuri / 16 000   Zuri Legendary, 10 %
+10 World Stage     5 × 4 000                      Vega / 25 000   Vega Mythic, 10 %
+
+Les niveaux 5 et 10 sont les grands paliers de mise en scène. Tous les niveaux ont néanmoins leur boss.
+Common est principalement le départ et les relances ; toutes les identités de cette table existent aussi dans
+les relances.
+
+Décor et renouvellement
+
+Street Block : béton et graffiti original. Shopping : vitrines fictives et couleurs crème. Festival : scène et
+néons. Rooftop : vue urbaine, sans téléportation d'accès. World Stage : podium final et arrière-plan
+prismatique. Relier les élévations par des rampes si nécessaire.
+
+L'ouverture ne dépense aucune puissance. Aucun seuil de points ni mission obligatoire ne bloque la porte
+en plus du boss. La puissance recommandée s'affiche comme conseil, sans prétendre garantir la victoire.
+
+Règles V4 prioritaires • Compléments V3 intégrés                                        11
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4                                      CONCEPTION · PRODUCTION
+
+10. Mort et renaissance : deux transitions
+
+Origine : V4 p. 11                                Mort                         Renaissance volontaire
+  Élément                                         Retour au lobby              Retour au lobby
+  Position                                        Parcours remis à zéro        Parcours remis à zéro
+  Portes et ennemis                               Conservée                    Remise à la base proposée 1
+  Puissance d'entraînement                        Conservées dans leurs slots  Conservées sauf temporaire non promu
+  Baddies possédées                               Conservés                    Conservés
+  Book, exposition et looks                       Conservés                    Conservés
+  Compagnons et maîtrise                          Conservés                    Conservés
+  Drops en attente                                Aucune                       Relances et bonus de progression
+  Récompense spécifique
+
+Conditions et récompenses de rebirth Confirmé : finir le parcours puis choisir la renaissance ; paliers 1/3/6
+pour conserver le temporaire avec sa baddie et ouvrir un nouveau temporaire. Aux autres renaissances,
+vider le temporaire. Trois conservés maximum et un temporaire restent la proposition retenue.
+
+Valeurs proposées : +5 tickets baddie, +1 ticket compagnon par renaissance ; +10 % de gain
+d'entraînement par renaissance, plafonné à ×3 au rebirth 20. Le bonus améliore l'entraînement manuel et
+passif, pas directement les dégâts pour éviter de le compter deux fois.
+
+Les murs se referment aussi à la mort ; recommencer n'efface pas les captures déjà en attente. Un
+personnage puissant récupéré après rebirth peut accélérer immédiatement le nouveau parcours :
+conséquence acceptée de la persistance des drops.
+
+Déconnexion proposée
+
+Conserver puissance, slots, tickets et portes terminées. Abandonner le combat en cours sans récompense ;
+rejoindre au lobby puis revenir à pied à la dernière porte ouverte. Se déconnecter ne simule pas une mort,
+mais ne conserve ni boss blessé ni invulnérabilité. Cette règle de confort est une proposition technique
+distincte de la mort.
+
+Règles V4 prioritaires • Compléments V3 intégrés                                                               12
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4                                                        CONCEPTION · PRODUCTION
+
+11. Slots, principale et conservation
+
+Origine : V4 p. 12 ; V3 p. 5–6, 24
+
+Chaque slot possède son identité permanente. Aucune opération ne déplace une baddie de s1 vers s2.
+Sélectionner une principale change seulement activeSlotId ; une seule baddie possédée fournit le
+multiplicateur.
+
+Action                                            Slot temporaire                       Slot conservé
+Relance de ce slot                                Remplace son contenu                  Remplace son contenu également
+Accepter un drop boss                             Remplace son contenu                  Interdit
+Changer de principale                             Autorisé hors combat s'il est rempli  Même règle
+Mort                                              Contenu gardé                         Contenu gardé
+Rebirth sans promotion                            Contenu effacé                        Contenu gardé
+Rebirth qui le promeut                            Contenu gardé dans ce même slot       Inchangé
+
+Exemple : s1 conservé avec Nova, s2 temporaire avec Vega. Impossible d'envoyer Vega dans s1. Au rebirth
+2, s2 est effacé ; au rebirth 3, s2 devient conservé avec ce qu'il contient alors. Un drop de Vega en attente
+peut être accepté dans s2 avant cette promotion.
+
+Sécurité des décisions
+
+Verrou manuel de relance par slot et confirmation de remplacement, surtout Gold ou mieux. Le mot «
+conservé » ne signifie jamais « protégé d'une relance ». Refuser une confirmation ne consomme aucun
+ticket.
+
+Plusieurs slots peuvent contenir la même identité ; les bonus ne s'additionnent pas. La maîtrise est partagée
+par identité. Si le rebirth supprime la principale, sélectionner un slot rempli conservé. S'il n'en reste aucun,
+installer Maya dans le temporaire afin de garder une progression possible.
+
+Le contenu d'un slot ne change qu'après une relance, une acceptation de drop, un reset temporaire de
+rebirth ou la procédure de secours documentée. Ces quatre causes doivent être traçables dans les tests.
+
+Paliers de conservation
+
+Renaissance terminée                              Transition
+
+1                                                 s1 devient conservé avec son contenu ; s2 temporaire s’ouvre.
+
+3                                                 s2 devient conservé avec son contenu ; s3 temporaire s’ouvre.
+
+6                                                 s3 devient conservé avec son contenu ; s4 temporaire s’ouvre.
+
+Autres                                            Pas de nouveau slot ; le temporaire est vidé.
+
+Aucune vente ni suppression manuelle de baddie en V1. Un slot vide se remplit par relance ; le temporaire
+peut aussi recevoir un drop accepté. Le verrou manuel protège des relances accidentelles, pas de la
+suppression normale du temporaire au rebirth. Promouvoir un temporaire vide conserve un emplacement
+vide utilisable.
+
+Règles V4 prioritaires • Compléments V3 intégrés                                                                        13
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4         CONCEPTION · PRODUCTION
+
+12. Puissance, dégâts et maîtrise
+
+Origine : V4 p. 13 ; V3 p. 7
+
+Formules proposées, séparées dans la configuration
+
+bonusEntrainement = 1 + 0,10 × min(rebirths, 20)
+gainManuel = 1 × bonusEntrainement
+gainPassif/s = somme des compagnons actifs × bonusEntrainement
+dégâts/clic = puissance × multiplicateurPrincipale
+
+                       × (1 + 0,05 × maîtrisePrincipale)
+
+La puissance commence à 1. En combat, les clics n'ajoutent pas de puissance manuelle ; les compagnons
+continuent de produire. Aucun personnage exposé n'entre dans la formule. La limite de maîtrise reste 0 à 10
+et son bonus maximal ×1,5.
+
+Récompenses et maîtrise proposées Une victoire apporte de la puissance : sbire = 2 × niveau ; boss = 10 ×
+niveau. Récompenses attribuées une fois par ennemi/rencontre, y compris en rejouant une vague ; c'est
+une source de progression volontaire, à équilibrer contre l'entraînement.
+
+La maîtrise est permanente par baddie, gagnée lorsqu'elle est principale au moment d'une victoire : +1 XP
+par sbire, +5 XP par boss. Seuil total pour le niveau L : 10 × L². Le premier look évolué arrive à 10 XP, le
+troisième à maîtrise 5. Cette implémentation est proposée pour remplacer les anciens coûts en Glow et
+éviter de dépenser la puissance de combat.
+
+Tickets Dix tickets baddie à la création du profil, une seule fois. Un ticket baddie toutes les 250 actions
+d'entraînement acceptées ; un ticket compagnon toutes les 500. Premier passage de chaque niveau dans
+une renaissance : +1 ticket baddie. La mort ne réinitialise pas cette éligibilité ; le rebirth oui. Rejouer un
+boss ne réattribue pas cette récompense de premier passage.
+
+Tous les compteurs sont côté serveur. Récompenser les dégâts réellement retirés aux HP seulement si un
+futur système en dépend ; ne pas transformer un énorme overkill en récompense infinie.
+
+Précision numérique
+
+Conserver les décimales en interne ; le HUD peut afficher une valeur simplifiée. Ne pas arrondir chaque tick
+vers le haut. Une même identité dans plusieurs slots partage sa maîtrise, sans cumuler de bonus. Les
+tickets et compteurs vers le prochain ticket persistent au rebirth.
+
+Règles V4 prioritaires • Compléments V3 intégrés  14
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4                         CONCEPTION · PRODUCTION
+
+13. Relances et garantie de découverte
+
+Origine : V4 p. 14
+
+Une relance coûte un ticket et remplace le contenu du slot choisi après validation. Elle fonctionne
+uniquement hors combat. Le résultat est enregistré avant sa révélation animée.
+
+Identité  Rareté                                  Multiplicateur  Chance standard
+Maya      Common                                  ×1              32 %
+Lina      Common                                  ×1,2            25 %
+Jade      Silver                                  ×1,5            17 %
+Iris      Silver                                  ×1,8            12 %
+Sienna    Gold                                    ×2,2            7%
+Nova      Gold                                    ×2,5            5%
+Zuri      Legendary                               ×3,2            1,5 %
+Vega      Mythic                                  ×4              0,5 %
+Total                                                             100 %
+
+Confirmé : toutes les 50 relances baddie, si le Book du lot concerné est incomplet, obtenir une identité
+manquante. Proposition d'implémentation : tirage uniforme parmi ces identités. Afficher les chances de
+cette ouverture spéciale. Le compteur est global, ne dépend pas du slot et persiste après mort/rebirth.
+
+Le compteur concerne uniquement les relances. Une victoire de boss, un drop en attente, son acceptation
+ou son refus ne l'incrémente pas. Une récupération de boss retire toutefois cette identité de la liste des
+découvertes manquantes.
+
+Avec Maya découverte au départ, le lot V1 complet est borné à 350 relances au plus par cette règle,
+indépendamment de la chance contre les boss. Cela garantit des découvertes, pas huit personnages
+simultanément possédés. Quand le lot est complet, les ouvertures suivantes utilisent la table standard.
+
+Le mode de test P0 ne doit pas utiliser cette table avec des assets absents. Un catalogue de test séparé
+utilise Maya uniquement ou des silhouettes identifiées comme tests ; les profils de test ne sont pas importés
+tels quels en production.
+
+Règles V4 prioritaires • Compléments V3 intégrés                                                     15
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4         CONCEPTION · PRODUCTION
+
+14. Boss : drop à 10 % et inventaire en attente
+
+Origine : V4 p. 15
+
+Règle fixe : 10 % à chaque victoire valide, sans pity, sans garantie et sans augmentation après des échecs.
+Un boss reçoit son personnage cible depuis la configuration du niveau.
+
+Étape                                             État et conséquence
+Boss vaincu                                       Porte ouverte et récompense de victoire, même sans drop
+Tirage échoué                                     Aucun personnage ajouté ; aucun compteur de garantie boss
+Tirage réussi                                     Ajouter une unité de cette identité dans « Drops en attente »
+Ne rien faire                                     L'unité reste inutilisable, sans expiration
+Accepter                                          Retirer une unité et remplacer le temporaire, puis débloquer le Book
+Refuser                                           Supprimer une unité après confirmation, sans autre effet
+
+Les drops restent après mort, déconnexion et rebirth. Aucun drop n'est supprimé automatiquement à la
+fermeture d'un écran. Une ligne peut regrouper les exemplaires d'une même identité ; les boutons précisent
+« Accepter 1 » et « Refuser 1 ». Éviter de supprimer toute une pile par erreur.
+
+Récupération
+
+Hors combat, montrer « Vega remplacera Lina dans le slot temporaire s2 ». Confirmer consomme
+exactement un exemplaire ; la baddie précédente reste dans le Book si déjà découverte. Si la principale
+était ce temporaire, son identité change avec lui. Sinon, proposer ensuite de sélectionner ce slot, sans
+déplacement.
+
+Pas de multiplicateur, exposition, maîtrise ou score de collection avant acceptation. On peut afficher le boss
+comme « rencontré » séparément ; cela ne compte pas comme découverte. Une acceptation de doublon ne
+crée pas un nouveau personnage dans le pourcentage du Book.
+
+Probabilité : dix victoires donnent environ 65,1 % de chance d'au moins un drop ; vingt, environ 87,8 %.
+Même après beaucoup d'essais, aucune victoire future n'est garantie. Ces statistiques n'augmentent pas le
+taux réel.
+
+Règles V4 prioritaires • Compléments V3 intégrés                                                                        16
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4         CONCEPTION · PRODUCTION
+
+15. Book, exposition et classement du lobby
+
+Origine : V4 p. 16 ; V3 p. 9
+
+Trois notions distinctes
+
+Découvert : obtenu par relance, personnage initial ou drop accepté. Possédé : actuellement dans un slot.
+Exposé : sélection visuelle parmi les découvertes, sans puissance.
+
+Le Book conserve les découvertes et looks déverrouillés même après relance ou perte du temporaire au
+rebirth. Trois places d'exposition, sans doublons ; la principale utilise un emplacement visuel distinct,
+fusionné si la même identité est déjà exposée.
+
+Une fiche contient nom, rareté, aura, multiplicateur, maîtrise, source de drop et chances. Actions : Exposer ;
+sélectionner un slot possédé comme principale ; voir le boss correspondant. Les compagnons ont leur
+propre onglet.
+
+Classement proposé pour la première version
+
+Tableau des joueurs présents dans le serveur, trié par nombre d'identités baddies découvertes du lot public.
+Exemple : « Alex - 7/8 ». Compagnons dans un onglet séparé. Doublons, skins, apparitions de boss et drops
+non acceptés ne changent pas le score.
+
+Les égalités partagent le rang : 1, 1, 3. Le serveur calcule le classement depuis les profils ; le client ne
+fournit jamais son score. Un refresh groupé après découverte ou arrivée/départ suffit. Le classement
+mondial reste hors V1.
+
+Mises à jour du catalogue Chaque lot possède un ID et une liste stable. « Collection V1 complète » reste
+acquis si une V2 ajoute des personnages. Le tableau indique le lot ou le total courant qu'il classe, sans
+transformer un ancien succès en échec.
+
+La garde-robe n'entre pas dans le 100 % du Book. Les personnages retirés temporairement ont une source
+de retour annoncée. Le classement met en valeur la découverte, pas le nombre de relances effectuées ou le
+temps connecté.
+
+Navigation du Book
+
+Recherche par nom ; filtres rareté, source et possession ; tri des nouveautés et liste des manquants. Fiche
+inconnue : silhouette, rareté, source et chance ; découverte non possédée : modèle, aura, maîtrise et
+historique ; possédée : numéro du ou des slots ; conservée : indicateur de survie au rebirth, sans immunité
+à la relance. Une mention « Exposition uniquement » apparaît dans la fiche, pas comme une étiquette
+humiliante au-dessus du modèle. Les looks utilisés doivent être débloqués. Une découverte garde un ID
+stable même si son nom public change.
+
+Règles V4 prioritaires • Compléments V3 intégrés  17
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4                                     CONCEPTION · PRODUCTION
+
+16. Compagnons : collection et entraînement
+
+Origine : V4 p. 17 ; V3 p. 16
+
+Confirmé : collection permanente, deux compagnons actifs au départ, production automatique de puissance
+et garantie de découverte toutes les 20 ouvertures. Ils ne frappent pas les ennemis en V1.
+
+Compagnon              Rareté                      Puissance/s de base        Chance
+Enzo, danseur          Common                      0,4                        30 %
+Malik, DJ              Common                      0,6                        25 %
+Rafael, sportif        Silver                      0,8                        20 %
+Dario, chic            Gold                        1,2                        12 %
+Kenji, danseur techno  Legendary                   1,6                        8%
+Amine, scène           Mythic                      2,0                        5%
+Total                                                                         100 %
+
+Malik est le premier compagnon garanti du tutoriel, une seule fois. La table ci-dessus concerne les coffres
+suivants. Toutes les 20 ouvertures, proposer uniformément un compagnon encore manquant ; si aucun ne
+manque, reprendre la table normale. Le compteur persiste après mort/rebirth et n'interagit pas avec celui
+des baddies.
+
+Doublons et niveaux Premier exemplaire au niveau 1. Chaque doublon ajoute une copie ; pour passer de L à
+L+1, dépenser L+1 copies. Niveau maximum 10. Taux = base × (1 + 0,10 × (L - 1)). Les copies au
+maximum restent stockées ; aucune conversion future non implémentée n'est promise.
+
+Deux identités distinctes maximum équipées. Leurs taux s'additionnent puis reçoivent le bonus
+d'entraînement de rebirth. La production continue pendant le combat et s'arrête hors connexion. À la mort,
+elle reprend après le respawn, sans gain double pendant les transitions.
+
+Les origines et morphologies sont variées à toutes les raretés. Le rôle visuel de DJ ou sportif ne dépend pas
+de l'origine et ne change pas secrètement les probabilités.
+
+Briefs artistiques complémentaires
+
+ID / nom               Style et silhouette         Accessoire / aura          Signature
+
+C01 Enzo               Athlétique, streetwear,     Casquette / ondes orange   Deux pas de danse
+                       boucles courtes
+
+C03 Rafael             Sportif, bras développés,   Bracelet / anneau vert     Échauffement des épaules
+                       tenue de sport
+
+C04 Dario              Musclé, costume street chic Chaîne / éclat doré        Ajuste sa veste
+
+C05 Kenji              Athlétique, danseur techno  Lunettes / rubans violets  Pas glissé court
+
+C06 Amine              Épaules larges, tenue de    Montre / halo prismatique  Salut au public
+                       scène
+
+Règles V4 prioritaires • Compléments V3 intégrés                                                        18
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4         CONCEPTION · PRODUCTION
+
+Le brief détaillé de Malik figure dans sa rubrique de prototype. À terme : rig masculin commun, deux
+variantes de silhouette, vêtements modulaires et six coiffures. Une apparence de base par compagnon ; les
+niveaux ne nécessitent pas de nouveau modèle. Évolution proposée des auras aux niveaux 1, 5 et 10, par
+paramètres. Les muscles restent stylisés, sans mise en scène sexuelle.
+
+Règles V4 prioritaires • Compléments V3 intégrés  19
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4         CONCEPTION · PRODUCTION
+
+17. Catalogue futur : Common et Silver
+
+Origine : V4 p. 18
+
+Maya est décrite une seule fois dans le brief des trois looks. Les autres baddies ci-dessous complètent le
+catalogue ; les statistiques figurent dans la table de relance.
+
+B02 - Lina / Common / ×1,2
+
+Identité : sportive, silhouette robuste, queue de cheval haute, veste de survêtement et pantalon ample.
+Palette : vert sauge, blanc cassé, anthracite. Accessoire : bandeau. Aura : anneaux verts fins au niveau du
+sol.
+
+Trois étapes : survêtement uni → ensemble coordonné et coiffure détaillée → motifs graphiques et
+chaussures signature. Pose : étirement des épaules puis pouce levé. Réutiliser le rig de Maya avec une
+silhouette et des vêtements distincts.
+
+B03 - Jade / Silver / ×1,5 Identité : urbaine, coupe asymétrique, bomber et pantalon droit. Palette : noir,
+cyan, argent. Accessoire : lunettes au-dessus de la tête. Aura : petites lignes cyan en mouvement lent.
+
+Trois étapes : bomber simple → tenue coordonnée et lunettes → bandes réfléchissantes et pose assurée.
+Signature : petit demi-tour et regard caméra. Candidate au premier événement Neon, sans nouveau corps à
+modéliser.
+
+B04 - Iris / Silver / ×1,8 Identité : créative, longues tresses, silhouette grande, ensemble violet et baskets.
+Palette : lilas, crème, rose framboise. Accessoire : sac transversal. Aura : pétales géométriques, non
+réalistes.
+
+Trois étapes : tenue unie → motifs textiles → accessoires et coiffure plus élaborés. Signature : ajuster son
+sac puis poser. Garder les tresses suffisamment simples pour le budget mobile.
+
+Production différée : ces personnages restent des briefs. Ne lancer leurs modèles qu’après validation de
+Maya, Malik et du lobby. Leurs versions boss réutilisent leur rig et leurs looks, avec animations de combat
+additionnelles.
+
+Règles V4 prioritaires • Compléments V3 intégrés  20
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4         CONCEPTION · PRODUCTION
+
+18. Catalogue futur : Gold à Mythic
+
+Origine : V4 p. 19
+
+B05 - Sienna / Gold / ×2,2
+
+Identité : festival, silhouette athlétique, cheveux ondulés, veste métallisée et pantalon ample. Palette :
+cuivre, rose, blanc. Accessoire : lunettes rondes. Aura : étincelles cuivre lentes.
+
+Trois étapes : ensemble sobre → veste brillante et bijoux → panneaux irisés et animation de scène.
+Signature : pas de danse court. Matériaux limités, pas de lumière dynamique attachée à chaque bijou.
+
+B06 - Nova / Gold / ×2,5 Identité : rooftop chic, peau foncée, coiffure relevée, tailleur graphique et
+chaussures stylisées. Palette : bleu nuit, or, ivoire. Accessoire : collier géométrique. Aura : étoiles dorées et
+arc fin derrière les épaules.
+
+Trois étapes : tailleur simple → coiffure, accessoires et finitions → ensemble signature et pose de scène. Sert
+de référence visuelle Gold. Sa tenue ne doit pas gêner la marche ni l'emplacement de l'aura.
+
+B07 - Zuri / Legendary / ×3,2
+
+Identité : performance musicale, cheveux courts texturés, veste structurée et bottines. Palette : violet
+profond, argent, noir. Accessoire : boucle d'oreille graphique. Aura : deux arcs violets décalés.
+
+Trois étapes : veste textile → broderies et accessoires → touches prismatiques, aura plus ample. Signature :
+tourner une épaule puis lever la main. Spectaculaire par sa composition, pas par une quantité excessive de
+particules.
+
+B08 - Vega / Mythic / ×4
+
+Identité : grande scène, cheveux argentés stylisés, ensemble blanc et turquoise avec volumes
+géométriques. Palette : blanc, turquoise, violet. Accessoire : serre-tête prismatique. Aura : trois prismes
+orbitaux lents.
+
+Trois étapes : ensemble géométrique simple → couches textiles coordonnées → détails prismatiques et
+animation d'arrivée. La forme Mythic doit être reconnaissable avec les effets désactivés. Éviter
+transparences superposées et accessoires flottants trop nombreux.
+
+Checklist commune : nom original, fiche de droits, silhouette lisible à distance, trois tenues complètes,
+aucune pièce qui coupe le corps en mouvement, aperçu Book cohérent et aura désactivable.
+
+Règles V4 prioritaires • Compléments V3 intégrés  21
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4                                           CONCEPTION · PRODUCTION
+
+19. Avatar, titres, auras et succès
+
+Origine : V4 p. 20 ; V3 p. 17
+
+L'avatar du joueur conserve son identité Roblox. La garde-robe du jeu ajoute chaînes, montre, lunettes,
+casque, aura, trail, pose et cadre. Les déblocages restent acquis après mort/rebirth et sont changeables
+hors combat.
+
+Succès proposé                                    Condition serveur                 Récompense interne
+Premier entraînement                              20 actions acceptées              Cadre simple
+Premier look                                      Maya maîtrise 1                   Pose photo
+Premier boss                                      Victoire de niveau 1 enregistrée  Gérant de Baddies
+Premier crew                                      Malik obtenu                      Casque de joueur
+Parcours terminé                                  Niveau 10 vaincu                  Baddie Professionnel
+Première renaissance                              Rebirth 1 enregistré              Chaîne argentée
+Book Baddies V1                                   8 identités découvertes           Expert en Baddies
+Book Crew V1                                      6 compagnons découverts           Cadre Crew
+Mythic découverte                                 Vega réellement récupérée         Aura Spark
+Collection V1 complète                            Les deux Books complets           Chaîne dorée et cadre V1
+
+Au-dessus de l'avatar : titre sélectionné, pseudo et petit emblème. Pas de texte libre personnalisé non
+modéré. Les titres de réussite sont distincts du score affiché sur le tableau du lobby.
+
+Chaque baddie et compagnon possède sa propre aura ; l'aura du joueur est une troisième couche. Prévoir
+un réglage qui réduit simultanément ces effets et ceux des autres joueurs.
+
+Les vrais badges Roblox sont créés dans le Creator Dashboard et attribués côté serveur avec les identifiants
+publiés. Gérer l'échec de BadgeService sans doubler les récompenses internes [R6]. En P0, utiliser
+uniquement les succès internes ; activer les badges de plateforme après validation des conditions.
+
+Garde-robe et titres
+
+Séparer les emplacements cou, poignet, visage et aura pour limiter les conflits. Le lot comprend notamment
+chaînes argentée/dorée, montre, lunettes, casque, auras Spark/Neon, trail d'étoiles, pose photo et trois
+cadres de profil. Limiter la distance d'affichage des titres, garder leur couleur lisible et permettre de
+masquer ceux des autres joueurs. Les badges Roblox ne sont jamais la seule source de vérité du profil ;
+associer leurs vrais IDs à BadgesConfig, utiliser AwardBadgeAsync côté serveur et réessayer les échecs
+sans redonner les récompenses internes.
+
+Règles V4 prioritaires • Compléments V3 intégrés                                                              22
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4                                   CONCEPTION · PRODUCTION
+
+20. Direction artistique et inventaire des assets
+
+Origine : V4 p. 21 ; V3 p. 13, 16, 18
+
+Style confirmé : adultes 3D stylisés et expressifs. Direction proposée : streetwear français, scène musicale,
+accessoires graphiques et couleurs franches. Aucun classement des corps selon origine ou valeur physique ;
+conserver les mêmes identités à travers les transformations.
+
+Nuit #242036  Violet #7642A3                      Cyan #13A6B5  Or #D7A746  Crème #F4EEE7
+
+Raretés et auras
+
+Common : cercle gris ; Silver : losange argent/bleu ; Gold : étoile or ; Legendary : double étoile violette ;
+Mythic : prisme turquoise. Nom et symbole complètent la couleur. L'aura signature appartient au
+personnage et n'a pas à être de la couleur de sa rareté.
+
+Volume à terme, après P0/P1
+
+Huit baddies et 24 looks ; six compagnons et six looks de base ; quatorze presets d'aura ; locomotion
+partagée ; poses signatures ; trois archétypes de sbires ; trois patterns de boss réutilisables ; dix arènes
+dans cinq kits de quartier.
+
+Rig commun par famille, vêtements modulaires, peu de matériaux. Budgets de départ proposés : 6 000 à 10
+000 triangles par suiveur proche et textures 512/1 024 ; ce ne sont pas des limites officielles. Vérifier les
+performances plutôt que multiplier les détails invisibles.
+
+Références du monde réel Créer des crews, noms, logos et bijoux originaux inspirés de la mode et de la
+musique. Ne pas intégrer directement la marque 92i, un logo connu, une célébrité ou sa voix sans vérifier et
+obtenir les droits nécessaires. Une lettre modifiée ne suffit pas à régler une imitation [R18]. Les modèles
+finaux doivent aussi respecter les standards Roblox [R12].
+
+Tenir un registre : assetId, nom, version, auteur, licence, propriétaire et état de validation. Les références
+artistiques sont des directions, pas des autorisations de reproduction.
+
+Grammaire visuelle et livrables
+
+Une identité repose sur silhouette, coiffure signature, trois couleurs, accessoire marquant et aura propre.
+Les transformations font évoluer vêtements, coiffure, maquillage, posture et finitions, sans changer
+l'identité adulte ni accentuer les attributs sexuels. Les briefs doivent fournir face/profil/dos, trois looks,
+palette, attaches, expression neutre et célébration.
+
+Pipeline et animations
+
+Brief → silhouettes → modèle simple → rig → tenue → texture → animation → import Studio → test mobile →
+validation → publication → catalogue. Partager idle, marche, célébration et transition par famille de rig ;
+compléter par les poses et signatures après validation des bases. Tester les animations sous le propriétaire
+réel de l'expérience et en session publiée, pas uniquement dans l'éditeur.
+
+Inventaire complémentaire et nommage
+
+Prévoir 14 portraits, icônes de rareté et de systèmes, environ 11 cosmétiques joueur et 10 icônes de succès
+; atlas et composants UI partagés. Environ quatre systèmes d'effets paramétrés peuvent produire les 14
+auras. Exemples : B06_Nova_Look02, C02_Malik_Base, Aura_Nova_Gold, Anim_C02_Signature.
+
+Règles V4 prioritaires • Compléments V3 intégrés                                           23
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4                                             CONCEPTION · PRODUCTION
+
+21. Interface : entraînement et combat
+
+Origine : V4 p. 22 ; V3 p. 19                     COMBAT : NIVEAU 2 / 10  PARAMÈTRES
+  PUISSANCE : 100                                 CARTE 3D PARTAGÉE       SLOTS
+  BOSS : 250 / 450 PV                                                     BOOK
+                                                  JOUEUR                  CREW
+  SLOT 1 · NOVA · ×2,5                            PRINCIPALE EXPOSÉE      STYLE
+                                                  ATTAQUER 250 DMG
+
+Schéma de hiérarchie : couleurs et positions à tester sur téléphone.
+
+Deux modes visibles
+
+Au repos : puissance actuelle, gain par entraînement et production des compagnons. En combat : HP du
+joueur, HP de la cible, dégâts par clic, compteur de sbires et prochaine attaque. Le bouton devient «
+ATTAQUER » ; aucune ambiguïté avec l'entraînement.
+
+Le HUD affiche le niveau sur 10 et la principale avec son slot. Book, Crew, Style et Drops restent accessibles
+à la consultation ; les mutations interdites pendant le combat sont désactivées avec une explication courte.
+
+Tactile et lisibilité
+
+Grandes cibles tactiles, pas de dépendance au survol, couleurs doublées de symboles, affichage des zones
+dangereuses au-dessus du décor. La sélection d'ennemi ne doit pas consommer une relance ou accepter un
+drop par superposition de fenêtres.
+
+Option d'effets réduits et maintien du clic accessible. Les actions clavier et tactiles utilisent les mêmes
+intentions et limites serveur. Tester la navigation sur téléphone, les contrôles Roblox et les changements de
+résolution [R9].
+
+Le schéma est un plan fonctionnel. Une interface finale doit être validée sur la scène Maya/Malik, avant de
+fabriquer toutes les variantes de fenêtres.
+
+Accessibilité et hiérarchie
+
+Cibles tactiles proposées : 48 pixels minimum ; contraste suffisant, nom/symbole en plus de la couleur,
+navigation clavier et aucune action exclusivement au survol. Tenir compte des contrôles Roblox et des
+découpes d'écran. Tester portrait et paysage ; le paysage était la cible initiale à valider. Le rebirth apparaît
+quand il est pertinent, sans clignotement permanent.
+
+Règles V4 prioritaires • Compléments V3 intégrés                                      24
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4                                                CONCEPTION · PRODUCTION
+
+22. Écrans, confirmations et messages
+
+Origine : V4 p. 23 ; V3 p. 20                     Information indispensable              Action sûre
+  Écran                                                                                  Relancer ce slot ou sélectionner
+  Slots                                           Numéro, temporaire/conservé,           principale
+  Relance                                         personnage, puissance                  Confirmer remplacement hors combat
+  Drops
+  Acceptation                                     Ancien personnage, chance par          Accepter 1 / Refuser 1
+  Book                                            identité, garantie
+  Rebirth                                                                                Confirmation avec révision du slot
+  Classement                                      Quantité par identité, aucun bonus en
+                                                  attente                                Exposer ou choisir un slot possédé
+
+                                                  Temporaire exact et personnage         Confirmer après victoire du niveau 10
+                                                  remplacé
+                                                                                         Onglet baddies / compagnons
+                                                  Découvert, possédé, exposé ou
+                                                  seulement rencontré
+
+                                                  Resets, slot promu, tickets et bonus
+                                                  gagnés
+
+                                                  Découvertes uniques et lot classé
+
+Textes de référence Slot conservé : « Survit au rebirth. Une relance remplace quand même sa baddie. »
+Drop en attente : « Tu as obtenu un drop de Nova. Accepte-le dans ton slot temporaire pour l'utiliser. »
+Exposition : « Apparence uniquement. Aucun multiplicateur. »
+Mort : « Retour au lobby. Ta puissance et tes baddies restent ; les portes se referment. »
+Boss : « 10 % de chance à chaque victoire. Aucun drop garanti. »
+Pendant une écriture durable, afficher « Enregistrement en cours » et désactiver une seconde action
+concurrente. Une fermeture du panneau n'annule pas un drop déjà enregistré. Une erreur de profil
+n'entraîne jamais un profil neuf automatique. Les messages d'erreur indiquent si l'action est refusée, en
+attente ou déjà terminée.
+
+Écrans complémentaires
+
+Écran                                             Contenu / action
+
+Crew                                              Taux/s, niveau, copies et places actives ; équiper ou améliorer sans doublon
+                                                  actif.
+
+Style                                             Avatar, looks, auras, titre et cadre ; prévisualiser et sélectionner seulement les
+                                                  déblocages.
+
+Paramètres                                        Son, effets, flashs, suiveurs et maintien du clic ; choix sauvegardés.
+
+Confirmation de perte : « Nova sera remplacée dans le slot 1. Elle restera exposable dans ton Book. » Au
+rebirth 2 : « Le slot 2 reste temporaire : son personnage sera effacé. Il devient conservé au rebirth 3. » En
+cas d'échec ambigu, conserver le même identifiant de requête et resynchroniser avant une nouvelle action ;
+ne pas montrer un résultat provisoire puis un autre. Profil indisponible : chargement, nouvelle tentative ou
+
+Règles V4 prioritaires • Compléments V3 intégrés                                                                                25
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4                            CONCEPTION · PRODUCTION
+
+ sortie propre, jamais remplacement automatique par un profil vide.
+
+Règles V4 prioritaires • Compléments V3 intégrés                     26
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4         CONCEPTION · PRODUCTION
+
+23. Architecture et responsabilités
+
+Origine : V4 p. 24 ; V3 p. 21
+
+ReplicatedStorage
+       Shared/Types, PublicCatalog, UIConstants
+       Remotes/Intent, State, Result
+       Visuals/Characters, Enemies, Auras
+
+   ServerScriptService
+       Bootstrap.server.luau
+       Services/Profile, Mutations, Training, Combat
+       Services/Rolls, BossRewards, PendingDrops, Rebirth
+       Services/Crew, Book, Ranking, Wardrobe, Badges
+       Config/Balance, Encounters, Catalog, Events
+       Tests/Rules, Migrations, Faults
+
+   StarterPlayer/StarterPlayerScripts
+       Controllers/Input, HUD, Combat, Slots, Drops
+       Controllers/Book, Crew, Style, Followers, FX, Audio
+
+   Workspace
+       Lobby, LinearMap/Levels, ArenaBounds, Spawns
+
+Codeur A : autorité serveur, profils, puissance, combats logiques, gains, slots, drops et reprise après panne.
+Codeur B : HUD, scène Maya/Malik, carte, animations et intégration Blender. Relecture croisée du réseau et
+des mutations de profil.
+
+Les services exposent des fonctions d'intention courtes et reçoivent leurs dépendances à l'initialisation.
+Garder formules, table de tirage et transitions de slots dans des modules purs testables. Le rendu local ne
+décide ni d'une victoire, ni d'un ticket, ni de la possession.
+
+Les paramètres d'équilibrage restent dans un fichier séparé, versionné, chargé au démarrage. Un client
+peut lire les probabilités publiques mais ne les impose jamais au serveur. Une modification artistique ne doit
+pas réécrire la logique des slots.
+
+Choisir Studio versionné ou un flux fichiers/Git documenté ; éviter deux sources concurrentes de vérité. Les
+outils de collaboration Studio et les permissions doivent correspondre aux membres réels de l'équipe [R13].
+
+Compléments d’organisation Studio
+
+ServerStorage
+   PrivateTemplates, TestFixtures
+
+StarterGui
+   MainGui
+
+Shared / client
+   StateStore, UIConstants
+
+Services additionnels selon les besoins
+   Missions, Rewards, Zones, BadgeServiceAdapter
+
+Les ModuleScripts peuvent exposer Init(dependencies), puis Start(). Éviter script géant et dépendances
+circulaires. Un module dans ReplicatedStorage ne constitue pas un secret. Configurer qui modifie quoi et
+procéder à une relecture croisée des données et remotes.
+
+Règles V4 prioritaires • Compléments V3 intégrés  27
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4         CONCEPTION · PRODUCTION
+
+24. Données persistantes et états temporaires
+
+Origine : V4 p. 25 ; V3 p. 22
+
+profile = {
+       schemaVersion = 4, revision = 0,
+       power = 1, rebirths = 0, activeSlotId = "s1",
+       slots = {s1 = {order = 1, conserved = false,
+          baddieId = "maya", slotRevision = 0, rollLocked = false}},
+       run = {id = 1, attempt = 1, clearedLevels = {},
+          firstClearRewards = {}},
+       tickets = {baddie = 10, crew = 0},
+       rolls = {baddie = 0, crew = 0},
+       trainCounters = {baddie = 0, crew = 0},
+       pendingDrops = {}, -- baddieId -> quantity
+       pendingRevision = 0,
+       discoveredBaddies = {maya = true}, encounteredBosses = {},
+       masteryXP = {maya = 0}, crew = {}, equippedCrew = {},
+       displayBaddies = {}, wardrobe = {}, titles = {},
+       tutorial = {}, collectionAwards = {}, eventClaims = {},
+       settings = {}, pendingBadges = {}, lastMutation = nil
+
+   }
+
+Session serveur uniquement : HP joueur, ennemis et HP, cible, télégraphies, cadence, encounterId,
+attackSequence et statut de combat. Ne pas réanimer un boss blessé depuis une sauvegarde après
+reconnexion.
+
+Le profil persiste les portes terminées pour une reconnexion ; la mort les efface et incrémente attempt. Le
+rebirth incrémente run.id, remet la puissance à 1 et réinitialise les récompenses de premier passage. Les
+drops ne sont pas effacés.
+
+Invariants : la principale est possédée ; une exposition est découverte ; aucune quantité négative ;
+maximum deux compagnons actifs distincts ; un temporaire ; aucun transfert inter-slot. Un drop non
+accepté ne doit pas figurer parmi les découvertes uniquement à cause de ce drop.
+
+Migration explicite depuis toute version réellement utilisée. La V3 était un document, pas une base de
+production observée : ne pas inventer une migration de vrais joueurs. Tester les conversions de profils de
+test et conserver des fixtures par version.
+
+Invariants et synchronisation complémentaires
+
+Tous les IDs doivent exister dans le catalogue ; toute baddie possédée est découverte. Borner tickets,
+copies et niveaux ; refuser NaN et infini. Les looks exposés sont débloqués. La capacité de conservés
+correspond aux paliers obtenus. Augmenter la révision après chaque changement publié ; le client ignore
+les états plus anciens et demande un snapshot si des mises à jour manquent. Un ID retiré devient une
+archive ou une substitution documentée, sans suppression silencieuse des découvertes. Tester une fonction
+pure par version et conserver des fixtures anciennes.
+
+Règles V4 prioritaires • Compléments V3 intégrés  28
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4                                               CONCEPTION · PRODUCTION
+
+25. Contrats réseau et combat sécurisé
+
+Origine : V4 p. 26 ; V3 p. 23                     Entrée cliente                        Contrôle serveur
+  Intention                                       sequence
+  Train                                           encounterId, targetId, sequence       Hors combat, profil prêt, cadence
+  Attack
+                                                  levelId                               Cible propre, vivante, portée, rythme
+  StartWave                                                                             et phase
+                                                  requestId, slotId, slotRevision
+  Roll                                                                                  Niveau accessible, pas de rencontre
+                                                  requestId, baddieId, slotRevision,    active
+  AcceptDrop                                      pendingRevision
+                                                  requestId, baddieId, pendingRevision  Hors combat, ticket, verrou et
+  RefuseDrop                                      slotId                                confirmation
+  SetActive                                       requestId, expectedRunId
+  Rebirth                                                                               Quantité > 0, temporaire exact, hors
+                                                                                        combat
+
+                                                                                        Quantité > 0 ; retirer une unité
+
+                                                                                        Slot rempli, hors combat
+
+                                                                                        Niveau 10 terminé, mutation libre
+
+Jamais de montant de dégâts, taux de drop ou victoire envoyés comme vérité par le client. Le serveur
+recalcule depuis le profil et les paramètres. Valider les remotes selon contexte, types et limites [R1].
+
+Ennemis individuels
+
+Le serveur conserve les positions logiques et les phases de ses ennemis. Le client affiche leurs modèles.
+Pour chaque attaque : vérifier distance à la cible et règles de rencontre ; pour chaque danger : utiliser un
+instant et une forme serveur. Prévoir une tolérance réseau bornée, pas une confiance dans « j'ai esquivé ».
+
+Les positions de l'avatar peuvent être manipulées : une simple distance ne suffit pas. Détecter les
+déplacements incompatibles avec l'arène et invalider la rencontre si nécessaire ; ne pas attribuer de
+récompense à une session dont la progression est impossible. Tenir compte des règles Roblox de propriété
+réseau [R20].
+
+Les limites initiales, proposées à 8 actions/s manuelles, sont séparées par action et ne garantissent pas
+l'absence de bots. Éviter les bannissements automatiques sur un seul pic de latence.
+
+Règles V4 prioritaires • Compléments V3 intégrés                                                                               29
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4                                                                CONCEPTION · PRODUCTION
+
+Intentions complémentaires
+
+Intention                                         Validation
+
+UpgradeMastery / progression XP                   La V4 remplace l’achat Glow : XP et niveau dérivés des victoires serveur, pas
+                                                  de coût fourni par le client.
+
+EquipCrew : liste d’IDs                           Possession, unicité, deux actifs maximum.
+
+SetDisplay : liste d’IDs                          Découverte, trois places, unicité et looks autorisés.
+
+ClaimMission : missionId                          Condition serveur et récompense non encore reçue.
+
+SetStyle : catégorie, cosmeticId                  ID connu, contenu débloqué, mutation hors combat.
+
+requestId est une clé de reprise, pas une permission. Les confirmations utilisent la révision du slot ou l'ID du
+parcours : les clics ne doivent pas les invalider en changeant seulement la révision globale. Borner chaînes,
+listes et fréquence. Propositions : une relance à la fois, délai minimal de 2 secondes et attente de
+sauvegarde ; changements de style à 4/s. Le profil utile n'est envoyé qu'au propriétaire ; les autres ne
+reçoivent que les IDs visuels, le titre et la configuration d'équipe, pas les tickets ni historiques de mutations
+ou verrous.
+
+Règles V4 prioritaires • Compléments V3 intégrés                                                                                 30
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4         CONCEPTION · PRODUCTION
+
+26. Transactions : victoire, drop et rebirth
+
+Origine : V4 p. 27 ; V3 p. 24
+
+Victoire d'un boss
+
+Vérifier rencontre et boss mort sur le serveur. Marquer la rencontre en cours de finalisation : plus
+d'attaques. Tirer UNE FOIS avec 0,10 de probabilité, hors callback de stockage. Préparer une copie du profil
+: porte, récompenses, rencontre traitée. Si succès : pendingDrops[bossBaddieId] += 1 ; pendingRevision
++= 1. Enregistrer la transaction, puis afficher victoire et drop éventuel.
+
+La reprise de la même victoire réutilise le même encounterId et résultat. Aucune seconde tentative de
+hasard en réessayant une écriture. Les mutations d'un profil sont sérialisées ; conserver un reçu durable de
+la mutation récente pour résoudre une erreur ambiguë.
+
+Accepter un drop
+
+Hors combat : vérifier quantité et révisions ; déduire exactement une unité ; remplacer uniquement
+l'identité du temporaire ; incrémenter sa révision ; inscrire la découverte ; sauvegarder ensemble. Le joueur
+voit le résultat seulement après confirmation de l'écriture. Refuser retire seulement une unité et ne
+découvre rien.
+
+Rebirth Vérifier fin de parcours ; promouvoir le temporaire si nouveau compte de rebirth = 1, 3 ou 6 ;
+préserver son contenu ; vider les autres temporaires ; ajouter un temporaire si promotion ; appliquer les
+récompenses une seule fois ; remettre puissance/parcours à zéro ; conserver pendingDrops ; choisir une
+principale valide ; sauvegarder.
+
+Mort
+
+Finir la rencontre sans récompense, invalider son ID, fermer les portes, préserver puissance/slots/drops,
+respawn lobby. Une course entre dernier coup et mort doit être arbitrée dans la boucle serveur : un boss
+déjà finalisé donne sa récompense une fois ; sinon aucune victoire. Tester explicitement ce cas.
+
+Transaction de relance
+
+1. Verrouiller la file de mutations ; renvoyer le reçu si requestId est déjà traité. 2. Vérifier combat, révision,
+ticket, verrou et confirmation. 3. Tirer une seule fois côté serveur, hors callback UpdateAsync. 4. Copier le
+profil, déduire un ticket, incrémenter le compteur, remplacer l'identité du slot et incrémenter slotRevision.
+5. Inscrire la découverte et initialiser sa maîtrise XP si absente. 6. Écrire le reçu durable
+requestId/type/résultat/révision ; sauvegarder sous contrôle du verrou de session. 7. Adopter la copie et
+publier état/résultat seulement après confirmation. Une erreur ambiguë réutilise le même candidat, sans
+second tirage.
+
+Séparer règle et animation : le service gère tickets, mutations et résultat ; le contrôleur gère roulette, sons
+et aperçu. Aucun effet visuel ne change la puissance.
+
+Règles V4 prioritaires • Compléments V3 intégrés  31
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4         CONCEPTION · PRODUCTION
+
+27. Sauvegarde et récupération après panne
+
+Origine : V4 p. 28
+
+Roblox DataStoreService sert aux données persistantes. UpdateAsync permet une mise à jour conditionnelle
+et son callback ne doit pas attendre ; les appels doivent gérer les erreurs. Les tests Studio doivent utiliser
+un environnement distinct pour ne pas écraser des profils réels [R2].
+
+Un verrou de session évite que deux serveurs travaillent sur deux copies concurrentes du même profil.
+Roblox décrit ce problème et un mécanisme de verrou acquis atomiquement [R3]. UpdateAsync seul, sans
+protocole de session, ne suffit pas à garantir ce besoin.
+
+Proposition de protocole du projet
+
+Un profil par clé utilisateur ; propriétaire de verrou identifié par session, bail expirant et numéro de
+génération. Renouveler le bail avant échéance ; si sa propriété est perdue, arrêter les mutations. Toute
+écriture vérifie le propriétaire et la génération. Une nouvelle session attend la libération ou l'expiration
+documentée ; elle ne force pas arbitrairement le verrou.
+
+Utiliser un adaptateur de profils éprouvé ou implémenter ce protocole avec tests de panne. Ne pas
+mélanger deux systèmes de sauvegarde sur la même clé.
+
+Deux vitesses d'écriture Les gains d’entraînement et gains passifs restent en mémoire, avec autosave
+proposé toutes les 60 secondes, décalé entre joueurs. Les relances, drops et décisions de récupération,
+victoires de boss, promotions de slots et récompenses uniques passent par une écriture prioritaire avant
+confirmation. Une file unique sérialise ces opérations et les autosaves.
+
+Pendant une mutation durable, mettre les gains entrants en file ou suspendre brièvement leur validation ;
+ne pas adopter une copie qui écrase des clics intervenus pendant l'écriture. Aucune écriture DataStore à
+chaque clic.
+
+Pannes Chargement impossible : pas de profil de remplacement. Écriture incertaine : bloquer l'opération
+suivante, résoudre la même mutation, puis resynchroniser. Départ et fermeture : sauvegarde finale dans la
+limite du temps disponible. Une panne peut perdre les gains ordinaires depuis le dernier autosave ; ne pas
+promettre une perte nulle.
+
+Prévoir historique de versions, outil de restauration réservé aux responsables et test de restauration avant
+lancement. Les budgets d'appels et le throttling doivent être surveillés selon les limites officielles en vigueur
+[R14].
+
+Règles V4 prioritaires • Compléments V3 intégrés  32
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4         CONCEPTION · PRODUCTION
+
+28. Performance, art et combats personnels
+
+Origine : V4 p. 29 ; V3 p. 27
+
+Proposition de rendu
+
+Afficher localement les suiveurs à partir des IDs validés ; pas de simulation physique serveur pour un
+personnage d'exposition. Une principale + trois exposées + deux compagnons au maximum logique.
+Fusionner l'affichage si la principale est aussi exposée.
+
+Réduire les suiveurs et auras des autres joueurs selon distance. Proposition initiale : 20 rigs animés visibles,
+en réservant la priorité aux ennemis du combat personnel et à l'équipe locale. Ne pas masquer un danger
+actif pour respecter un budget esthétique.
+
+Ennemis et collisions
+
+Un ou deux sbires rendus simultanément, puis un boss. Les avatars des joueurs ne se bloquent pas
+mutuellement dans les arènes. Les murs individuels utilisent une présentation locale et un contrôle d'accès
+serveur ; leur absence visuelle ne vaut pas autorisation.
+
+La carte linéaire peut utiliser le streaming ; les scripts doivent tolérer des objets de
+quartier absents
+localement. ReplicatedStorage n'est pas automatiquement déchargé avec Workspace [R4]. Le
+catalogue réduit facilite la première version, mais les assets doivent rester mesurés.
+
+Objectifs de test 30 images/s minimum visées sur téléphone choisi ; 60 sur ordinateur de référence ;
+absence d'accumulation de mémoire après 30 minutes ; télégraphies lisibles en qualité basse ; aucun
+résultat de combat dépendant des images/s.
+
+Tester avec plusieurs joueurs combattant à des niveaux différents et des équipes exposées. Réduire
+particules, ombres et complexité avant de dégrader les informations de combat. Les outils Roblox de
+profilage permettent de trouver le vrai coût ; ces budgets restent des hypothèses jusqu'aux mesures [R15].
+
+Formation et nettoyage des suiveurs
+
+Positions interpolées, formation stable et correction discrète d'un suiveur trop éloigné ; modèles légers,
+collisions désactivées et ombres d'effets réduites. Éviter un Humanoid complet ou un trajet serveur par
+figurant sans interaction de gameplay. Afficher d'abord la principale et un représentant des équipes
+voisines, puis simplifier/masquer à distance. La réduction est déterministe et ne change aucun gain.
+Nettoyer modèles, connexions et animations lorsqu'un joueur part. Fournir une réponse visuelle immédiate
+au clic, tandis que le chiffre reste confirmé par le serveur.
+
+Règles V4 prioritaires • Compléments V3 intégrés  33
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4         CONCEPTION · PRODUCTION
+
+29. Équilibrage : fichier séparé et vérifications
+
+Origine : V4 p. 30 ; V3 p. 28, adapté aux règles V4
+
+La V4 mentionne un fichier séparé baddie_clicker_balance_v4.json, non joint aux deux PDF reçus. Les
+paramètres présents dans ce dossier sont conservés ; le fichier externe n'a pas été inspecté. La
+configuration doit être adaptée en Luau, et ne constitue pas du code prêt à exécuter.
+
+Exemples utiles Sbire de niveau 1 à 50 HP : puissance 1 et Maya ×1 demandent 50 attaques ; puissance 10
+et Maya demandent 5 attaques ; puissance 10 et Vega ×4 demandent 2 attaques. Un boss à 250 HP
+demande 25 attaques à 10 dégâts/clic. Les durées réelles ajoutent esquives et cadence.
+
+Avec 100 de puissance, Nova ×2,5 et maîtrise 10 : 375 dégâts/clic. Le boss 1 tombe en un clic. Après mort,
+cette puissance reste ; après rebirth, elle repart à 1, mais Nova et sa maîtrise peuvent rester si son slot est
+conservé.
+
+Hasard : ne pas mélanger les systèmes
+
+Boss : 1 - 0,9^n donne la chance d'au moins un drop après n victoires. Relances : la garantie change la
+distribution à chaque 50e ouverture. Compagnons : autre compteur, à chaque 20e. Accepter un drop ne
+compte comme aucune ouverture.
+
+Mesures à recueillir
+
+Temps jusqu'au premier combat et premier boss ; morts par niveau ; puissance à la mort ; reprises après
+retour lobby ; temps du parcours ; décisions sur les drops ; nombre de relances jusqu'à découverte ;
+compréhension de la conservation. Observer des joueurs sans leur expliquer les menus.
+
+Éviter de ralentir le parcours uniquement pour prolonger la session. Si le joueur clique longtemps sans
+décision, ajuster entraînement, HP ou rythme d'attaque. Si l'entraînement du DJ rend l'attente passive
+dominante, revoir les taux et récompenses de combat.
+
+Les événements analytiques publiés partent du serveur et doivent être agrégés, avec noms stables et sans
+données personnelles inutiles [R7].
+
+Indicateurs complémentaires
+
+Mesurer aussi premier look, première relance, premier compagnon, accès au deuxième quartier, premier
+rebirth et abandon après perte d'une baddie. À 3 actions d'entraînement/s, 250 actions prennent environ 83
+secondes. Le plafond de 350 relances représenterait environ huit heures d'actions si tous les tickets
+venaient seulement de ce compteur ; les tickets initiaux, premiers passages et rebirths réduisent ce total.
+Ce n'est pas une durée de complétion garantie, puisque les combats et déplacements interrompent
+l'entraînement manuel.
+
+Règles V4 prioritaires • Compléments V3 intégrés  34
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4                                                                CONCEPTION · PRODUCTION
+
+30. Tests avant de produire tout le catalogue
+
+Origine : V4 p. 31 ; V3 p. 29                     Résultat attendu
+  Test
+
+Clic hors combat puis en combat                   Entraîne puis attaque ; jamais les deux
+
+Boss vaincu sans drop                             Mur ouvert, progression possible
+
+Deux requêtes de victoire                         Une récompense, un tirage au maximum
+
+20 échecs boss                                    Toujours 10 % au suivant ; aucune garantie
+
+Relance 50 / coffre compagnon 20                  Résultat manquant si collection incomplète
+
+Drop non accepté                                  Aucun multiplicateur, exposition ou score Book ajouté
+
+Mort, reconnexion, rebirth avec drop              Drop toujours en attente
+
+Accepter une unité d'une pile                     Temporaire remplacé, quantité diminuée d'une
+
+Accepter dans un conservé                         Impossible
+
+Mort au niveau 8                                  Puissance gardée, toutes les portes fermées
+
+Rebirth 3 avec Vega dans s2                       s2 promu avec Vega ; aucune migration inter-slot
+
+Rebirth avec principale temporaire effacée Repli vers slot rempli ou Maya de secours
+
+Relance d'un conservé                             Ancienne baddie remplacée, Book intact
+
+Baddie exposée mais non possédée                  Aucun effet sur les dégâts
+
+Tableau avec égalité et doublons                  Rang partagé ; doublons non comptés
+
+Arrêt serveur pendant récupération                Pas de double consommation ni double personnage
+
+Compléter par tests tactiles, latence, deux puis huit clients, caméra, effets réduits, modèles sans texture
+chargée et erreur DataStore. Les outils de simulation Studio ne remplacent pas un téléphone réel [R10].
+
+Critères P0/P1 : Maya lisible à trois étapes ; DJ produit correctement ; sortie trouvée ; boucle d'un boss
+complète ; mort et reprise comprises ; conservation et sauvegarde vérifiées. Pas besoin du catalogue
+complet pour tester ces règles avec des IDs de test isolés.
+
+Le bêta-testeur fournit version, étapes, attendu, obtenu et capture. Inviter ensuite quelques nouveaux
+joueurs de test pour vérifier la compréhension sans coaching.
+
+Règles V4 prioritaires • Compléments V3 intégrés                                                             35
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4                                                            CONCEPTION · PRODUCTION
+
+Régression et pannes complémentaires
+
+Test                                              Résultat attendu
+
+Même requestId de relance répété                  Même résultat ; un seul ticket consommé.
+
+Résultat Mythic fourni par client                 Ignoré ; tirage serveur.
+
+Rebirth 1 avec Nova en s1                         Nova reste en s1 conservé ; s2 temporaire ouvert.
+
+Rebirth 2 avec Vega en s2                         Vega effacée du slot, conservée dans le Book.
+
+Deux slots avec Nova                              Une principale, pas de cumul.
+
+Doublon compagnon                                 Copies correctes ; impossible d’équiper deux identités identiques.
+
+Deux serveurs, même profil                        Une seule session autorisée à écrire.
+
+Mission puis reconnexion                          Récompense attribuée une seule fois.
+
+Migration / restauration                          Slots, découvertes, cosmétiques préservés ; reprise vérifiée.
+
+Compléter par serveur chargé, changement de taille d'écran, 30 minutes de mémoire, et manette si le
+support est annoncé. Les commandes de préparation restent réservées aux responsables et désactivées en
+production. Sortie bêta : aucun bug ouvert de perte/duplication ; parcours et rebirth sans outil admin ; tous
+les contenus annoncés obtenables ; compréhension par de nouveaux joueurs ; budgets appareils atteints et
+restauration répétée avec succès.
+
+Règles V4 prioritaires • Compléments V3 intégrés                                                                      36
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4                                      CONCEPTION · PRODUCTION
+
+31. Feuille de route pour deux codeurs
+
+Origine : V4 p. 32  Codeur A                      Codeur B                     Critère de passage
+  Lot                                                                          Scène cohérente et fluide
+  P0                Puissance, profil minimal, DJ Maya 3 looks, lobby, HUD     Un boss jouable
+  P1                                                                           Aucun cas de
+  P2                Combat, mort, victoire        Arène grise et télégraphies  perte/duplication connu
+                                                                               Parcours complet
+  V1                Slots, drops, rebirth,        Book, confirmations,
+                    reprises                      classement                   Matrice de tests réussie
+  Bêta
+                    Dix rencontres et configs     Cinq quartiers et catalogue
+                                                  validé
+
+                    Sécurité et stockage          Mobile et présentation
+
+Responsable marketing : fiches de référence, scripts courts TikTok, captures, cohérence des visuels,
+calendrier des annonces et suivi des retours. Bêta-testeur : tests de compréhension, pannes, régression et
+performances. Le codeur B est proposé comme intégrateur artistique ; confirmer qui modélise et anime
+réellement dans Blender.
+
+Estimation indicative révisée
+
+P0/P1 : 10 à 18 jours-personne de développement/intégration, plus le temps de création des assets selon
+votre maîtrise des outils. Projet V1 complet : ordre de grandeur 60 à 90 jours-personne de développement,
+hors production artistique complète et imprévus. Les combats ajoutés rendent obsolète la précédente
+estimation de 49 à 74.
+
+Ce ne sont pas des dates garanties. Recalculer après le premier import et le premier combat ; ne pas
+déduire un délai calendaire sans disponibilité hebdomadaire. Une assistance IA n'annule pas les contrôles
+de rig, droits et qualité.
+
+Règle d'organisation : après chaque lot, montrer une version jouable au testeur. Les nouvelles idées vont
+dans un backlog ; seules les corrections nécessaires à la boucle et à sa compréhension entrent pendant
+P0/P1.
+
+Règles V4 prioritaires • Compléments V3 intégrés                                                            37
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4         CONCEPTION · PRODUCTION
+
+32. Mises à jour et rendez-vous du mercredi
+
+Origine : V4 p. 33 ; V3 p. 12
+
+Le mercredi reste un rendez-vous de contenu après la stabilisation de la première version. Il peut apporter
+une baddie, un compagnon, une variante de look ou un événement ; tous ne doivent pas arriver chaque
+semaine.
+
+Premier événement proposé
+
+« Neon Session » : variante de look de Maya ou Jade, pose du DJ, cadre de profil et défi facultatif de combat.
+Aucun besoin d'un corps entièrement nouveau. Le boss normal et ses 10 % ne changent pas sans annonce
+et configuration explicites.
+
+Publication d'un nouveau personnage
+
+Ajouter ID stable, rareté, multiplicateur, looks, aura, portrait, source de découverte, éventuel boss associé
+et tests. La somme des probabilités de relance doit rester 100 %. Vérifier que les garanties utilisent les
+bonnes listes de collection et que les drops en attente d'anciens personnages restent acceptables.
+
+Les compteurs sont globaux dans la configuration V1. Si des coffres d'événement séparés sont créés plus
+tard, définir explicitement leurs compteurs au lieu de réutiliser silencieusement celui du coffre principal.
+
+Dates et récompenses
+
+Dates, configuration et attribution unique : voir les compléments techniques de cette rubrique. Un drop boss
+déjà obtenu ne peut pas expirer à la fin d'un événement : conserver son ID et son contenu jusqu'à
+acceptation ou refus.
+
+Les succès de complétion par lot restent acquis. Le marketing prépare les annonces depuis une version
+jouable validée ; aucune date de drop n'est publiée tant que les assets et les règles ne passent pas les tests.
+
+Missions facultatives et configuration événement
+
+Tutoriel unique et permanent ; défis de parcours facultatifs réinitialisés selon leur règle ; collections et
+exploits permanents. Varier thème ou chemin, pas les règles de possession. Aucun objectif ne demande une
+rareté ou une attente arbitraire. Les validations proviennent d'événements serveur : action acceptée,
+maîtrise obtenue, checkpoint validé.
+
+eventId, contentVersion, startAtUtc, endAtUtc
+missionIds, rewardIds, eligibleCollectionIds
+returnPolicy, enabled
+
+Neon Session : la V3 proposait sept jours d'activité, une variante de Jade, cadre Neon et tickets ; la V4
+élargit le brief à Maya/Jade, pose DJ et défi facultatif. Ces options restent à choisir, pas des récompenses
+cumulées obligatoires. Afficher date/fuseau explicites en heure de Paris et stocker UTC côté serveur ; ne pas
+attribuer depuis l'horloge du téléphone. Enregistrer récompense et clé eventId:missionId ensemble. Une
+récompense de défi acquise avant la fin peut rester réclamable sept jours supplémentaires, selon la
+proposition V3 à valider. Cette fenêtre ne s'applique pas aux drops boss : eux n'expirent pas.
+
+Règles V4 prioritaires • Compléments V3 intégrés  38
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4                                              CONCEPTION · PRODUCTION
+
+33. TikTok : stratégie de présentation
+
+Origine : V4 p. 34
+
+Objectif : montrer le jeu réellement construit et son identité. « X-Field / X-Fight » est interprété ici comme
+Higgsfield, déjà évoqué dans les échanges ; si un autre outil était visé, seule cette partie du pipeline devra
+être remplacée.
+
+Trois familles de vidéos
+
+Format                                            Matière première                     Ce que le spectateur comprend
+
+Transformation Maya                               Captures des trois looks             Identité et progression visuelle
+
+Combat réel                                       Entraînement, sbires, boss et porte  Fonctionnement du jeu
+
+Collection / exposition                           Book et équipe dans le lobby         On peut montrer ses découvertes
+
+Ajouter ponctuellement une cinématique IA de présentation, clairement distincte du gameplay. Le prototype
+Maya/Malik/lobby suffit pour les premiers essais ; ne pas attendre dix zones décorées et ne pas inventer des
+fonctionnalités pour remplir une vidéo.
+
+Livrable de test recommandé
+
+Vidéo verticale 9:16, 15 à 20 secondes, une idée principale, texte court et lisible, musique autorisée.
+Proposer un premier plan fort, une démonstration et une fin montrant le nom du jeu. Les dimensions
+proposées sont un format de travail, pas une exigence technique universelle de TikTok.
+
+Le membre marketing prépare le montage et compare les retours : compréhension du gameplay, rétention
+de la vidéo, questions et visites. Aucun taux de succès ou de viralité n'est garanti.
+
+Ne pas publier automatiquement depuis ce dossier. Validation de l'équipe avant diffusion ; mention d'une
+version en développement si le jeu n'est pas disponible. Un drop montré comme obtenu réellement doit
+provenir d'une capture réelle ou être indiqué comme démonstration.
+
+Règles V4 prioritaires • Compléments V3 intégrés                                                                         39
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4         CONCEPTION · PRODUCTION
+
+34. Higgsfield : pipeline vidéo à partir des
+assets
+
+Origine : V4 p. 35
+
+Higgsfield propose des workflows image-vers-vidéo ; les références et paramètres dépendent du modèle
+choisi [R19]. Le choix du modèle, sa durée et son coût éventuel sont à vérifier au moment de produire. Ce
+dossier ne lance aucune génération.
+
+Entrées à préparer
+
+• Captures propres de Maya face/profil/dos et de ses trois looks.
+
+• Une image du lobby validé avec le cadrage voulu.
+
+• Une référence de Malik et de son aura.
+
+• Palette, noms exacts, durée, format et mouvement de caméra.
+
+• Liste des éléments à préserver et autorisations sur les sons/images.
+
+Procédure
+
+Capturer dans Studio ou rendre dans Blender → choisir un seul plan → fournir les références compatibles
+avec le modèle → générer → comparer au modèle du jeu → éliminer les erreurs → monter avec les
+séquences de gameplay réelles → ajouter les textes au montage.
+
+Exemple de brief d'animation
+
+Plan vertical de présentation de Maya adulte stylisée, basé sur la référence fournie. Conserver son visage,
+son carré bouclé, sa tenue denim/crème/orange et ses accessoires. Mouvement de caméra lent autour du
+podium du lobby, petite pose de salut et aura orange discrète. Pas de nouveau personnage, pas de
+changement de tenue ni de texte généré.
+
+Vérifications avant utilisation
+
+Pas de visage modifié, membre supplémentaire, logo inventé, tenue transformée ou architecture
+trompeuse. Les textes et l'interface ne sont pas confiés à une génération approximative. Si l'identité dérive,
+utiliser la capture réelle plutôt que présenter un autre personnage comme le jeu.
+
+TikTok exige l'étiquetage de certains contenus IA réalistes et encourage la transparence sur les contenus
+générés ou fortement modifiés. Vérifier les options et règles au moment de publier ; annoncer «
+cinématique IA » lorsqu'il ne s'agit pas de gameplay [R21].
+
+Règles V4 prioritaires • Compléments V3 intégrés  40
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4                                               CONCEPTION · PRODUCTION
+
+35. Premier storyboard : Maya, DJ et lobby
+
+Origine : V4 p. 36
+
+Vidéo pilote proposée : 18 secondes
+
+Temps                                             Plan                                  Réalisation
+0-3 s                                             Maya sur le podium, look initial
+                                                                                        Capture réelle ou cinématique
+3-6 s                                             Trois looks, même cadrage             identifiée
+6-9 s                                             Avatar et Malik, puissance qui monte
+9-13 s                                            Sbire puis boss du prototype          Coupes entre modèles réels validés
+
+13-16 s                                           Mur ouvert et départ à pied           Gameplay réel, HUD lisible
+16-18 s                                           Équipe au lobby et nom du jeu
+                                                                                        Gameplay réel ; aucune victoire
+                                                                                        truquée présentée comme réelle
+
+                                                                                        Capture du parcours linéaire
+
+                                                                                        Pose réelle et titre ajouté au montage
+
+Si le combat n'existe pas encore, remplacer cette vidéo par un journal de développement centré sur Maya
+et annoncer clairement le prototype. Ne pas utiliser l'IA pour simuler une mécanique absente comme si elle
+était jouable.
+
+Deux essais suivants
+
+« Ton personnage reste dans le Book » : montrer une relance de test, puis l'ancienne baddie exposée sans
+multiplicateur. Démontrer la distinction en quelques plans.
+
+« Après la mort » : retour au lobby, puissance conservée et premier boss vaincu plus vite. Capturer des
+états vrais et comparables ; mentionner la version de développement.
+
+Organisation des fichiers
+
+marketing/reference/, captures/build-id/, ai-drafts/, approved/, exports/. Garder prompt, outil/modèle,
+source, date, musique et statut de validation avec chaque clip. Un montage approuvé ne remplace pas les
+captures originales.
+
+Le responsable marketing valide le récit et les droits ; le codeur client valide la fidélité des personnages ; le
+bêta-testeur vérifie que les actions montrées existent dans la version annoncée.
+
+Règles V4 prioritaires • Compléments V3 intégrés                                                                   41
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4         CONCEPTION · PRODUCTION
+
+36. Publication et critères de livraison
+
+Origine : V4 p. 37 ; V3 p. 31
+
+Avant diffusion du jeu
+
+Parcours complet sur téléphone et ordinateur, classement cohérent, aucun cas connu de perte ou
+duplication, sauvegarde restaurable, options d'effets fonctionnelles, assets et sons autorisés. Vérifier les
+conditions de publication et le questionnaire de maturité dans le Creator Dashboard au moment de sortir
+[R11].
+
+Développement, test et production utilisent des profils et configurations séparés. Les outils de test de drop
+garanti restent réservés à l'environnement de test et ne modifient pas secrètement le taux public de 10 %.
+
+Préparer la maintenance Flags serveur pour désactiver temporairement relances, acceptations de drops ou
+rebirth si un bug critique apparaît. Ne jamais résoudre un incident en supprimant les drops en attente.
+Journaliser les mutations importantes sans données personnelles inutiles.
+
+Conserver versions du projet, licences d'assets, scripts de migration et procédure de retour arrière. Une
+ancienne version du code ne doit pas écrire un schéma de profil plus ancien sur des données récentes.
+
+Livrables attendus de l'équipe
+
+Projet Studio jouable ; sources Luau versionnées ; Maya/Malik et références d'assets ; configuration
+d'équilibrage ; tables de boss et relances ; tests et rapport bêta ; manuel de restauration ; captures et vidéo
+pilote approuvée.
+
+Réussite P0 : une scène cohérente et testable, pas tout le jeu. Réussite V1 : dix niveaux, morts/rebirths
+fiables, collection et drops fonctionnels. Réussite de présentation : une vidéo qui montre fidèlement cette
+expérience.
+
+Les chiffres peuvent évoluer sans refaire le dossier. Un changement de règle structurelle, comme déplacer
+une baddie entre slots ou garantir un boss, exige au contraire une décision écrite et des tests adaptés.
+
+Exploitation et paquet de livraison
+
+Vérifier propriétaire de l'expérience, accès des membres, vrais IDs de badges/assets, état de modération,
+droits des sons, description et captures réelles. Ne jamais placer un secret dans le client ou un document
+partagé. Publier d'abord en accès de test, terminer un parcours avec deux comptes, vérifier badges et
+stockage, puis élargir. Suivre erreurs de profil, échecs de mutation et durée des sauvegardes ; désigner les
+destinataires d'alertes et responsables de restauration. Contrôler et journaliser les outils admin côté
+serveur.
+
+Compléter les livrables V4 avec inventaire des assets/licences/propriétaires, configurations
+missions/zones/événements, tests automatisés et rapport manuel, procédures de
+sauvegarde/migration/restauration/retour arrière, liste des IDs publiés, notes de version et registre des
+décisions ouvertes.
+
+Règles V4 prioritaires • Compléments V3 intégrés  42
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4         CONCEPTION · PRODUCTION
+
+37. Fonctions pures Luau et tests de
+configuration
+
+Origine : V3 p. 25 ; adaptation explicite aux formules V4 p. 13
+
+Base pédagogique issue de la V3, conservée pour le tirage pondéré et le facteur d'entraînement commun.
+L'ancienne fonction clickGain n'est pas réutilisée : elle correspondait à l'économie Glow, remplacée par les
+formules de puissance/dégâts de la V4.
+
+--!strict
+type Entry = {id: string, weight: number}
+
+local function pick(entries: {Entry}, rng: Random): string
+       local total = 0
+       for _, entry in entries do
+              assert(entry.weight > 0 and entry.weight < math.huge)
+              total += entry.weight
+       end
+       assert(total > 0 and total < math.huge)
+       local target = rng:NextNumber() * total
+       local cumulative = 0
+       for _, entry in entries do
+              cumulative += entry.weight
+              if target < cumulative then
+                     return entry.id
+              end
+       end
+       return entries[#entries].id
+
+end
+
+local function rebirthFactor(count: number): number
+       assert(count >= 0)
+       return 1 + 0.10 * math.min(count, 20)
+
+end
+
+return {pick = pick, rebirthFactor = rebirthFactor}
+
+Tests : catalogue non vide, poids positifs et finis, IDs uniques, total des chances 100 %, résultats
+reproductibles pour une graine de test. Ne jamais accepter la graine de production depuis le client. La
+garantie construit la liste triée des IDs manquants et tire uniformément dedans ; tester les rangs 50/20 et le
+retour à la table normale lorsque la liste est vide. Pour la V4 : Maya à puissance 1 et maîtrise 0 = 1 dégât ;
+Vega à puissance 1 et maîtrise 10 = 6 dégâts ; entraînement au rebirth 20 = facteur 3. Le rebirth ne
+multiplie pas directement les dégâts une seconde fois.
+
+Règles V4 prioritaires • Compléments V3 intégrés  43
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4                                                             CONCEPTION · PRODUCTION
+
+38. Arbitrages de fusion : anciennes règles
+remplacées
+
+Origine : Comparaison V3 p. 3–8, 11, 13, 17, 25, 28, 30, 32 ; V4 p. 1–2, 11–17, 20, 32
+
+Cette rubrique conserve la trace des différences entre documents, sans créer un second règlement jouable.
+Tous les éléments ci-dessous sont historiques ; la colonne V4 est la référence active.
+
+Sujet                                             V3 : règle ancienne                      V4 : règle retenue
+Boucle
+Parcours                                          Cliquer pour gagner du Glow ; combat     Entraîner hors combat, attaquer en
+                                                  hors périmètre.                          combat.
+Rebirth
+Maîtrise                                          5 zones ; accès à 250 / 1 500 / 5 000 /  10 niveaux dans 5 quartiers ; victoire
+Formule active                                    14 000 Glow gagnés et mission            boss ouvre le mur, missions
+                                                  précédente.                              facultatives.
+Tickets de missions
+                                                  5 missions et runEarnedGlow ≥ 25 000. Niveau 10 terminé, choix volontaire ;
+Compagnon tutoriel                                                                                                 puissance remise à 1.
+Rareté intermédiaire
+Garanties                                         Achat : 25 × (niveau + 1)² Glow ;        XP de victoire : +1 sbire / +5 boss ;
+                                                  améliorable si possédée.                 seuil 10 × L².
+Feuille de route
+                                                  Gain/clic = multiplicateur × maîtrise ×  Dégâts = puissance × multiplicateur ×
+                                                  facteur rebirth.                         maîtrise ; bonus rebirth sur
+                                                                                           entraînement seulement.
+
+                                                  Chaque mission de zone : 2 baddie + 1    Premier passage de niveau : 1 baddie ;
+                                                  compagnon.                               rebirth : proposition 5 baddie + 1
+                                                                                           compagnon.
+
+                                                  Enzo.                                    Malik DJ.
+
+                                                  Rare.                                    Silver (mêmes identités Jade, Iris,
+                                                                                           Rafael).
+
+                                                  50 baddies / 20 compagnons proposés,     Fréquences confirmées ; tirage
+                                                  à valider.                               uniforme proposé. Boss 10 %, aucune
+                                                                                           garantie.
+
+                                                  49 à 74 jours-personne, hors             60 à 90 pour V1 ; P0/P1 10 à 18, hors
+                                                  art/imprévus.                            art/imprévus.
+
+Audit Glow archivé
+
+La V3 évaluait 25 000 Glow à 3 clics/s, sans compagnons, missions, déplacement ni améliorations : Maya ×1
+≈ 139 min ; Nova ×2,5 ≈ 56 min ; Vega ×4 ≈ 35 min ; Vega maîtrise 10/rebirth 20, gain 18/clic ≈ 7,7 min.
+Ces chiffres expliquaient le risque de monotonie ou de parcours trop court ; ils ne s'appliquent pas à la V4.
+Le reset Glow et l'ancien runEarnedGlow ne doivent pas être réintroduits dans le schéma V4.
+
+La V3 proposait Maya, Nova et Enzo comme premiers modèles de référence. La V4 réduit la production
+immédiate à Maya trois looks, Malik DJ et lobby. Les autres briefs restent conservés dans le catalogue futur.
+Les titres/succès anciens « Premier Glow », « Nouvelle découverte » et « Tour de la ville » sont remplacés
+par les conditions V4 d'entraînement, premier boss et niveau 10. Les règles inchangées — aucun transfert,
+Book permanent, slots 1/3/6 et exposition sans bonus — ne sont pas répétées ici.
+
+Règles V4 prioritaires • Compléments V3 intégrés                                                                                          44
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4         CONCEPTION · PRODUCTION
+
+39. Paramètres ouverts et références
+conservées
+
+Origine : V3 p. 32 ; V4 p. 38
+
+Ce qui reste à régler par test
+
+HP, dégâts ennemis, portée, cadence, récompenses de puissance, XP de maîtrise, quantité de tickets de
+rebirth et taux des relances hors garantie. La décision structurelle des boss à 10 % sans garantie est
+confirmée, pas un réglage à changer silencieusement.
+
+Confirmer aussi responsable artistique, outils réellement connectés, appareils cibles et temps disponible. Le
+catalogue futur est un brief ; le seul engagement de production immédiat est Maya, Malik et un morceau du
+lobby, puis une arène test.
+
+Références déjà présentes dans les PDF
+
+Les liens ci-dessous sont repris des annotations des documents sources, qui indiquent une consultation le
+14 octobre 2026. Ils n'ont pas été revérifiés dans cette opération de fusion. Les numéros R1 à R21 des
+rubriques renvoient à cette liste ; les personnages, règles et estimations restent des éléments de
+conception du projet.
+
+R1 — Sécurité client-serveur
+https://create.roblox.com/docs/scripting/security/client-server-boundary
+R2 — Data stores
+https://create.roblox.com/docs/cloud-services/data-stores
+R3 — Données joueur et verrouillage de session
+https://create.roblox.com/docs/cloud-services/data-stores/player-data-purchasing
+R4 — Streaming des instances
+https://create.roblox.com/docs/workspace/streaming
+R5 — Apparence des personnages
+https://create.roblox.com/docs/characters/appearance
+R6 — Badges Roblox
+https://create.roblox.com/docs/production/publishing/badges
+R7 — Événements analytiques
+https://create.roblox.com/docs/production/analytics/custom-events
+R8 — Modèles et assets 3D
+https://create.roblox.com/docs/art/modeling
+R9 — Multiplateforme
+https://create.roblox.com/docs/projects/cross-platform
+R10 — Tests Studio
+https://create.roblox.com/docs/studio/testing-modes
+R11 — Publication
+https://create.roblox.com/docs/production/publishing/publish-games-and-places
+R12 — Standards Roblox
+https://about.roblox.com/community-standards
+R13 — Collaboration Studio
+https://create.roblox.com/docs/projects/collaboration
+R14 — Limites et erreurs DataStore
+https://create.roblox.com/docs/cloud-services/data-stores/error-codes-and-limits
+R15 — Optimisation des performances
+https://create.roblox.com/docs/performance-optimization/improve
+R16 — Templates de personnages
+https://create.roblox.com/docs/art/characters/creating
+
+Règles V4 prioritaires • Compléments V3 intégrés  45
+BADDIE CLICKER / DOSSIER UNIFIÉ / V3 + V4                                           CONCEPTION · PRODUCTION
+
+  R17 — Blender pour Roblox
+  https://create.roblox.com/docs/art/blender
+  R18 — INPI : contrefaçon
+  https://www.inpi.fr/nos-solutions/defendre-ses-droits/quest-ce-quune-contrefacon
+  R19 — Higgsfield image-vers-vidéo
+  https://higgsfield.ai/image-to-video-ai
+  R20 — Propriété réseau et sécurité
+  https://create.roblox.com/docs/scripting/security/network-ownership
+  R21 — TikTok : contenus IA
+  https://support.tiktok.com/en/using-tiktok/creating-videos/ai-generated-content
+
+Règles V4 prioritaires • Compléments V3 intégrés                                    46
+

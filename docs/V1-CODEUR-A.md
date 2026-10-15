@@ -58,5 +58,5 @@ Dans Studio, rien n'est envoyé : chaque événement s'écrit dans la sortie (`[
 
 - [x] `Rules/Metrics` (étapes uniques, temps de jeu cumulé, relances jusqu'à découverte, tranches de puissance) ; profil `analytics` + garde-fous ; 5 tests Lune (105 au total)
 - [x] `MetricsService` branché sur l'entraînement, le combat, les relances, les drops, les coffres et la renaissance
-- [ ] Valider en Studio : les lignes `[Metrics]` apparaissent dans la sortie
+- [x] Valider en Studio (15/10) : `[Metrics] TicketBaddie -1 (Relance) → 18`, `RelancesJusquaDecouverte = 1 · iris · table` après une relance écrite en 666 ms
 - [ ] Après publication : vérifier les premiers chiffres dans le Creator Hub (délai de quelques heures côté Roblox)

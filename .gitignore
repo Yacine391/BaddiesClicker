@@ -1,7 +1,7 @@
 # Builds et fichiers de place locaux (la source de vérité du code, c'est src/)
 /build/
-/*.rbxl
-/*.rbxlx
+*.rbxl
+*.rbxlx
 *.rbxl.lock
 *.rbxlx.lock
 

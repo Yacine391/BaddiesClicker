@@ -29,8 +29,8 @@ local serial = 0
 function CombatService.init(context, dependencies)
 	ctx = context
 	deps = dependencies
-	-- Créé ici pour ne pas toucher default.project.json pendant que la PR #1 (codeur B) est ouverte.
-	-- À déclarer dans default.project.json (ReplicatedStorage/Remotes) une fois les deux branches fusionnées.
+	-- Déclaré dans default.project.json (ReplicatedStorage/Remotes) ; créé ici seulement s'il manque
+	-- (place sans Rojo, ancien fichier .rbxl).
 	local remotes = ReplicatedStorage:WaitForChild("Remotes")
 	if remotes:FindFirstChild(Net.COMBAT) == nil then
 		local remote = Instance.new("RemoteEvent")

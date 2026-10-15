@@ -1,2 +1,2 @@
 std = "roblox"
-exclude = ["src/server/Packages/*"]
+exclude = ["src/server/Packages/*", "src/client/Packages/*"]

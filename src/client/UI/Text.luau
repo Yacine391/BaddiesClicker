@@ -22,6 +22,8 @@ export type LabelProps = {
 	ZIndex: number?,
 	Name: string?,
 	Visible: any?,
+	LayoutOrder: number?,
+	RichText: boolean?,
 	-- transition (ancien style V3)
 	Font: Font?,
 	TextColor: any?,
@@ -54,6 +56,8 @@ function Text.label(scope: any, props: LabelProps): TextLabel
 		TextYAlignment = props.YAlignment or Enum.TextYAlignment.Center,
 		ZIndex = props.ZIndex or 1,
 		Visible = if props.Visible == nil then true else props.Visible,
+		LayoutOrder = props.LayoutOrder or 0,
+		RichText = props.RichText == true,
 		[scope.Children] = children,
 	}) :: TextLabel
 end

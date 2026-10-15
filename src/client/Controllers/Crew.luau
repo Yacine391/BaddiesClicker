@@ -20,7 +20,8 @@ local function entriesOf(snapshot: any): ({ any }, boolean)
 	return (snapshot and snapshot.crew) or {}, false
 end
 
-local function crewRows(scope: any, deps: any, snapshot: any): { Instance }
+-- Aussi utilisé par l'onglet CREW du Book
+function Crew.rows(scope: any, deps: any, snapshot: any): { Instance }
 	local rows: { Instance } = {}
 	local entries, owned = entriesOf(snapshot)
 	if #entries == 0 then
@@ -78,7 +79,7 @@ local function crewRows(scope: any, deps: any, snapshot: any): { Instance }
 	return rows
 end
 
-local function signature(snapshot: any): string
+function Crew.signature(snapshot: any): string
 	if snapshot == nil then
 		return "none"
 	end
@@ -99,8 +100,8 @@ function Crew.start(scope: any, deps: any)
 		icon = "crew",
 		content = function(inner)
 			return {
-				WindowHost.rows(inner, deps, signature, function(rowsScope, snapshot)
-					return crewRows(rowsScope, deps, snapshot)
+				WindowHost.rows(inner, deps, Crew.signature, function(rowsScope, snapshot)
+					return Crew.rows(rowsScope, deps, snapshot)
 				end),
 			}
 		end,

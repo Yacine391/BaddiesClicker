@@ -13,7 +13,8 @@ export type Spec = {
 	name: string,
 	title: string,
 	icon: string, -- clé de Theme.Icons
-	tabs: { { id: string, label: string, count: string? } }?,
+	-- onglets, ou fonction(snapshot) évaluée à l'ouverture (compteurs à jour)
+	tabs: any?,
 	activeTab: any?, -- état de string
 	onTab: ((id: string) -> ())?,
 	layout: ("list" | "free")?,
@@ -29,7 +30,9 @@ function WindowHost.mount(scope: any, deps: any, parent: Instance, spec: Spec)
 		return Window(inner, {
 			Title = spec.title,
 			Icon = spec.icon,
-			Tabs = spec.tabs,
+			Tabs = if type(spec.tabs) == "function"
+				then spec.tabs(deps.peek(deps.Store.snapshot))
+				else spec.tabs,
 			ActiveTab = spec.activeTab,
 			OnTab = spec.onTab,
 			Layout = spec.layout,

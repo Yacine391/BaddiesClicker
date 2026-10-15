@@ -89,7 +89,7 @@ local function text(parent: Instance, value: string, size: number, color: Color3
 	return make("TextLabel", {
 		LayoutOrder = order,
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 0),
+		Size = UDim2.fromScale(1, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Font = Enum.Font.GothamBold,
 		TextSize = size,
@@ -138,7 +138,7 @@ function DevSlotsPanel.start(state)
 	local body = make("Frame", {
 		LayoutOrder = 2,
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 0),
+		Size = UDim2.fromScale(1, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 	}, panel)
 	list(body, 6)
@@ -170,7 +170,7 @@ function DevSlotsPanel.start(state)
 	)
 		local armed = warning ~= nil and (confirmUntil[key] or 0) > os.clock()
 		local b = make("TextButton", {
-			Size = UDim2.new(0, 0, 0, 26),
+			Size = UDim2.fromOffset(0, 26),
 			AutomaticSize = Enum.AutomaticSize.X,
 			BackgroundColor3 = if armed then ROUGE else color,
 			Font = Enum.Font.GothamBlack,
@@ -196,7 +196,7 @@ function DevSlotsPanel.start(state)
 		local c = make("Frame", {
 			LayoutOrder = order,
 			BackgroundColor3 = color,
-			Size = UDim2.new(1, 0, 0, 0),
+			Size = UDim2.fromScale(1, 0),
 			AutomaticSize = Enum.AutomaticSize.Y,
 		}, body)
 		rounded(c, 8)
@@ -209,7 +209,7 @@ function DevSlotsPanel.start(state)
 		local actions = make("Frame", {
 			LayoutOrder = 2,
 			BackgroundTransparency = 1,
-			Size = UDim2.new(1, 0, 0, 0),
+			Size = UDim2.fromScale(1, 0),
 			AutomaticSize = Enum.AutomaticSize.Y,
 		}, c)
 		list(actions, 4, true)

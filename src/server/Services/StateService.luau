@@ -89,10 +89,7 @@ function StateService.snapshot(player: Player, data): { [string]: any }
 		combat = { active = false, hp = maxHP, maxHP = maxHP }
 	end
 
-	local pendingDrops = {}
-	for dropId, count in data.pendingDrops do
-		pendingDrops[dropId] = count
-	end
+	local pendingDrops = table.clone(data.pendingDrops)
 
 	local missing = SlotRules.missingBaddies(data, ctx)
 	local promotesNext = SlotRules.rebirthPromotes(data.rebirths + 1, ctx)

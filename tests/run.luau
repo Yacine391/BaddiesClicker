@@ -23,6 +23,7 @@ local Collection = require("../src/server/Rules/Collection")
 local Receipts = require("../src/server/Rules/Receipts")
 local TestCatalog = require("../src/shared/TestCatalog")
 local ProfileGuard = require("../src/server/Rules/ProfileGuard")
+local Ranking = require("../src/server/Rules/Ranking")
 local profileV4P0 = require("./fixtures/profile_v4_p0")
 
 local ctx = { Balance = Balance, Catalog = Catalog, Formulas = Formulas }
@@ -1435,6 +1436,47 @@ test("deux slots avec Nova : une seule principale, pas de cumul", function()
 	p.slots.s1.baddieId = "nova"
 	p.slots.s2.baddieId = "nova"
 	near(CombatRules.attackDamage(p, ctx), 2.5, "×2,5 une seule fois")
+end)
+
+print("Classement du lobby (§15)")
+
+test("rangs partagés : 7, 7, 5 → 1, 1, 3 ; ordre alphabétique à égalité", function()
+	local list = Ranking.rank({
+		{ userId = 3, name = "zoe", score = 5 },
+		{ userId = 2, name = "Bob", score = 7 },
+		{ userId = 1, name = "alex", score = 7 },
+		{ userId = 4, name = "Mia", score = 0 },
+	})
+	eq(list[1].name, "alex")
+	eq(list[1].rank, 1)
+	eq(list[2].name, "Bob")
+	eq(list[2].rank, 1, "égalité")
+	eq(list[3].rank, 3, "saut après l'égalité")
+	eq(list[4].rank, 4)
+	eq(#Ranking.rank({}), 0, "serveur vide")
+end)
+
+test("score Book : doublons, looks, boss rencontrés, drops et identités de test ne comptent pas", function()
+	local p = newProfile()
+	p.pendingDrops.vega = 3
+	p.encounteredBosses.vega = true
+	p.masteryXP.maya = 250 -- looks débloqués
+	p.discoveredBaddies.test_b99 = true
+	p.discoveredBaddies.ancienne_b42 = true
+	finishRun(p)
+	Slots.applyRebirth(p, ctx)
+	p.slots.s2.baddieId = "maya" -- doublon possédé
+	eq((Collection.bookCount(p, studioCtx)), 1, "Maya seule")
+	p.discoveredBaddies.jade = true
+	eq((Collection.bookCount(p, studioCtx)), 2)
+end)
+
+test("signature : change seulement si le classement change", function()
+	local a = Ranking.rank({ { userId = 1, name = "a", score = 1 } })
+	local b = Ranking.rank({ { userId = 1, name = "a", score = 1 } })
+	local c = Ranking.rank({ { userId = 1, name = "a", score = 2 } })
+	eq(Ranking.signature(a), Ranking.signature(b))
+	assert(Ranking.signature(a) ~= Ranking.signature(c), "score modifié")
 end)
 
 print(`\n{passed} réussi(s), {failed} échec(s)`)

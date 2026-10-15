@@ -168,6 +168,15 @@ Envoyé au chargement, sur `Hello`, puis à chaque changement (regroupé, au plu
 	saving = false,               -- true pendant l'écriture d'une décision durable
 	maintenance = { },            -- décisions coupées ("Roll", "AcceptDrop", "RefuseDrop", "Rebirth", "OpenChest") : griser
 	seq = 42,                     -- numéro croissant de ce snapshot : ignorer un snapshot plus ancien que le dernier reçu
+	ranking = {                   -- classement du lobby : joueurs PRÉSENTS, calculé par le serveur (§15)
+		lot = "V1", total = 8, crewTotal = 6, -- afficher « 7/8 » et le lot classé
+		baddies = {               -- trié ; rang partagé en cas d'égalité (1, 1, 3)
+			{ userId = 123, name = "Alex", score = 7, rank = 1 },  -- name = DisplayName
+			{ userId = 456, name = "Mia", score = 7, rank = 1 },
+			{ userId = 789, name = "Zoé", score = 5, rank = 3 },
+		},
+		crew = { { userId = 123, name = "Alex", score = 4, rank = 1 } }, -- onglet séparé
+	},
 	rebirth = {
 		count = 1,                -- renaissances déjà faites
 		available = false,        -- niveau 10 terminé dans ce parcours
@@ -251,7 +260,8 @@ Pour afficher les suiveurs de **tous** les joueurs, pas seulement les siens :
 | `BC_EquippedCrew` | string, IDs séparés par des virgules | `"malik"` ou `"malik,enzo"` |
 | `BC_ActiveLook` | number | `1` (look de la principale) |
 | `BC_Display` | string, IDs séparés par des virgules | `"nova,jade"` (exposition) |
-| `BC_BookCount` | number | `2` (identités publiques découvertes, pour un futur classement) |
+| `BC_BookCount` | number | `2` (identités publiques découvertes : score du classement) |
+| `BC_CrewCount` | number | `4` (compagnons possédés : score de l'onglet Crew) |
 
 ## Outils de test (Studio uniquement)
 

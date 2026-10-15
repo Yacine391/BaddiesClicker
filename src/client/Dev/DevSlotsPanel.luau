@@ -7,6 +7,7 @@
 	- Drops en attente : ACCEPTER 1 (remplace le temporaire) et REFUSER 1, avec confirmation.
 	- Renaissance : quand le niveau 10 est terminé, avec le texte de ce qui sera gardé ou effacé.
 	- Compagnons : OUVRIR UN COFFRE (1 ticket compagnon), AMÉLIORER (copies), ÉQUIPER / RETIRER.
+	- Classement du lobby (baddies et crew) tel que le serveur le calcule.
 	- Outils Studio : tickets baddie et compagnon, drop de Vega, finir le parcours, maîtrise 5.
 	- Réponses des décisions durables (Result kind = "mutation") ; RÉESSAYER renvoie le MÊME requestId.
 ]]
@@ -413,6 +414,23 @@ function DevSlotsPanel.start(state)
 			end)
 		end
 
+		local ranking = s.ranking
+		if ranking ~= nil then
+			local function lines(list: { any }, total: number): string
+				local out = {}
+				for _, entry in list do
+					table.insert(out, `{entry.rank}. {entry.name} {entry.score}/{total}`)
+				end
+				return if #out > 0 then table.concat(out, " · ") else "personne"
+			end
+			card(
+				290,
+				`CLASSEMENT (lot {ranking.lot}) · baddies : {lines(ranking.baddies, ranking.total)}`
+					.. `\ncrew : {lines(ranking.crew, ranking.crewTotal)}`,
+				NUIT_CLAIR
+			)
+		end
+
 		local tools = card(300, "Outils Studio", Color3.fromHex("#2E2A42"))
 		button(tools, "dev:tickets", "+10 TICKETS", nil, NUIT, function()
 			send(Net.Actions.DevGrant, { what = "tickets" })
@@ -452,6 +470,12 @@ function DevSlotsPanel.start(state)
 		local rolls = s.rolls or {}
 		table.insert(parts, `{rolls.baddie}:{s.run and s.run.id}:{s.rebirth and s.rebirth.available}`)
 		table.insert(parts, table.concat(s.maintenance or {}, ","))
+		for _, entry in (s.ranking and s.ranking.baddies) or {} do
+			table.insert(parts, `r{entry.userId}:{entry.score}:{entry.rank}`)
+		end
+		for _, entry in (s.ranking and s.ranking.crew) or {} do
+			table.insert(parts, `c{entry.userId}:{entry.score}:{entry.rank}`)
+		end
 		table.insert(parts, tostring(s.active and s.active.baddieId))
 		table.insert(parts, `{s.tickets.crew}:{s.crewChest and s.crewChest.opened}`)
 		for _, entry in s.crewOwned or {} do

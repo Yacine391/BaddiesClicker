@@ -31,6 +31,7 @@ local World = require(Services.WorldService)
 local Combat = require(Services.CombatService)
 local Mutations = require(Services.MutationService)
 local Maintenance = require(Services.MaintenanceService)
+local Ranking = require(Services.RankingService)
 local Slots = require(Services.SlotService)
 local Book = require(Services.BookService)
 local Dev = require(Services.DevService)
@@ -42,6 +43,7 @@ local deps = table.freeze({
 	World = World,
 	Mutations = Mutations,
 	Maintenance = Maintenance,
+	Ranking = Ranking,
 })
 
 Profiles.init(ctx)
@@ -55,6 +57,7 @@ Mutations.init(ctx, deps)
 Slots.init(ctx, deps)
 Book.init(ctx, deps)
 Dev.init(ctx, deps)
+Ranking.init(ctx, deps)
 
 -- Décisions durables : la file de MutationService les sérialise ; la cadence ne fait que borner le spam
 local MUTATION_RATE = 4
@@ -112,6 +115,7 @@ Profiles.onReleasing(function(player)
 end)
 
 Maintenance.start()
+Ranking.start()
 Crew.start()
 Combat.start()
 Profiles.start()

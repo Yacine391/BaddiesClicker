@@ -292,6 +292,34 @@ end)
 test("toast inconnu", function()
 	eq(HudModel.toastFor({ kind = "passiveTick", amount = 0.6 }, Catalog), nil)
 end)
+test("cartes : principale puis compagnon", function()
+	local cards = build(baseSnapshot()).cards
+	eq(#cards, 2)
+	eq(cards[1].name, "MAYA")
+	eq(cards[1].rarity.label, "Common")
+	eq(cards[1].line1, "×1 dégâts")
+	eq(cards[1].line2, "Principale · Slot 1")
+	eq(cards[1].accent, "#F2A65A")
+	eq(cards[2].name, "MALIK")
+	eq(cards[2].line1, "+0,6/s")
+	eq(cards[2].line2, "DJ · Niv. 1")
+	eq(cards[2].accent, "#13A6B5")
+end)
+test("cartes : 2 compagnons max, inconnus ignorés", function()
+	local crew = {
+		{ id = "malik", level = 2, perSecond = 0.66 },
+		{ id = "inconnu", level = 1, perSecond = 1 },
+		{ id = "enzo", level = 1, perSecond = 0.4 },
+		{ id = "rafael", level = 1, perSecond = 0.8 },
+	}
+	local cards = build(with({ crew = crew })).cards
+	eq(#cards, 3)
+	eq(cards[3].name, "ENZO")
+end)
+test("cartes : sans principale ni crew", function()
+	eq(#build(with({ active = false, crew = false })).cards, 0)
+	eq(#build(nil).cards, 0)
+end)
 
 print("StyleModel")
 test("sans style : looks seuls", function()

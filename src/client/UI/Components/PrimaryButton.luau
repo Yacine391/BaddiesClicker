@@ -10,6 +10,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
+local Metrics = require(UI.Metrics)
 local Icon = require(script.Parent.Icon)
 
 export type Props = {
@@ -29,6 +30,7 @@ local FILL = {
 }
 
 return function(scope: any, props: Props): Instance
+	local height = Metrics.touch(scope, 76)
 	local pressed = scope:Value(false)
 	local pressedInput: InputObject? = nil
 	table.insert(
@@ -135,7 +137,10 @@ return function(scope: any, props: Props): Instance
 		Text = "",
 		AutoButtonColor = false,
 		BackgroundColor3 = Color3.new(1, 1, 1),
-		Size = UDim2.fromOffset(300, 76),
+		-- hauteur ≥ 48 px réels même en très petite échelle (§21)
+		Size = scope:Computed(function(use)
+			return UDim2.fromOffset(300, use(height))
+		end),
 		Position = props.Position or UDim2.new(),
 		AnchorPoint = props.AnchorPoint or Vector2.zero,
 		Active = props.Enabled,

@@ -205,8 +205,8 @@ Noms, raretés, couleurs et looks : lire `Shared/Catalog` avec l'ID (`Catalog.ba
 
 | `kind` | Champs | Usage suggéré |
 |---|---|---|
-| `crewJoined` | `crewId`, `isNew`, `equipped` | nouveau compagnon (tutoriel : Malik, ou coffre) ; `isNew = false` : doublon d'un coffre, +1 copie |
-| `ticket` | `ticket` = `"baddie"`/`"crew"`, `amount` | toast +1 ticket |
+| `crewJoined` | `crewId`, `isNew`, `equipped` | `isNew = true` : bannière RGB « NOUVEAU CREW » (CelebrationController) ; `isNew = false` : doublon d'un coffre, toast « +1 copie » (HUD) |
+| `ticket` | `ticket` = `"baddie"`/`"crew"`, `amount` | toast +1 ticket (HUD seulement) |
 | `passiveTick` | `amount` (puissance réellement gagnée) | petit « +0,6 » au-dessus du compagnon, chaque seconde |
 
 | `levelCleared` | `level`, `boss`, `drop` (baddieId ou nil), `firstClear`, `baddieTickets`, `power` | boss vaincu : la porte s'ouvre ; texte « 10 % à chaque victoire, aucun drop garanti » |
@@ -256,8 +256,9 @@ d'être dans une arène. Traverser un mur côté client ne donne ni combat ni ga
 ## Effets RGB (`Controllers/CelebrationController`)
 
 Bannière arc-en-ciel, gerbe de particules RGB autour du personnage, onde au sol et flash d'écran
-quand le joueur franchit un cap : nouveau compagnon, ticket, palier de puissance (10, 25, 50, 100,
-250…), niveau terminé, drop de boss, maîtrise, puis renaissance (P2). Si `settings.reducedEffects` est vrai, seule la bannière
+pour les **grands moments** : nouveau compagnon, palier de puissance (10, 25, 50, 100, 250…), niveau terminé,
+drop de boss, maîtrise, nouvelle baddie, renaissance, succès. Les petites infos (`ticket`, et `crewJoined` avec
+`isNew = false`, soit +1 copie) sont des toasts du HUD du codeur B : jamais de double annonce. Si `settings.reducedEffects` est vrai, seule la bannière
 reste. Le HUD final peut réutiliser `rainbowGradient(guiObjectOuStroke)` et `play({ title, subtitle?, big })`.
 
 ## Attributs du Player (visibles par tous les clients)

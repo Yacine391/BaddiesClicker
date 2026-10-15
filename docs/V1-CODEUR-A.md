@@ -28,7 +28,8 @@ relancer (F4) jusqu'à une nouvelle baddie : en 2 s, la carte CLASSEMENT change 
 - [x] `CelebrationController` : bannière RGB « SUCCÈS : … » ; panneau de test : carte GARDE-ROBE
 - [x] 7 tests Lune (100 au total)
 - [x] Valider en Studio (15/10) : 6 succès sur 10 accordés au profil de test, cosmétiques et titre portés ou retirés depuis le panneau
-- [ ] Créer les 10 badges dans le Creator Dashboard et coller leurs IDs dans `src/server/Config/BadgesConfig.luau`
+- [x] 5 badges créés le 15/10 (gratuits) et leurs IDs dans `BadgesConfig.luau`
+- [ ] 5 badges restants (Première renaissance, Book Baddies V1, Book Crew V1, Mythic découverte, Collection V1 complète) : gratuits après 2 h (heure de Paris)
 
 Sans source pour l'instant (à annoncer : missions ou événement) : montre, lunettes, aura Neon, trail d'étoiles.
 
@@ -39,3 +40,24 @@ Sans source pour l'instant (à annoncer : missions ou événement) : montre, lun
 **Tester dans Studio** : au lancement, ton profil de test remplit déjà plusieurs conditions (Malik, renaissance,
 parcours…) : les bannières « SUCCÈS » arrivent dans les 2 s. Carte GARDE-ROBE du panneau F4 : cliquer un
 cosmétique ou un titre le porte (✓), recliquer le retire. Stop puis Play : tout est conservé.
+
+## Statistiques de jeu (§29, §36) — branche `a/v1-metrics`
+
+Envoyées par le **serveur** à AnalyticsService (jamais par le client), sans donnée personnelle.
+À lire dans le Creator Hub → l'expérience → **Analytics** (onglets Onboarding, Progression, Economy, Custom).
+Dans Studio, rien n'est envoyé : chaque événement s'écrit dans la sortie (`[Metrics] …`) pour vérifier.
+
+| Onglet | Événement | Ce qu'il mesure |
+|---|---|---|
+| Onboarding | 1 Profil chargé → 2 Premier entraînement → 3 Malik obtenu → 4 Premier combat → 5 Premier boss vaincu → 6 Deuxième quartier → 7 Parcours terminé → 8 Première renaissance | où les nouveaux joueurs décrochent (une fois par joueur) |
+| Progression | « Parcours », niveaux 1 à 10 : début, échec (mort), réussite | morts par niveau, niveaux trop durs |
+| Economy | `TicketBaddie`, `TicketCrew` : gagnés (Entrainement, PremierPassage, Renaissance), dépensés (Relance, Coffre) | rythme des tickets |
+| Custom | `TempsPremierCombat`, `TempsPremierBoss`, `DureeParcours` (secondes de jeu) | temps jusqu'aux premiers moments forts |
+| Custom | `PuissanceALaMort` (niveau, tranche de puissance), `RepriseApresMort` (secondes avant de retenter) | difficulté, abandon après une mort |
+| Custom | `RelancesJusquaDecouverte` (baddie, garantie ou table), `NouveauCompagnon`, `DropBoss`, `DecisionDrop` (accepter / refuser) | collection et décisions |
+| Custom | `BaddieEffaceeAuRebirth` (baddie, rareté) | compréhension de la conservation |
+
+- [x] `Rules/Metrics` (étapes uniques, temps de jeu cumulé, relances jusqu'à découverte, tranches de puissance) ; profil `analytics` + garde-fous ; 5 tests Lune (105 au total)
+- [x] `MetricsService` branché sur l'entraînement, le combat, les relances, les drops, les coffres et la renaissance
+- [x] Valider en Studio (15/10) : `[Metrics] TicketBaddie -1 (Relance) → 18`, `RelancesJusquaDecouverte = 1 · iris · table` après une relance écrite en 666 ms
+- [ ] Après publication : vérifier les premiers chiffres dans le Creator Hub (délai de quelques heures côté Roblox)

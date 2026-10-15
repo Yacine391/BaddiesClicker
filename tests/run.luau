@@ -25,6 +25,7 @@ local TestCatalog = require("../src/shared/TestCatalog")
 local ProfileGuard = require("../src/server/Rules/ProfileGuard")
 local Ranking = require("../src/server/Rules/Ranking")
 local Achievements = require("../src/server/Rules/Achievements")
+local Metrics = require("../src/server/Rules/Metrics")
 local profileV4P0 = require("./fixtures/profile_v4_p0")
 
 local Wardrobe = require("../src/shared/Wardrobe")
@@ -1609,6 +1610,59 @@ test("configuration de la garde-robe cohérente (sources, récompenses, lot V1 f
 	eq(Catalog.lot, "V1")
 	eq(table.concat(Wardrobe.lotV1.baddies, ","), table.concat(Catalog.baddieOrder, ","), "lot V1 baddies")
 	eq(table.concat(Wardrobe.lotV1.crew, ","), table.concat(Catalog.crewOrder, ","), "lot V1 crew")
+end)
+
+print("Statistiques de jeu (§29)")
+
+test("étapes d'accueil : chacune une seule fois, mémorisée dans le profil", function()
+	local p = newProfile()
+	eq(Metrics.once(p, "o1"), true)
+	eq(Metrics.once(p, "o1"), false, "pas deux fois")
+	eq(Metrics.once(p, "o2"), true)
+	local steps = {}
+	for _, step in Metrics.ONBOARDING do
+		steps[step.step] = step.name
+	end
+	for i = 1, 8 do
+		assert(steps[i] ~= nil, `étape {i} manquante`)
+	end
+end)
+
+test("temps de jeu : sessions cumulées, durée du parcours depuis la renaissance", function()
+	local p = newProfile()
+	eq(Metrics.playSeconds(p, 30.7), 30)
+	Metrics.closeSession(p, 100)
+	Metrics.closeSession(p, 50)
+	eq(Metrics.playSeconds(p, 10), 160, "100 + 50 + 10")
+	Metrics.startRun(p, 160)
+	eq(Metrics.runSeconds(p, 400), 240)
+	Metrics.closeSession(p, -5) -- horloge incohérente : ignorée
+	eq(Metrics.playSeconds(p, 0), 150)
+end)
+
+test("relances jusqu'à découverte : compteur remis à zéro à chaque nouvelle identité", function()
+	local p = newProfile()
+	eq(Metrics.onRoll(p, false), nil)
+	eq(Metrics.onRoll(p, false), nil)
+	eq(Metrics.onRoll(p, true), 3, "3 relances pour découvrir")
+	eq(Metrics.onRoll(p, true), 1)
+end)
+
+test("paquets de puissance lisibles", function()
+	eq(Metrics.powerBucket(3), "<10")
+	eq(Metrics.powerBucket(37), "20+")
+	eq(Metrics.powerBucket(76.9), "50+")
+	eq(Metrics.powerBucket(1190), "1000+")
+	eq(Metrics.powerBucket(250000), "200000+")
+end)
+
+test("profil P0 sans statistiques : complété par Reconcile, réparé si illisible", function()
+	local raw = profileV4P0()
+	raw.analytics = { once = { o1 = "oui" }, playSeconds = 0 / 0 }
+	local data = load(raw)
+	eq(data.analytics.once.o1, nil, "valeur illisible retirée")
+	eq(data.analytics.playSeconds, 0)
+	eq(data.analytics.rollsSinceDiscovery, 0)
 end)
 
 print(`\n{passed} réussi(s), {failed} échec(s)`)

@@ -48,6 +48,8 @@ function ProfileTemplate.new(ctx: any): { [string]: any }
 		pendingBadges = {}, -- succès dont le badge Roblox reste à attribuer : achievementId -> true
 		stats = { trainActions = 0, crewPowerEarned = 0 },
 		lastMutation = {}, -- reçu durable de la dernière décision (Rules/Receipts), vide au départ
+		-- Statistiques (Rules/Metrics) : étapes déjà envoyées, temps de jeu cumulé, compteurs
+		analytics = { once = {}, playSeconds = 0, rollsSinceDiscovery = 0, runStartedAt = 0 },
 	}
 end
 

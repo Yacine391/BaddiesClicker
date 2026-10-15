@@ -45,6 +45,7 @@ function TrainingService.onTrain(player: Player)
 		deps.State.notify(player, { kind = "ticket", ticket = "crew", amount = result.crewTickets })
 	end
 
+	deps.Metrics.trained(player, data, result)
 	deps.State.markDirty(player)
 end
 

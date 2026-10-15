@@ -34,6 +34,7 @@ local Mutations = require(Services.MutationService)
 local Maintenance = require(Services.MaintenanceService)
 local Ranking = require(Services.RankingService)
 local Wardrobe = require(Services.WardrobeService)
+local Metrics = require(Services.MetricsService)
 local Slots = require(Services.SlotService)
 local Book = require(Services.BookService)
 local Dev = require(Services.DevService)
@@ -46,6 +47,7 @@ local deps = table.freeze({
 	Mutations = Mutations,
 	Maintenance = Maintenance,
 	Ranking = Ranking,
+	Metrics = Metrics,
 })
 
 Profiles.init(ctx)
@@ -61,6 +63,7 @@ Book.init(ctx, deps)
 Dev.init(ctx, deps)
 Ranking.init(ctx, deps)
 Wardrobe.init(ctx, deps)
+Metrics.init(ctx, deps)
 
 -- Décisions durables : la file de MutationService les sérialise ; la cadence ne fait que borner le spam
 local MUTATION_RATE = 4
@@ -110,10 +113,12 @@ IntentRouter.init(ctx, deps, routes)
 Profiles.onLoaded(function(player, data)
 	Sessions.create(player)
 	Dev.onProfileLoaded(player, data)
+	Metrics.profileLoaded(player, data)
 	State.onPlayerReady(player, data)
 end)
 
 Profiles.onReleasing(function(player)
+	Metrics.releasing(player, Profiles.get(player)) -- temps de jeu cumulé, écrit avec la sauvegarde de départ
 	Sessions.remove(player)
 	State.forget(player)
 end)

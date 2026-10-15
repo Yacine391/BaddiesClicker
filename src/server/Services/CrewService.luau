@@ -59,13 +59,14 @@ function CrewService.onOpenChest(player: Player, payload: { [any]: any }?)
 		end
 		session.lastChestAt = now
 		return nil, CrewRules.applyOpenChest(data, rng:NextNumber(), ctx)
-	end, function(target: Player, _data, result)
+	end, function(target: Player, data, result)
 		deps.State.notify(target, {
 			kind = "crewJoined",
 			crewId = result.crewId,
 			isNew = result.isNew,
 			equipped = result.equipped,
 		})
+		deps.Metrics.chestOpened(target, data, result)
 	end)
 end
 

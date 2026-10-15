@@ -57,7 +57,10 @@ function SlotService.onRoll(player: Player, payload: { [any]: any }?)
 		end
 		session.lastRollAt = now
 		return nil, SlotRules.applyRoll(data, payload.slotId, rng:NextNumber(), ctx)
-	end, onDiscovery)
+	end, function(target: Player, data, result)
+		onDiscovery(target, data, result)
+		deps.Metrics.rolled(target, data, result)
+	end)
 end
 
 -- Intention « AcceptDrop »
@@ -80,7 +83,10 @@ function SlotService.onAcceptDrop(player: Player, payload: { [any]: any }?)
 			return reason
 		end
 		return nil, SlotRules.applyAcceptDrop(data, payload.baddieId, ctx)
-	end, onDiscovery)
+	end, function(target: Player, data, result)
+		onDiscovery(target, data, result)
+		deps.Metrics.dropDecided(target, data, "accepter", result.baddieId)
+	end)
 end
 
 -- Intention « RefuseDrop »
@@ -94,6 +100,8 @@ function SlotService.onRefuseDrop(player: Player, payload: { [any]: any }?)
 			return reason
 		end
 		return nil, SlotRules.applyRefuseDrop(data, payload.baddieId)
+	end, function(target: Player, data, result)
+		deps.Metrics.dropDecided(target, data, "refuser", result.baddieId)
 	end)
 end
 
@@ -127,8 +135,9 @@ function SlotService.onRebirth(player: Player, payload: { [any]: any }?)
 		local result = SlotRules.applyRebirth(data, ctx)
 		respawnLater(player) -- task.delay ne fait pas attendre : l'application reste d'un bloc
 		return nil, result
-	end, function(target: Player, _data, result)
+	end, function(target: Player, data, result)
 		deps.State.notify(target, { kind = "rebirth", count = result.count })
+		deps.Metrics.reborn(target, data, result)
 	end)
 end
 

@@ -1,10 +1,12 @@
 --[[
 	CelebrationController : effets RGB (arc-en-ciel) quand le joueur franchit un cap.
 
-	Purement visuel et local : il ne décide de rien. Il réagit :
-	- aux événements Result du serveur (nouveau compagnon, ticket, et plus tard
-	  niveau terminé, maîtrise, renaissance, nouvelle baddie) ;
-	- aux paliers de puissance lus dans le snapshot (10, 25, 50, 100, 250…).
+	Purement visuel et local : il ne décide de rien. Il ne garde que les GRANDS moments :
+	- événements Result du serveur : nouveau compagnon, niveau terminé, drop de boss, maîtrise,
+	  nouvelle baddie, renaissance, succès ;
+	- paliers de puissance lus dans le snapshot (10, 25, 50, 100, 250…).
+	Les petites infos (+1 ticket, +1 copie d'un compagnon) sont des toasts du HUD du codeur B
+	(accord du 15/10 : pas de double annonce).
 
 	Effets réduits (§21) : si le profil a settings.reducedEffects, seule la bannière reste.
 	Le HUD du codeur B peut réutiliser rainbowGradient() et play().
@@ -230,16 +232,15 @@ end
 local function onResult(event: { [string]: any })
 	local kind = event.kind
 	if kind == "crewJoined" then
+		if event.isNew == false then
+			return -- doublon d'un coffre (+1 copie) : toast du HUD
+		end
 		local def = Catalog.crew[event.crewId]
-		local isCopy = event.isNew == false -- doublon d'un coffre : une copie de plus
 		CelebrationController.play({
-			title = if isCopy then "+1 COPIE" else "NOUVEAU CREW !",
+			title = "NOUVEAU CREW !",
 			subtitle = if def then `{def.name} · {def.role}` else event.crewId,
-			big = not isCopy,
+			big = true,
 		})
-	elseif kind == "ticket" then
-		local what = if event.ticket == "baddie" then "BADDIE" else "COMPAGNON"
-		CelebrationController.play({ title = `+{event.amount} TICKET {what}`, big = false })
 	elseif kind == "levelCleared" then
 		CelebrationController.play({
 			title = `NIVEAU {event.level} TERMINÉ !`,

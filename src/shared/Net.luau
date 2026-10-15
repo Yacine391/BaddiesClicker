@@ -22,13 +22,16 @@ local Net = {
 		AcceptDrop = "AcceptDrop", -- { requestId, baddieId, slotRevision, pendingRevision }
 		RefuseDrop = "RefuseDrop", -- { requestId, baddieId, pendingRevision }
 		Rebirth = "Rebirth", -- { requestId, expectedRunId }
+		OpenChest = "OpenChest", -- { requestId } (coffre de compagnon, 1 ticket compagnon)
 		-- Lot P2 (choix immédiats, sans écriture prioritaire) :
 		SetActive = "SetActive", -- { slotId }
 		SetRollLock = "SetRollLock", -- { slotId, locked }
 		SetDisplay = "SetDisplay", -- { ids } (exposition, 3 max)
 		SetLook = "SetLook", -- { baddieId, look }
+		UpgradeCrew = "UpgradeCrew", -- { crewId } (dépense niveau + 1 copies)
+		EquipCrew = "EquipCrew", -- { ids } (2 compagnons possédés maximum)
 		DevSetMastery = "DevSetMastery", -- { baddieId, xp } (Studio uniquement)
-		DevGrant = "DevGrant", -- { what = "tickets" | "drop" | "finishRun", baddieId? } (Studio uniquement)
+		DevGrant = "DevGrant", -- { what = "tickets" | "crewTickets" | "drop" | "finishRun", baddieId? } (Studio)
 	}),
 }
 

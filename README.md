@@ -3,7 +3,7 @@
 Jeu Roblox : on s'entraîne, on affronte sbires et baddies boss, on collectionne et on renaît.
 La référence des règles est le **dossier de production v4** (14 octobre 2026).
 
-## État actuel : P0 et P1 validés, P2 (slots, relances, renaissance) écrit côté codeur A
+## État actuel : P0, P1 et P2 (slots, relances, renaissance) validés ; coffres de compagnons écrits
 
 | Fait | Où |
 |---|---|
@@ -17,8 +17,9 @@ La référence des règles est le **dossier de production v4** (14 octobre 2026)
 | Slots, relances (garantie toutes les 50), drops acceptés/refusés, renaissance et paliers 1/3/6 | `Rules/Slots.luau`, `Services/SlotService.luau` |
 | Baddies Book, exposition 3 places, looks débloqués par la maîtrise | `Rules/Collection.luau`, `Services/BookService.luau` |
 | Décisions durables : une à la fois, tirage unique, reçu, réponse après la sauvegarde | `Rules/Receipts.luau`, `Services/MutationService.luau` |
+| Coffres de compagnons (garantie toutes les 20), niveaux par copies, équipe de 2 | `Rules/Crew.luau`, `Services/CrewService.luau` |
 | HUD, vue et panneaux de test (temporaires, Studio) | `src/client/Dev/`, `CombatBootstrap.client.luau`, `DevToolsBootstrap.client.luau` |
-| 64 tests des règles (exemples chiffrés et cas §30 du dossier) | `tests/run.luau` |
+| 71 tests des règles (exemples chiffrés et cas §30 du dossier) | `tests/run.luau` |
 
 **Vocabulaire :** le **Baddies Book** est la collection des baddies découvertes.
 
@@ -63,7 +64,8 @@ Ce que tu dois voir :
   Un panneau de combat de test apparaît à droite : **ATTAQUER** (ou touche **F**). Sors des cercles
   rouges avant l'impact, bats Jade, la porte s'ouvre. Détails : `docs/P1-COMBAT.md`.
 - en haut à droite, le panneau **SLOTS · P2** (touche **F4**) : relancer un slot, accepter ou refuser
-  un drop, renaître, et des outils de test. Détails : `docs/P2-SLOTS.md`.
+  un drop, renaître, ouvrir un coffre de compagnon, améliorer ou équiper le crew, et des outils de test.
+  Détails : `docs/P2-SLOTS.md`.
 
 **Sauvegarde dans Studio :** tant que le place n'est pas publié avec **Game Settings → Security → Enable Studio Access to API Services**, ProfileStore tourne en mode mock et rien n'est gardé entre deux Play. C'est normal. Une fois l'accès activé, Studio écrit dans `BC_Profiles_STUDIO_v1`, jamais dans les profils des vrais joueurs.
 

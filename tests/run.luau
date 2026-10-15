@@ -924,5 +924,125 @@ test("reçu : le même requestId retrouve le même résultat, sans nouvel effet"
 	eq(Receipts.isSaved({ lastMutation = {} }, "req-1"), false)
 end)
 
+print("Coffres et niveaux des compagnons (§16)")
+
+local function withMalik()
+	local p = newProfile()
+	Crew.grant(p, "malik", ctx)
+	return p
+end
+
+test("table des coffres : Enzo 30 %, Malik 25 %… Amine 5 %", function()
+	eq(Crew.pickChest(0, ctx), "enzo")
+	eq(Crew.pickChest(0.31, ctx), "malik")
+	eq(Crew.pickChest(0.56, ctx), "rafael")
+	eq(Crew.pickChest(0.76, ctx), "dario")
+	eq(Crew.pickChest(0.88, ctx), "kenji")
+	eq(Crew.pickChest(0.96, ctx), "amine")
+	eq(Crew.pickChest(0.99999999, ctx), "amine")
+end)
+
+test("coffre : 1 ticket compagnon, compteur +1, nouveau compagnon équipé s'il reste une place", function()
+	local p = withMalik()
+	eq(Crew.checkOpenChest(p), "no_ticket")
+	p.tickets.crew = 2
+	eq(Crew.checkOpenChest(p), nil)
+	local r = Crew.applyOpenChest(p, 0.6, ctx) -- Rafael
+	eq(r.crewId, "rafael")
+	eq(r.isNew, true)
+	eq(r.equipped, true, "deuxième place libre")
+	eq(r.level, 1)
+	eq(r.openNumber, 1)
+	eq(p.tickets.crew, 1, "ticket dépensé")
+	eq(p.rolls.baddie, 0, "compteur des baddies séparé")
+	local again = Crew.applyOpenChest(p, 0.6, ctx)
+	eq(again.isNew, false, "doublon")
+	eq(again.copies, 1, "une copie")
+end)
+
+test("coffre : la 20e ouverture donne un compagnon manquant (uniforme)", function()
+	local p = withMalik()
+	p.tickets.crew = 1
+	p.rolls.crew = 19
+	eq(Crew.untilChestGuarantee(p, ctx), 1, "la prochaine")
+	-- 0,3 donnerait Malik dans la table normale ; parmi les 5 manquants, le 2e : Rafael
+	local r = Crew.applyOpenChest(p, 0.3, ctx)
+	eq(r.guaranteed, true)
+	eq(r.crewId, "rafael")
+	eq(Crew.untilChestGuarantee(p, ctx), 20)
+end)
+
+test("coffre : les 6 compagnons en 100 ouvertures au plus, puis la table normale", function()
+	local p = withMalik()
+	p.tickets.crew = 1000
+	local opens = 0
+	while #Crew.missing(p, ctx) > 0 do
+		Crew.applyOpenChest(p, 0.3, ctx) -- 0,3 : toujours Malik hors garantie
+		opens += 1
+		assert(opens <= 120, "boucle")
+	end
+	eq(opens, 100, "ouvertures")
+	p.rolls.crew = 119
+	local r = Crew.applyOpenChest(p, 0.3, ctx)
+	eq(r.guaranteed, false, "collection complète")
+	eq(r.crewId, "malik")
+end)
+
+test("niveau : L → L+1 coûte L+1 copies, maximum 10, copies gardées au maximum", function()
+	local p = withMalik()
+	eq(Crew.upgradeCost(1, ctx), 2)
+	eq(Crew.upgradeCost(9, ctx), 10)
+	eq(Crew.upgradeCost(10, ctx), nil)
+	eq(Crew.upgrade(p, "malik", ctx), "not_enough_copies")
+	eq(Crew.upgrade(p, "enzo", ctx), "not_owned")
+	eq(Crew.upgrade(p, "bob", ctx), "unknown")
+	p.crew.malik.copies = 2
+	local reason, level = Crew.upgrade(p, "malik", ctx)
+	eq(reason, nil)
+	eq(level, 2)
+	eq(p.crew.malik.copies, 0, "copies dépensées")
+	near(Crew.passivePerSecond(p, ctx), 0.66, "0,6 × 1,1")
+	-- niveau 2 → 10 : 3 + 4 + … + 10 = 52 copies (54 depuis le niveau 1)
+	p.crew.malik.copies = 60
+	for _ = 3, 10 do
+		eq(Crew.upgrade(p, "malik", ctx), nil)
+	end
+	eq(p.crew.malik.level, 10)
+	eq(p.crew.malik.copies, 8, "copies restantes gardées")
+	eq(Crew.upgrade(p, "malik", ctx), "max_level")
+end)
+
+test("équipe : 2 compagnons possédés maximum, sans doublon", function()
+	local p = withMalik()
+	Crew.grant(p, "enzo", ctx)
+	Crew.grant(p, "amine", ctx) -- possédé mais pas équipé (2 places prises)
+	eq(table.concat(p.equippedCrew, ","), "malik,enzo")
+	eq(Crew.setEquipped(p, { "malik", "enzo", "amine" }, ctx), "too_many")
+	eq(Crew.setEquipped(p, { "amine", "amine" }, ctx), "duplicate")
+	eq(Crew.setEquipped(p, { "kenji" }, ctx), "not_owned")
+	eq(Crew.setEquipped(p, { "bob" }, ctx), "invalid")
+	eq(Crew.setEquipped(p, { x = "amine" }, ctx), "invalid")
+	eq(Crew.setEquipped(p, { "amine", "malik" }, ctx), nil)
+	near(Crew.passivePerSecond(p, ctx), 2.6, "2,0 + 0,6")
+	eq(Crew.setEquipped(p, {}, ctx), nil, "aucun")
+	near(Crew.passivePerSecond(p, ctx), 0, "plus de production")
+end)
+
+test("vue de la collection : ordre du catalogue, coût, amélioration possible, équipé", function()
+	local p = withMalik()
+	Crew.grant(p, "amine", ctx)
+	p.crew.malik.copies = 2
+	p.rebirths = 1
+	local view = Crew.ownedView(p, ctx)
+	eq(#view, 2)
+	eq(view[1].id, "malik", "ordre du catalogue")
+	eq(view[1].upgradeCost, 2)
+	eq(view[1].canUpgrade, true)
+	eq(view[1].equipped, true)
+	near(view[1].perSecond, 0.66, "bonus de rebirth inclus")
+	eq(view[2].id, "amine")
+	eq(view[2].canUpgrade, false)
+end)
+
 print(`\n{passed} réussi(s), {failed} échec(s)`)
 process.exit(if failed > 0 then 1 else 0)

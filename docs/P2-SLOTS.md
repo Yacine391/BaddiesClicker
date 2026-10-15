@@ -1,10 +1,10 @@
-# Lot P2 : slots, relances, drops et renaissance (codeur A)
+# Lot P2 : slots, relances, drops, renaissance et compagnons (codeur A)
 
 Branche `a/p2-slots`, construite sur `a/p1-combat` (PR #2). Fiche séparée de `ROADMAP.md` pour ne pas
 créer de conflit avec la PR #1 du codeur B ; à reporter dans la feuille de route après fusion.
 Contrat réseau : `docs/CONTRACT.md` (v3, snapshot `v = 2`).
 
-## Fait (testé hors Studio : 64 tests Lune, dont 24 pour le P2)
+## Fait (testé hors Studio : 71 tests Lune, dont 31 pour le P2)
 
 - [x] `Rules/Slots` : slots à identité fixe (aucun transfert), un seul temporaire, slot vide = `""`
 - [x] Relance : 1 ticket, remplace le contenu du slot choisi (conservé ou non), `slotRevision` +1, découverte au Baddies Book
@@ -17,6 +17,9 @@ Contrat réseau : `docs/CONTRACT.md` (v3, snapshot `v = 2`).
 - [x] `Rules/Receipts` + `MutationService` : une décision durable à la fois, tirage unique, reçu durable, réponse **après** l'écriture DataStore (`Profiles.saveAndWait`), renvoi idempotent du même `requestId`, écriture incertaine résolue avant la suivante
 - [x] Snapshot `v = 2` : `slots`, `rolls`, `collection`, `saving`, `rebirth`, `pendingRevision`, `active.look` ; attributs `BC_ActiveLook`, `BC_Display`, `BC_BookCount`
 - [x] Studio : `TestCatalog` (`test_b99` hors Book public), `DevSetMastery`, `DevGrant`, panneau `Dev/DevSlotsPanel` (F4)
+- [x] Coffres de compagnons (`OpenChest`, décision durable) : 1 ticket compagnon, table du catalogue, toutes les 20 ouvertures un compagnon **manquant** (uniforme) ; compteur global séparé des relances
+- [x] Niveaux des compagnons (`UpgradeCrew`) : L → L+1 coûte L+1 copies, niveau 10 max, copies gardées au maximum ; écriture prioritaire
+- [x] Équipe (`EquipCrew`) : 2 compagnons possédés maximum, sans doublon ; snapshot `crewOwned` et `crewChest`
 
 ## Choix proposés (à valider)
 
@@ -28,8 +31,8 @@ Contrat réseau : `docs/CONTRACT.md` (v3, snapshot `v = 2`).
 
 ## Reste
 
-- [ ] Valider en Studio (procédure ci-dessous)
-- [ ] Coffres de compagnons (ticket compagnon, garantie toutes les 20), montée de niveau et choix des compagnons équipés
+- [x] Valider en Studio : slots, relances, drops, renaissance (15/10)
+- [ ] Valider en Studio : coffres, niveaux et équipe des compagnons (étape 8 ci-dessous)
 - [ ] Après fusion des PR #1 et #2 : déclarer le remote `Combat` dans `default.project.json`, reporter P1 et P2 dans `ROADMAP.md`
 
 ## Côté codeur B (P2)
@@ -39,6 +42,7 @@ Contrat réseau : `docs/CONTRACT.md` (v3, snapshot `v = 2`).
 - [ ] Écran Rebirth : aperçu (slot promu ou effacé, tickets, bonus) et confirmation avec `run.id`
 - [ ] Générer un `requestId` par décision et le réutiliser en cas de renvoi ; afficher la révélation à la réponse `mutation`
 - [ ] Book et Style : brancher `collection` (déjà prévu dans la PR #1)
+- [ ] Crew : afficher `crewOwned` (niveau, copies, coût), boutons Ouvrir un coffre / Améliorer / Équiper ; `crewChest` pour la garantie
 - [ ] Supprimer `DevToolsBootstrap.client.luau` et `Dev/DevSlotsPanel.luau` quand ces écrans sont prêts
 
 ## Tester dans Studio
@@ -52,3 +56,6 @@ Contrat réseau : `docs/CONTRACT.md` (v3, snapshot `v = 2`).
 6. **Renaissance** : FINIR LE PARCOURS (ou battre Vega au niveau 10), puis RENAÎTRE : s1 devient conservé, s2 s'ouvre,
    puissance 1, +5 tickets, retour au lobby. Deuxième renaissance : s2 est vidé. Troisième : s2 est promu.
 7. **Sauvegarde** : Stop puis Play (avec « Studio Access to API Services ») → slots, Book, tickets et drops sont conservés.
+8. **Compagnons** : +5 TICKETS CREW, puis OUVRIR UN COFFRE plusieurs fois (2 s entre deux) : nouveau compagnon
+   (équipé s'il reste une place) ou +1 copie. AMÉLIORER apparaît quand les copies suffisent (2 pour le niveau 2) ;
+   la production par seconde monte de 10 %. ÉQUIPER / RETIRER change les 2 compagnons actifs.

@@ -6,7 +6,8 @@
 	  remplacement), PRINCIPALE, VERROU.
 	- Drops en attente : ACCEPTER 1 (remplace le temporaire) et REFUSER 1, avec confirmation.
 	- Renaissance : quand le niveau 10 est terminé, avec le texte de ce qui sera gardé ou effacé.
-	- Outils Studio : +10 tickets, drop de Vega, finir le parcours, maîtrise 5 pour la principale.
+	- Compagnons : OUVRIR UN COFFRE (1 ticket compagnon), AMÉLIORER (copies), ÉQUIPER / RETIRER.
+	- Outils Studio : tickets baddie et compagnon, drop de Vega, finir le parcours, maîtrise 5.
 	- Réponses des décisions durables (Result kind = "mutation") ; RÉESSAYER renvoie le MÊME requestId.
 ]]
 
@@ -135,13 +136,28 @@ function DevSlotsPanel.start(state)
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Text = "",
 	}, panel)
-	local body = make("Frame", {
+	-- Contenu défilant : le panneau ne dépasse jamais 60 % de la hauteur de l'écran
+	local body = make("ScrollingFrame", {
 		LayoutOrder = 2,
 		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
 		Size = UDim2.fromScale(1, 0),
-		AutomaticSize = Enum.AutomaticSize.Y,
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		CanvasSize = UDim2.new(),
+		ScrollingDirection = Enum.ScrollingDirection.Y,
+		ScrollBarThickness = 4,
 	}, panel)
 	list(body, 6)
+	local bodyLayout = body:FindFirstChildOfClass("UIListLayout") :: UIListLayout
+	local function fitScreen()
+		local camera = workspace.CurrentCamera
+		local maxHeight = math.max(200, (if camera then camera.ViewportSize.Y else 720) * 0.6)
+		body.Size = UDim2.new(1, 0, 0, math.min(bodyLayout.AbsoluteContentSize.Y, maxHeight))
+	end
+	bodyLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(fitScreen)
+	if workspace.CurrentCamera then
+		workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(fitScreen)
+	end
 	gui.Parent = player:WaitForChild("PlayerGui")
 
 	local render: () -> ()
@@ -350,9 +366,55 @@ function DevSlotsPanel.start(state)
 			)
 		end
 
+		local chest = s.crewChest or {}
+		local chestGuarantee = if chest.complete
+			then "collection complète"
+			else `garantie dans {chest.untilGuarantee} (1 chance sur {#(chest.missing or {})})`
+		local crewCard =
+			card(250, `COMPAGNONS · tickets {s.tickets.crew} · {chestGuarantee}`, Color3.fromHex("#1F3A44"))
+		button(crewCard, "chest", "OUVRIR UN COFFRE (1 ticket)", nil, CYAN, function()
+			durable(Net.Actions.OpenChest, {})
+		end)
+		local equipped: { string } = {}
+		for _, entry in s.crewOwned or {} do
+			if entry.equipped then
+				table.insert(equipped, entry.id)
+			end
+		end
+		for index, entry in s.crewOwned or {} do
+			local def = Catalog.crew[entry.id]
+			local name = if def then def.name else entry.id
+			local cost = if entry.upgradeCost then `{entry.upgradeCost} copies` else "max"
+			local line = `{name} · niv. {entry.level} · {entry.copies} copie(s) · prochain : {cost}`
+			local actions = card(250 + index, `{line}{if entry.equipped then " · ÉQUIPÉ" else ""}`, NUIT)
+			if entry.canUpgrade then
+				button(actions, `upgrade:{entry.id}`, "AMÉLIORER", nil, OR, function()
+					send(Net.Actions.UpgradeCrew, { crewId = entry.id })
+				end)
+			end
+			local ids = table.clone(equipped)
+			local label
+			if entry.equipped then
+				table.remove(ids, table.find(ids, entry.id) :: number)
+				label = "RETIRER"
+			elseif #ids < 2 then
+				table.insert(ids, entry.id)
+				label = "ÉQUIPER"
+			else
+				label = `ÉQUIPER (remplace {ids[#ids]})`
+				ids[#ids] = entry.id
+			end
+			button(actions, `equip:{entry.id}`, label, nil, CYAN, function()
+				send(Net.Actions.EquipCrew, { ids = ids })
+			end)
+		end
+
 		local tools = card(300, "Outils Studio", Color3.fromHex("#2E2A42"))
 		button(tools, "dev:tickets", "+10 TICKETS", nil, NUIT, function()
 			send(Net.Actions.DevGrant, { what = "tickets" })
+		end)
+		button(tools, "dev:crewTickets", "+5 TICKETS CREW", nil, NUIT, function()
+			send(Net.Actions.DevGrant, { what = "crewTickets" })
 		end)
 		button(tools, "dev:drop", "DROP VEGA", nil, NUIT, function()
 			send(Net.Actions.DevGrant, { what = "drop", baddieId = "vega" })
@@ -386,6 +448,10 @@ function DevSlotsPanel.start(state)
 		local rolls = s.rolls or {}
 		table.insert(parts, `{rolls.baddie}:{s.run and s.run.id}:{s.rebirth and s.rebirth.available}`)
 		table.insert(parts, tostring(s.active and s.active.baddieId))
+		table.insert(parts, `{s.tickets.crew}:{s.crewChest and s.crewChest.opened}`)
+		for _, entry in s.crewOwned or {} do
+			table.insert(parts, `{entry.id}:{entry.level}:{entry.copies}:{entry.equipped}`)
+		end
 		return table.concat(parts, "|")
 	end
 
@@ -420,6 +486,12 @@ function DevSlotsPanel.start(state)
 					`{nameOf(r.baddieId)} acceptée dans {r.slotId} (reste {r.remaining}) · {saved}`
 			elseif event.action == "RefuseDrop" then
 				lastMessage = `Drop de {nameOf(r.baddieId)} refusé (reste {r.remaining}) · {saved}`
+			elseif event.action == "OpenChest" then
+				local def = Catalog.crew[r.crewId]
+				local name = if def then def.name else tostring(r.crewId)
+				local what = if r.isNew then "NOUVEAU compagnon" else `+1 copie ({r.copies})`
+				local extra = if r.guaranteed then " (garantie)" else ""
+				lastMessage = `Coffre : {name}, {what}{extra} · {saved}`
 			elseif event.action == "Rebirth" then
 				local parts = { `Renaissance {r.count}` }
 				if r.promotedSlotId then

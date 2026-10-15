@@ -83,10 +83,13 @@ local routes: { [string]: IntentRouter.Route } = {
 	AcceptDrop = { rate = MUTATION_RATE, burst = MUTATION_RATE, handler = Slots.onAcceptDrop },
 	RefuseDrop = { rate = MUTATION_RATE, burst = MUTATION_RATE, handler = Slots.onRefuseDrop },
 	Rebirth = { rate = 1, burst = 1, handler = Slots.onRebirth },
+	OpenChest = { rate = MUTATION_RATE, burst = MUTATION_RATE, handler = Crew.onOpenChest },
 	SetActive = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Slots.onSetActive },
 	SetRollLock = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Slots.onSetRollLock },
 	SetDisplay = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Book.onSetDisplay },
 	SetLook = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Book.onSetLook },
+	UpgradeCrew = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Crew.onUpgrade },
+	EquipCrew = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Crew.onEquip },
 }
 if Dev.enabled() then
 	routes.DevSetMastery = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Dev.onSetMastery }

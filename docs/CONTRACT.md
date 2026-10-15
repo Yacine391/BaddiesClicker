@@ -37,12 +37,15 @@ peut être découverte (dans le Baddies Book), possédée (dans un slot) ou expo
 | `AcceptDrop` ⏳ | `{ requestId, baddieId, slotRevision, pendingRevision }` | 4/s | hors combat ; au moins 1 drop de cette baddie ; `slotRevision` = révision du **temporaire** affiché |
 | `RefuseDrop` ⏳ | `{ requestId, baddieId, pendingRevision }` | 4/s | à tout moment ; retire **une** unité |
 | `Rebirth` ⏳ | `{ requestId, expectedRunId }` | 1/s | hors combat ; niveau 10 terminé dans le parcours `run.id = expectedRunId` |
+| `OpenChest` ⏳ | `{ requestId }` | 4/s + 2 s entre deux coffres | hors combat ; 1 ticket compagnon |
 | `SetActive` | `{ slotId }` | 4/s | hors combat ; slot rempli. Change seulement la principale, **aucun déplacement** de baddie |
 | `SetRollLock` | `{ slotId, locked: boolean }` | 4/s | verrou de relance (le temporaire est quand même vidé au rebirth) |
 | `SetDisplay` | `{ ids: { string } }` | 4/s | hors combat ; ≤ 3 IDs connus, **découverts**, sans doublon ; remplace toute la liste |
 | `SetLook` | `{ baddieId, look: number }` | 4/s | hors combat ; baddie découverte ; `look` ∈ `collection.looks[id].unlocked` |
+| `UpgradeCrew` | `{ crewId }` | 4/s | compagnon possédé, pas au niveau 10 ; dépense `niveau + 1` copies (`crewOwned[i].upgradeCost`) |
+| `EquipCrew` | `{ ids: { string } }` | 4/s | ≤ 2 compagnons **possédés**, sans doublon ; remplace la liste (vide = aucun) |
 | `DevSetMastery` 🧪 | `{ baddieId, xp }` | 4/s | **Studio uniquement** : fixe l'XP de maîtrise (tester les looks) |
-| `DevGrant` 🧪 | `{ what = "tickets" \| "drop" \| "finishRun", baddieId? }` | 4/s | **Studio uniquement** : +10 tickets, un drop en attente, ou les 10 niveaux terminés |
+| `DevGrant` 🧪 | `{ what = "tickets" \| "crewTickets" \| "drop" \| "finishRun", baddieId? }` | 4/s | **Studio uniquement** : +10 tickets baddie, +5 tickets compagnon, un drop en attente, ou les 10 niveaux terminés |
 
 ⏳ = **décision durable** (ci-dessous) : réponse `Result { kind = "mutation" }` après l'écriture.
 Les autres intentions invalides sont ignorées sans réponse : le client se fie au snapshot suivant.
@@ -52,7 +55,7 @@ Le client peut afficher `Balance.training.holdActionsPerSecond` (3/s) pour le ma
 En combat, le bouton principal envoie `Attack` ; au repos, `Train`. Jamais les deux (§07).
 Le premier passage d'un niveau démarre tout seul quand le joueur entre dans son arène.
 
-## Décisions durables (P2 : relance, drop, renaissance — §25 à §27)
+## Décisions durables (P2 : relance, drop, renaissance, coffre — §25 à §27)
 
 1. Le client génère un `requestId` (chaîne de 1 à 64 caractères, ex. `HttpService:GenerateGUID(false)`)
    **par décision**, et le **réutilise** s'il doit renvoyer la même décision (pas de réponse, `saving`,
@@ -68,7 +71,7 @@ Réponse `Result` :
 ```lua
 {
 	kind = "mutation",
-	action = "Roll",              -- "Roll" | "AcceptDrop" | "RefuseDrop" | "Rebirth"
+	action = "Roll",              -- "Roll" | "AcceptDrop" | "RefuseDrop" | "Rebirth" | "OpenChest"
 	requestId = "…",              -- celui de la demande
 	ok = true,
 	reason = nil,                 -- si ok = false (voir ci-dessous)
@@ -80,6 +83,7 @@ Réponse `Result` :
 		-- RefuseDrop : baddieId, remaining
 		-- Rebirth    : count, runId, promotedSlotId?, newSlotId?, clearedSlotId?, lostBaddieId?,
 		--              activeSlotId, fallback? ("conserved" | "maya"), baddieTickets, crewTickets
+		-- OpenChest  : crewId, isNew, equipped, level, copies, guaranteed, openNumber
 	},
 }
 ```
@@ -114,6 +118,17 @@ Envoyé au chargement, sur `Hello`, puis à chaque changement (regroupé, au plu
 	},
 	crew = {                      -- compagnons équipés, dans l'ordre (2 max)
 		{ id = "malik", level = 1, copies = 0, perSecond = 0.6 },
+	},
+	crewOwned = {                 -- toute la collection possédée, ordre du catalogue (P2)
+		{ id = "malik", level = 2, copies = 1, upgradeCost = 3, canUpgrade = false,
+		  equipped = true, perSecond = 0.66 },   -- upgradeCost nil au niveau 10
+	},
+	crewChest = {
+		opened = 7,               -- coffres ouverts (compteur global, séparé des relances)
+		guaranteeEvery = 20,
+		untilGuarantee = 13,      -- 1 = le prochain coffre donne un compagnon manquant
+		missing = { "kenji", "amine" },
+		complete = false,
 	},
 	stats = { trainActions = 14, crewPowerEarned = 2.4 },
 	settings = { reducedEffects = false }, -- effets réduits (§21)
@@ -168,7 +183,7 @@ Noms, raretés, couleurs et looks : lire `Shared/Catalog` avec l'ID (`Catalog.ba
 
 | `kind` | Champs | Usage suggéré |
 |---|---|---|
-| `crewJoined` | `crewId`, `isNew`, `equipped` | annonce du nouveau compagnon (tutoriel : Malik) |
+| `crewJoined` | `crewId`, `isNew`, `equipped` | nouveau compagnon (tutoriel : Malik, ou coffre) ; `isNew = false` : doublon d'un coffre, +1 copie |
 | `ticket` | `ticket` = `"baddie"`/`"crew"`, `amount` | toast +1 ticket |
 | `passiveTick` | `amount` (puissance réellement gagnée) | petit « +0,6 » au-dessus du compagnon, chaque seconde |
 
@@ -179,8 +194,7 @@ Noms, raretés, couleurs et looks : lire `Shared/Catalog` avec l'ID (`Catalog.ba
 | `mutation` | voir « Décisions durables » | réponse à `Roll`, `AcceptDrop`, `RefuseDrop`, `Rebirth` |
 | `discovery` | `baddieId` | nouvelle identité au Baddies Book (relance ou drop accepté), après l'écriture |
 | `rebirth` | `count` | renaissance confirmée |
-
-Prévu : `crewLevelUp` {`crewId`, `level`} (coffres de compagnons), déjà géré par `CelebrationController`.
+| `crewLevelUp` | `crewId`, `level` | compagnon amélioré (`UpgradeCrew`) |
 
 ## Flux `Combat` (rencontre individuelle, §08)
 

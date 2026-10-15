@@ -5,6 +5,7 @@
 	  Studio (store Studio séparé, jamais importé en production) ; elles restent hors du compte public.
 	- DevSetMastery { baddieId, xp }       : fixe l'XP de maîtrise d'une identité découverte (tester les looks).
 	- DevGrant { what = "tickets" }        : +10 tickets baddie (tester les relances et la garantie).
+	- DevGrant { what = "crewTickets" }    : +5 tickets compagnon (tester les coffres).
 	- DevGrant { what = "drop", baddieId } : ajoute un drop en attente (tester accepter / refuser).
 	- DevGrant { what = "finishRun" }      : marque les 10 niveaux terminés (tester la renaissance).
 	Hors Studio, ces intentions ne sont même pas déclarées (Bootstrap.server) et chaque fonction refuse.
@@ -71,6 +72,8 @@ function DevService.onGrant(player: Player, payload: { [any]: any }?)
 	local what = payload.what
 	if what == "tickets" then
 		data.tickets.baddie += 10
+	elseif what == "crewTickets" then
+		data.tickets.crew += 5
 	elseif what == "drop" then
 		local id = payload.baddieId
 		-- identités publiques seulement : un drop vient toujours d'un boss du lot

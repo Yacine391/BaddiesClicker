@@ -92,6 +92,7 @@ function StateService.snapshot(player: Player, data): { [string]: any }
 	local pendingDrops = table.clone(data.pendingDrops)
 
 	local missing = SlotRules.missingBaddies(data, ctx)
+	local crewMissing = CrewRules.missing(data, ctx)
 	local promotesNext = SlotRules.rebirthPromotes(data.rebirths + 1, ctx)
 
 	local needed = B.tutorial.crewUnlockAfterTrainActions
@@ -112,7 +113,15 @@ function StateService.snapshot(player: Player, data): { [string]: any }
 			damagePerClick = F.damagePerClick(data.power, multiplier, masteryLevel, B.mastery),
 			look = if baddieId then CollectionRules.selectedLook(data, baddieId, ctx) else 1,
 		},
-		crew = crew,
+		crew = crew, -- compagnons ÉQUIPÉS (inchangé depuis le v1)
+		crewOwned = CrewRules.ownedView(data, ctx), -- toute la collection possédée (P2)
+		crewChest = {
+			opened = data.rolls.crew, -- coffres ouverts (compteur global)
+			guaranteeEvery = B.rolls.crewGuaranteeEvery,
+			untilGuarantee = CrewRules.untilChestGuarantee(data, ctx), -- 1 = le prochain est garanti
+			missing = crewMissing,
+			complete = #crewMissing == 0,
+		},
 		stats = { trainActions = data.stats.trainActions, crewPowerEarned = data.stats.crewPowerEarned },
 		settings = { reducedEffects = data.settings.reducedEffects == true },
 		combat = combat,

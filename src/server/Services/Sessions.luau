@@ -16,6 +16,7 @@ export type Session = {
 	mutating: boolean, -- une décision durable est en cours d'écriture (MutationService)
 	unconfirmed: any?, -- décision appliquée dont l'écriture n'est pas encore confirmée
 	lastRollAt: number?, -- dernière relance acceptée (2 s minimum entre deux)
+	lastChestAt: number?, -- dernier coffre de compagnon ouvert (même délai)
 }
 
 local Sessions = {}
@@ -33,6 +34,7 @@ function Sessions.create(player: Player): Session
 		mutating = false,
 		unconfirmed = nil,
 		lastRollAt = nil,
+		lastChestAt = nil,
 	}
 	byPlayer[player] = session
 	return session

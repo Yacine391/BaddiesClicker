@@ -5,5 +5,5 @@
 ]]
 
 return table.freeze({
-	DEV_HUD = true,
+	DEV_HUD = false,
 })

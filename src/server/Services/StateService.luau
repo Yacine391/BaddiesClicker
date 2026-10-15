@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Net = require(ReplicatedStorage.Shared.Net)
+local CombatRules = require(script.Parent.Parent.Rules.Combat)
 local CrewRules = require(script.Parent.Parent.Rules.Crew)
 
 local StateService = {}
@@ -62,6 +63,30 @@ function StateService.snapshot(player: Player, data): { [string]: any }
 		})
 	end
 
+	local maxHP = B.combat.playerHP
+	local encounter = if session then session.encounter else nil
+	local combat
+	if encounter ~= nil then
+		combat = {
+			active = true,
+			encounterId = encounter.id,
+			levelId = encounter.levelId,
+			phase = encounter.phase,
+			hp = session.hp,
+			maxHP = maxHP,
+			minionsKilled = encounter.minionsKilled,
+			minionsTotal = encounter.minionsTotal,
+			boss = encounter.cfg.boss,
+		}
+	else
+		combat = { active = false, hp = maxHP, maxHP = maxHP }
+	end
+
+	local pendingDrops = {}
+	for dropId, count in data.pendingDrops do
+		pendingDrops[dropId] = count
+	end
+
 	local needed = B.tutorial.crewUnlockAfterTrainActions
 	return {
 		v = 1,
@@ -82,6 +107,10 @@ function StateService.snapshot(player: Player, data): { [string]: any }
 		crew = crew,
 		stats = { trainActions = data.stats.trainActions, crewPowerEarned = data.stats.crewPowerEarned },
 		settings = { reducedEffects = data.settings.reducedEffects == true },
+		combat = combat,
+		clearedLevels = CombatRules.clearedList(data),
+		run = { id = data.run.id, attempt = data.run.attempt },
+		pendingDrops = pendingDrops,
 		tutorial = {
 			crewUnlocked = data.tutorial.crewUnlocked,
 			progress = math.min(data.stats.trainActions, needed),

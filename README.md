@@ -3,16 +3,21 @@
 Jeu Roblox : on s'entraîne, on affronte sbires et baddies boss, on collectionne et on renaît.
 La référence des règles est le **dossier de production v4** (14 octobre 2026).
 
-## État actuel : lot P0, côté codeur A
+## État actuel : P0 validé, P1 (combat) écrit côté codeur A
 
 | Fait | Où |
 |---|---|
 | Profils sauvegardés avec ProfileStore : verrou de session, autosave 60 s, store Studio séparé | `src/server/Services/Profiles.luau` |
 | Puissance et entraînement calculés par le serveur, limite 8 actions/s | `Rules/Training.luau`, `Services/TrainingService.luau` |
 | Malik le DJ : débloqué après 10 entraînements, production passive serveur 0,6/s | `Rules/Crew.luau`, `Services/CrewService.luau` |
-| Contrat réseau Intent / State / Result pour le HUD du codeur B | `docs/CONTRACT.md` |
-| HUD de test (temporaire) | `src/client/Dev/DevHUD.luau` |
-| 25 tests des règles (exemples chiffrés du dossier inclus) | `tests/run.luau` |
+| Effets RGB quand on franchit un cap (paliers, compagnon, niveau, drop, maîtrise) | `Controllers/CelebrationController.luau` |
+| Combat individuel : vague de sbires, boss, télégraphies, esquive, mort, portes, drop à 10 % | `Rules/Combat.luau`, `Rules/Encounter.luau`, `Services/CombatService.luau` |
+| Carte grise de test (10 arènes + portes, Studio uniquement, placée après le lobby s'il existe) | `src/server/World/DevWorld.luau` |
+| Contrat réseau Intent / State / Result / Combat pour le codeur B | `docs/CONTRACT.md` |
+| HUD, vue et panneau de combat de test (temporaires, Studio) | `src/client/Dev/`, `src/client/CombatBootstrap.client.luau` |
+| 40 tests des règles (exemples chiffrés et cas §30 du dossier) | `tests/run.luau` |
+
+**Vocabulaire :** le **Baddies Book** est la collection des baddies découvertes.
 
 Suite du travail : `docs/ROADMAP.md`.
 
@@ -48,9 +53,12 @@ rojo serve
 Dans Studio : **New → Baseplate**, puis **Plugins → Rojo → Connect**, puis **Play**.
 
 Ce que tu dois voir :
-- le HUD DEV en haut à gauche et le bouton **ENTRAÎNER** en bas ;
+- le HUD DEV à gauche et le bouton **ENTRAÎNER** en bas ;
 - chaque clic ajoute +1 puissance (le maintien envoie 3 actions/s) ;
-- au 10e entraînement, un toast annonce Malik, puis la puissance monte seule de 0,6/s.
+- au 10e entraînement, un toast annonce Malik, puis la puissance monte seule de 0,6/s ;
+- vers le nord, la carte grise de test : entre dans l'arène du niveau 1 et le combat commence.
+  Un panneau de combat de test apparaît à droite : **ATTAQUER** (ou touche **F**). Sors des cercles
+  rouges avant l'impact, bats Jade, la porte s'ouvre. Détails : `docs/P1-COMBAT.md`.
 
 **Sauvegarde dans Studio :** tant que le place n'est pas publié avec **Game Settings → Security → Enable Studio Access to API Services**, ProfileStore tourne en mode mock et rien n'est gardé entre deux Play. C'est normal. Une fois l'accès activé, Studio écrit dans `BC_Profiles_STUDIO_v1`, jamais dans les profils des vrais joueurs.
 

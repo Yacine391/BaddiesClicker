@@ -16,6 +16,8 @@ local ProfileTemplate = require("../src/server/Rules/ProfileTemplate")
 local Training = require("../src/server/Rules/Training")
 local Crew = require("../src/server/Rules/Crew")
 local RateLimiter = require("../src/server/Util/RateLimiter")
+local CombatRules = require("../src/server/Rules/Combat")
+local Encounter = require("../src/server/Rules/Encounter")
 
 local ctx = { Balance = Balance, Catalog = Catalog, Formulas = Formulas }
 
@@ -293,6 +295,242 @@ test("format français des nombres", function()
 	eq(Format.number(1530), "1,53 K")
 	eq(Format.number(2000000), "2 M")
 	eq(Format.number(0 / 0), "—")
+end)
+
+print("Combat : règles (§09 à §14, §26, §30)")
+
+local BOUNDS = { minX = -30, maxX = 30, minZ = -120, maxZ = -60 }
+local INSIDE = { x = 0, z = -90 }
+
+local function newEncounter()
+	return Encounter.new("t", 1, CombatRules.levelConfig(1, ctx), BOUNDS, 0)
+end
+
+local function run(enc, from: number, to: number, player)
+	local events = {}
+	local t = from
+	while t <= to + 1e-9 do
+		for _, e in Encounter.step(enc, t, player, ctx) do
+			table.insert(events, e)
+		end
+		t += 0.1
+	end
+	return events
+end
+
+local function countType(events, kind: string): number
+	local n = 0
+	for _, e in events do
+		if e.type == kind then
+			n += 1
+		end
+	end
+	return n
+end
+
+-- Tue tous les sbires (en laissant le temps aux apparitions) ; renvoie l'instant atteint
+local function clearMinions(enc, t: number): number
+	while true do
+		run(enc, t, t + 1, INSIDE)
+		t += 1.1
+		if enc.phase ~= "wave" then
+			return t -- le boss vient d'apparaître : on ne le touche pas ici
+		end
+		for _ = 1, #enc.alive do
+			Encounter.attack(enc, nil, INSIDE, 1e9, 1000)
+		end
+	end
+end
+
+test("niveau 1 : 3 sbires de 50 PV puis Jade 250 PV", function()
+	local cfg = CombatRules.levelConfig(1, ctx)
+	assert(cfg ~= nil)
+	eq(cfg.minions, 3, "sbires")
+	eq(cfg.minionHP, 50, "PV sbire")
+	eq(cfg.boss, "jade", "boss")
+	eq(cfg.bossHP, 250, "PV boss")
+	eq(CombatRules.levelConfig(11, ctx), nil, "niveau 11")
+end)
+
+test("accès : niveau 1 ouvert, niveau 2 seulement après le boss 1", function()
+	local p = newProfile()
+	eq(CombatRules.isAccessible(p, 1, ctx), true, "niveau 1")
+	eq(CombatRules.isAccessible(p, 2, ctx), false, "niveau 2 fermé")
+	p.run.clearedLevels["1"] = true
+	eq(CombatRules.isAccessible(p, 2, ctx), true, "niveau 2 ouvert")
+	eq(CombatRules.isAccessible(p, 0, ctx), false, "niveau 0")
+	eq(CombatRules.isAccessible(p, 1.5, ctx), false, "niveau 1,5")
+end)
+
+test("jamais plus de 2 sbires en même temps, puis le boss", function()
+	local enc = newEncounter()
+	local events = run(enc, 0, 5, INSIDE)
+	eq(countType(events, "spawn"), 2, "apparitions")
+	eq(#enc.alive, 2, "sbires vivants")
+	Encounter.attack(enc, nil, INSIDE, 1e9, 1000)
+	events = run(enc, 5.1, 7, INSIDE)
+	eq(countType(events, "spawn"), 1, "3e sbire")
+	clearMinions(enc, 7.1)
+	eq(enc.phase, "boss", "phase")
+	eq(enc.minionsKilled, 3, "sbires tués")
+	eq(enc.enemies[enc.alive[1]].kind, "boss", "boss présent")
+end)
+
+test("attaque : cible la plus proche à portée, refusée hors de portée", function()
+	local enc = newEncounter()
+	run(enc, 0, 0.5, INSIDE)
+	local result, reason = Encounter.attack(enc, nil, { x = 0, z = 500 }, 10, 28)
+	eq(result, nil, "hors de portée")
+	eq(reason, "noTarget")
+	result = Encounter.attack(enc, nil, INSIDE, 10, 28)
+	assert(result ~= nil, "attaque à portée refusée")
+	eq(result.damage, 10, "dégâts")
+	eq(result.hp, 40, "PV restants")
+end)
+
+test("deux requêtes de victoire : une seule récompense", function()
+	local enc = newEncounter()
+	clearMinions(enc, 0)
+	local first = Encounter.attack(enc, nil, INSIDE, 1e9, 1000)
+	assert(first ~= nil and first.killed and first.kind == "boss", "boss non tué")
+	eq(enc.phase, "finalizing", "phase")
+	local second, reason = Encounter.attack(enc, nil, INSIDE, 1e9, 1000)
+	eq(second, nil, "seconde victoire")
+	eq(reason, "phase")
+end)
+
+test("esquive : touché si on reste dans la zone, épargné si on en sort", function()
+	local enc = newEncounter()
+	local t, telegraph = 0, nil
+	while telegraph == nil and t < 20 do
+		for _, e in Encounter.step(enc, t, INSIDE, ctx) do
+			if e.type == "telegraph" then
+				telegraph = e
+			end
+		end
+		t += 0.1
+	end
+	assert(telegraph ~= nil, "aucune télégraphie")
+	local impacts = {}
+	for _, e in run(enc, t, t + 1.5, INSIDE) do
+		if e.type == "impact" and e.enemyId == telegraph.enemyId then
+			table.insert(impacts, e)
+		end
+	end
+	eq(impacts[1].hit, true, "resté dans la zone")
+	eq(impacts[1].damage, 15, "dégâts sbire niveau 1")
+
+	local enc2 = newEncounter()
+	t, telegraph = 0, nil
+	while telegraph == nil and t < 20 do
+		for _, e in Encounter.step(enc2, t, INSIDE, ctx) do
+			if e.type == "telegraph" then
+				telegraph = e
+			end
+		end
+		t += 0.1
+	end
+	assert(telegraph ~= nil)
+	local away = { x = INSIDE.x + 12, z = INSIDE.z }
+	for _, e in run(enc2, t, t + 1.05, away) do
+		if e.type == "impact" and e.enemyId == telegraph.enemyId then
+			eq(e.hit, false, "sorti de la zone")
+		end
+	end
+end)
+
+test("dernier coup contre mort : aucun impact après la victoire", function()
+	local enc = newEncounter()
+	local t = clearMinions(enc, 0)
+	local bossTelegraph = false
+	while not bossTelegraph and t < 60 do
+		for _, e in Encounter.step(enc, t, INSIDE, ctx) do
+			if e.type == "telegraph" then
+				bossTelegraph = true
+			end
+		end
+		t += 0.1
+	end
+	assert(bossTelegraph, "le boss n'a pas télégraphié")
+	Encounter.attack(enc, nil, INSIDE, 1e9, 1000)
+	eq(countType(run(enc, t, t + 3, INSIDE), "impact"), 0, "impacts après victoire")
+end)
+
+test("sbire vaincu : +2 puissance et +1 XP au niveau 1", function()
+	local p = newProfile()
+	local reward = CombatRules.applyMinionKill(p, 1, ctx)
+	eq(reward.power, 2)
+	near(p.power, 3)
+	eq(p.masteryXP.maya, 1)
+end)
+
+test("boss vaincu sans drop : la porte s'ouvre quand même", function()
+	local p = newProfile()
+	local v = CombatRules.applyBossVictory(p, 1, 0.5, ctx)
+	eq(v.drop, nil, "drop")
+	eq(CombatRules.isCleared(p, 1), true, "porte 1")
+	eq(v.power, 10, "récompense boss")
+	eq(p.masteryXP.maya, 5, "XP boss")
+	eq(p.encounteredBosses.jade, true, "Jade rencontrée")
+	eq(p.discoveredBaddies.jade, nil, "rencontrée n'est pas découverte")
+end)
+
+test("drop à 10 % : Jade part dans les drops en attente", function()
+	local p = newProfile()
+	local v = CombatRules.applyBossVictory(p, 1, 0.05, ctx)
+	eq(v.drop, "jade")
+	eq(p.pendingDrops.jade, 1, "drops en attente")
+	eq(p.pendingRevision, 1, "révision")
+	eq(p.discoveredBaddies.jade, nil, "pas découverte avant acceptation")
+	eq(CombatRules.applyBossVictory(p, 1, 0.10, ctx).drop, nil, "0,10 n'est pas < 10 %")
+end)
+
+test("ticket de premier passage : une seule fois par parcours", function()
+	local p = newProfile()
+	eq(CombatRules.applyBossVictory(p, 1, 0.5, ctx).baddieTickets, 1, "premier passage")
+	eq(CombatRules.applyBossVictory(p, 1, 0.5, ctx).baddieTickets, 0, "rejouer")
+	eq(p.tickets.baddie, 11)
+end)
+
+test("20 échecs boss : toujours 10 %, aucune garantie", function()
+	local p = newProfile()
+	for _ = 1, 20 do
+		eq(CombatRules.applyBossVictory(p, 1, 0.5, ctx).drop, nil)
+	end
+	eq(CombatRules.applyBossVictory(p, 1, 0.11, ctx).drop, nil, "21e victoire à 0,11")
+	eq(CombatRules.applyBossVictory(p, 1, 0.09, ctx).drop, "jade", "0,09")
+end)
+
+test("mort au niveau 8 : puissance gardée, toutes les portes fermées", function()
+	local p = newProfile()
+	for level = 1, 7 do
+		CombatRules.applyBossVictory(p, level, 0.5, ctx)
+	end
+	p.pendingDrops.jade = 1
+	local power = p.power
+	CombatRules.applyDeath(p, ctx)
+	eq(#CombatRules.clearedList(p), 0, "portes")
+	eq(p.run.attempt, 2, "tentative")
+	near(p.power, power, "puissance")
+	eq(p.pendingDrops.jade, 1, "drop en attente")
+	eq(p.run.firstClearRewards["1"], true, "premier passage conservé")
+	eq(CombatRules.isAccessible(p, 2, ctx), false, "niveau 2 refermé")
+end)
+
+test("maîtrise : le 10e XP fait passer Maya au niveau 1", function()
+	local p = newProfile()
+	p.masteryXP.maya = 9
+	local reward = CombatRules.applyMinionKill(p, 1, ctx)
+	eq(reward.masteryBaddie, "maya")
+	eq(reward.masteryUp, 1)
+end)
+
+test("dégâts d'attaque : puissance × multiplicateur × maîtrise", function()
+	local p = newProfile()
+	p.power = 10
+	near(CombatRules.attackDamage(p, ctx), 10, "Maya, maîtrise 0")
+	p.masteryXP.maya = 1000
+	near(CombatRules.attackDamage(p, ctx), 15, "Maya, maîtrise 10")
 end)
 
 print(`\n{passed} réussi(s), {failed} échec(s)`)

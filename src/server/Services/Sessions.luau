@@ -10,6 +10,9 @@ export type Session = {
 	inCombat: boolean,
 	buckets: { [string]: RateLimiter.Bucket },
 	lastPassiveAt: number,
+	hp: number, -- PV de combat (jamais sauvegardés)
+	encounter: any?, -- rencontre en cours (Rules/Encounter)
+	outsideSince: number?, -- depuis quand le joueur est hors de son arène
 }
 
 local Sessions = {}
@@ -17,7 +20,14 @@ local Sessions = {}
 local byPlayer: { [Player]: Session } = {}
 
 function Sessions.create(player: Player): Session
-	local session: Session = { inCombat = false, buckets = {}, lastPassiveAt = os.clock() }
+	local session: Session = {
+		inCombat = false,
+		buckets = {},
+		lastPassiveAt = os.clock(),
+		hp = 0,
+		encounter = nil,
+		outsideSince = nil,
+	}
 	byPlayer[player] = session
 	return session
 end

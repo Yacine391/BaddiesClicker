@@ -2,7 +2,7 @@
 --[[
 	Catalog : identités publiques du lot V1 (baddies et compagnons).
 
-	- Les IDs sont STABLES : ne jamais renommer un ID publié (profils, drops, Book en dépendent).
+	- Les IDs sont STABLES : ne jamais renommer un ID publié (profils, drops, Baddies Book en dépendent).
 	- Couleurs en hex, à convertir côté client avec Color3.fromHex.
 	- Aucun require, aucune API Roblox : testable avec Lune.
 ]]

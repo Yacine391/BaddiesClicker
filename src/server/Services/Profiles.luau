@@ -57,6 +57,14 @@ function Profiles.get(player: Player): any?
 	return nil
 end
 
+-- Écriture prioritaire (victoire de boss, drop…) en plus de l'autosave
+function Profiles.saveNow(player: Player)
+	local profile = active[player]
+	if profile ~= nil and profile:IsActive() then
+		profile:Save()
+	end
+end
+
 local function loadPlayer(player: Player)
 	local profile = store:StartSessionAsync(`Player_{player.UserId}`, {
 		Cancel = function()

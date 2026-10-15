@@ -29,13 +29,17 @@ trouve la sortie du lobby ; fluide sur le téléphone de référence ; vidéo r�
 
 ## P1 : un boss jouable (codeur A : combat, mort, victoire)
 
-- [ ] `Sessions` : HP joueur, rencontre en cours, cible, cadence
-- [ ] Ennemis logiques côté serveur : approche → télégraphie (~1 s) → impact → récupération
-- [ ] Intentions `StartWave(levelId)` et `Attack(encounterId, targetId, sequence)` : portée 25 studs, une application de dégâts par action
-- [ ] Victoire boss : mur individuel ouvert, récompense de puissance, **un seul** tirage à 10 % → `pendingDrops`
-- [ ] Mort : retour lobby, portes refermées, puissance et possessions conservées
-- [ ] Arbitrage « dernier coup contre mort » dans la boucle serveur
-- [ ] Tests §30 : clic hors combat / en combat, boss vaincu sans drop, deux requêtes de victoire, 20 échecs boss, mort au niveau 8
+- [x] `Sessions` : HP joueur, rencontre en cours, cible, cadence
+- [x] Ennemis logiques côté serveur : approche → télégraphie (~1 s) → impact → récupération
+- [x] Intentions `StartWave(levelId)` et `Attack(encounterId, targetId?)` : portée 25 studs, une application de dégâts par action (la cadence 8/s remplace le numéro de séquence)
+- [x] Victoire boss : mur individuel ouvert, récompense de puissance, **un seul** tirage à 10 % → `pendingDrops`
+- [x] Mort : retour lobby, portes refermées, puissance et possessions conservées
+- [x] Arbitrage « dernier coup contre mort » dans la boucle serveur
+- [x] Tests §30 : clic hors combat / en combat, boss vaincu sans drop, deux requêtes de victoire, 20 échecs boss, mort au niveau 8
+- [x] Validé en Studio (15/10) : 10 niveaux, rejouer, mort, drop ; bouton principal Attack/Train (codeur B, PR #1)
+- [ ] Codeur B : barrière de rue retirée, vraies arènes `Levels/LevelN/Arena` + `Door`, rendu du combat via `onCombat` (ajustements 2 et 3)
+
+Détails : `docs/P1-COMBAT.md`.
 
 ## P2 : slots, drops, rebirth, reprises (codeur A)
 

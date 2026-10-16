@@ -22,7 +22,7 @@ La référence des règles est le **dossier de production v4** (14 octobre 2026)
 | Statistiques de jeu (accueil, progression par niveau, tickets, moments clés) envoyées par le serveur | `Rules/Metrics.luau`, `Services/MetricsService.luau` |
 | Garde-robe, titres et 10 succès (badges Roblox prêts à brancher) | `Shared/Wardrobe.luau`, `Rules/Achievements.luau`, `Services/WardrobeService.luau` |
 | Garde-fous du profil au chargement (migrations, invariants), maintenance, restauration | `Rules/ProfileGuard.luau`, `Services/MaintenanceService.luau`, `Admin/`, `docs/OPERATIONS.md` |
-| HUD, vue et panneaux de test (temporaires, Studio) | `src/client/Dev/`, `CombatBootstrap.client.luau`, `DevToolsBootstrap.client.luau` |
+| HUD, vue et panneaux de test (temporaires, Studio) | `src/client/Dev/`, `DevToolsBootstrap.client.luau` |
 | 105 tests des règles, des pannes et des profils (cas §30 du dossier) | `tests/run.luau`, `tests/fixtures/` |
 
 **Vocabulaire :** le **Baddies Book** est la collection des baddies découvertes.

@@ -37,7 +37,7 @@ trouve la sortie du lobby ; fluide sur le téléphone de référence ; vidéo r�
 - [x] Arbitrage « dernier coup contre mort » dans la boucle serveur
 - [x] Tests §30 : clic hors combat / en combat, boss vaincu sans drop, deux requêtes de victoire, 20 échecs boss, mort au niveau 8
 - [x] Validé en Studio (15/10) : 10 niveaux, rejouer, mort, drop ; bouton principal Attack/Train (codeur B, PR #1)
-- [ ] Codeur B : barrière de rue retirée, vraies arènes `Levels/LevelN/Arena` + `Door`, rendu du combat via `onCombat` (ajustements 2 et 3)
+- [x] Codeur B : barrière de rue retirée, vraies arènes `Levels/LevelN/Arena` + `Door` (`assets/world/LevelsBuilder.luau` → `Levels.rbxm`), rendu du combat via `onCombat` (`Controllers/Combat`)
 
 Détails : `docs/P1-COMBAT.md`.
 

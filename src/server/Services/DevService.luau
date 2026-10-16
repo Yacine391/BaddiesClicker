@@ -6,8 +6,10 @@
 	- DevSetMastery { baddieId, xp }       : fixe l'XP de maîtrise d'une identité découverte (tester les looks).
 	- DevGrant { what = "tickets" }        : +10 tickets baddie (tester les relances et la garantie).
 	- DevGrant { what = "crewTickets" }    : +5 tickets compagnon (tester les coffres).
+	- DevGrant { what = "power" }          : +5 000 puissance (atteindre vite les niveaux suivants).
 	- DevGrant { what = "drop", baddieId } : ajoute un drop en attente (tester accepter / refuser).
 	- DevGrant { what = "finishRun" }      : marque les 10 niveaux terminés (tester la renaissance).
+	- DevGrant { what = "teleport" }       : en combat, saute au coin opposé de l'arène (tester §25).
 	Hors Studio, ces intentions ne sont même pas déclarées (Bootstrap.server) et chaque fonction refuse.
 ]]
 
@@ -72,6 +74,8 @@ function DevService.onGrant(player: Player, payload: { [any]: any }?)
 	local what = payload.what
 	if what == "tickets" then
 		data.tickets.baddie += 10
+	elseif what == "power" then
+		data.power += 5000 -- les niveaux 2 à 10 demandent des milliers de puissance (équilibrage v4-p1)
 	elseif what == "crewTickets" then
 		data.tickets.crew += 5
 	elseif what == "drop" then
@@ -86,6 +90,21 @@ function DevService.onGrant(player: Player, payload: { [any]: any }?)
 		for levelId = 1, #ctx.Balance.levels do
 			data.run.clearedLevels[tostring(levelId)] = true
 		end
+	elseif what == "teleport" then
+		-- Saute au coin opposé de l'arène SANS prévenir le contrôle des déplacements (§25) :
+		-- c'est exactement ce que verrait le serveur face à une téléportation côté client.
+		local encounter = session.encounter
+		local arena = if encounter ~= nil then deps.World.arena(encounter.levelId) else nil
+		local character = player.Character
+		if arena == nil or character == nil then
+			return
+		end
+		local pivot = character:GetPivot()
+		local b = arena.bounds
+		local x = if pivot.Position.X < (b.minX + b.maxX) / 2 then b.maxX - 4 else b.minX + 4
+		local z = if pivot.Position.Z < (b.minZ + b.maxZ) / 2 then b.maxZ - 4 else b.minZ + 4
+		character:PivotTo(pivot.Rotation + Vector3.new(x, pivot.Position.Y, z))
+		return -- aucune donnée de profil modifiée
 	else
 		return
 	end

@@ -9,7 +9,8 @@
 	- Progression « Parcours » par niveau : début, échec (mort), réussite.
 	- Économie : tickets baddie et compagnon gagnés (entraînement, premier passage, renaissance) et dépensés.
 	- Personnalisés : temps jusqu'au premier combat / boss, durée du parcours, puissance à la mort,
-	  reprise après une mort, relances jusqu'à une découverte, décisions sur les drops, baddie effacée au rebirth.
+	  reprise après une mort, relances jusqu'à une découverte, décisions sur les drops, baddie effacée au rebirth,
+	  rencontre invalidée pour déplacements impossibles (§25).
 ]]
 
 local AnalyticsService = game:GetService("AnalyticsService")
@@ -161,6 +162,11 @@ function MetricsService.died(player: Player, data, session, levelId: number)
 	send(`progression échec · {levelName(levelId)}`, function()
 		AnalyticsService:LogProgressionFailEvent(player, PATH, levelId, levelName(levelId))
 	end)
+end
+
+-- §25 : rencontre invalidée pour déplacements impossibles (agrégé, aucune donnée personnelle)
+function MetricsService.encounterInvalid(player: Player, _data, levelId: number)
+	custom(player, "RencontreInvalidee", levelId, `niveau {levelId}`, "deplacement")
 end
 
 function MetricsService.bossDefeated(player: Player, data, levelId: number, victory)

@@ -53,7 +53,7 @@ Contrat réseau : `docs/CONTRACT.md` (v3, snapshot `v = 2`).
 - [ ] Générer un `requestId` par décision et le réutiliser en cas de renvoi ; afficher la révélation à la réponse `mutation`
 - [ ] Book et Style : brancher `collection` (déjà prévu dans la PR #1)
 - [ ] Crew : afficher `crewOwned` (niveau, copies, coût), boutons Ouvrir un coffre / Améliorer / Équiper ; `crewChest` pour la garantie
-- [ ] Supprimer `DevToolsBootstrap.client.luau` et `Dev/DevSlotsPanel.luau` quand ces écrans sont prêts
+- [x] Écrans prêts (fenêtre SLOTS, CREW) : `Dev/DevSlotsPanel.luau` remplacé par `Dev/DevToolsPanel.luau` (outils Studio seulement)
 
 ## Tester dans Studio
 

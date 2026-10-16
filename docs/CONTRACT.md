@@ -300,8 +300,10 @@ Pour afficher les suiveurs de **tous** les joueurs, pas seulement les siens :
   relance, jamais « manquante », jamais comptée dans `bookCount`. Côté client, `Shared/Catalog` ne la
   contient pas : afficher l'ID tel quel si `Catalog.baddies[id]` est nil.
 - `DevSetMastery`, `DevGrant` : voir les intentions.
-- `Dev/DevSlotsPanel` (touche F4), lancé par `DevToolsBootstrap.client.luau` : slots, relances, drops,
-  renaissance et outils, en attendant les écrans Slots / Drops / Rebirth du codeur B.
+- `Dev/DevToolsPanel` (touche F4), lancé par `DevToolsBootstrap.client.luau` : raccourcis `DevGrant` /
+  `DevSetMastery` seulement. Les écrans de jeu sont dans le HUD : fenêtre SLOTS (`Controllers/Slots` :
+  slots, drops, renaissance), CREW (coffres, amélioration, équipe), décisions durables via
+  `Controllers/Decisions` (requestId réutilisé, nouvel essai automatique sur `saving` / `error` / non confirmé).
 
 Les suiveurs sont **purement visuels et locaux** (§28) : aucune physique serveur, aucune collision,
 arrêter une animation ne change rien aux gains.

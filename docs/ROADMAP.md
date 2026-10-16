@@ -50,7 +50,7 @@ Détails : `docs/P1-COMBAT.md`.
 - [x] Baddies Book, exposition et looks (proposition « collection » du codeur B), compagnons : coffres, niveaux, équipe
 - [x] Garde-fous du profil au chargement, interrupteurs de maintenance, outil de restauration (`docs/OPERATIONS.md`)
 - [x] Validé en Studio (15/10). Détails : `docs/P2-SLOTS.md`
-- [ ] Codeur B : écrans Slots, Drops, Renaissance, Crew (collection, coffres, niveaux, équipe), puis suppression du panneau de test F4
+- [x] Codeur B : écrans Slots, Drops, Renaissance (fenêtre SLOTS), Crew (coffres, niveaux, équipe) ; panneau F4 réduit aux outils Studio
 
 ## V1 puis bêta
 
@@ -60,6 +60,6 @@ Détails : `docs/P1-COMBAT.md`.
 - [x] Flags serveur de maintenance (§36) ; outil de restauration écrit
 - [ ] Restauration répétée avec succès sur un compte de test
 - [ ] Badges Roblox : 5 sur 10 créés (les 5 autres : gratuits le 16/10)
-- [ ] Codeur B : tableau du lobby, écran Style, titres au-dessus des avatars, vraies arènes et rendu du combat (ajustements 2 et 3)
+- [x] Codeur B : tableau du lobby (`Controllers/Leaderboard`), écran Style, titres au-dessus des avatars (`Controllers/Titles`), vraies arènes et rendu du combat
 - [ ] Catalogue validé (modèles et looks des 8 baddies et 6 compagnons)
 - [ ] Mobile, présentation, matrice de tests complète

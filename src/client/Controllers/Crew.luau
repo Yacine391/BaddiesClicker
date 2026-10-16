@@ -2,14 +2,19 @@
 --[[
 	Crew : compagnons (§16) — rareté, nom · rôle, production réelle par seconde, niveau, copies,
 	puce ÉQUIPÉ. Collection complète (`crewOwned`) si le snapshot la donne, sinon les équipés (`crew`).
-	Les compagnons n'attaquent pas en V1 : ils entraînent en continu. Aucun bouton (pas de faux bouton).
+	Les compagnons n'attaquent pas en V1 : ils entraînent en continu.
+	Fenêtre CREW (avec `withActions`) : OUVRIR un coffre (décision durable, Controllers/Decisions),
+	AMÉLIORER (copies), ÉQUIPER / RETIRER (deux au maximum). L'onglet CREW du Book reste en lecture seule.
 ]]
 
 local Client = script.Parent.Parent
 local Theme = require(Client.UI.Theme)
 local WindowHost = require(Client.UI.WindowHost)
 local ListRow = require(Client.UI.Components.ListRow)
+local Toast = require(Client.UI.Components.Toast)
 local Chip = require(Client.UI.Components.Chip)
+local CrewModel = require(Client.Logic.CrewModel)
+local Decisions = require(script.Parent.Decisions)
 
 local Crew = {}
 
@@ -21,9 +26,31 @@ local function entriesOf(snapshot: any): ({ any }, boolean)
 end
 
 -- Aussi utilisé par l'onglet CREW du Book
-function Crew.rows(scope: any, deps: any, snapshot: any): { Instance }
+function Crew.rows(scope: any, deps: any, snapshot: any, withActions: boolean?): { Instance }
 	local rows: { Instance } = {}
 	local entries, owned = entriesOf(snapshot)
+	local actions = withActions == true and owned and snapshot ~= nil
+	local inCombat = snapshot ~= nil and snapshot.mode == "combat"
+	local maxLevel = deps.Balance.crew.maxLevel
+	local maxEquipped = deps.Balance.crew.maxEquipped
+	if actions then
+		local tickets = tonumber(snapshot.tickets and snapshot.tickets.crew) or 0
+		table.insert(
+			rows,
+			ListRow(scope, {
+				Portrait = "?",
+				PortraitColor = Theme.Colors.Crew,
+				Name = "COFFRE DE COMPAGNON",
+				Chips = { Chip(scope, { Text = CrewModel.chestText(snapshot), Color = Theme.Colors.Accent }) },
+				Description = if inCombat then "Impossible en combat." else "1 ticket compagnon par coffre.",
+				ActionLabel = if tickets >= 1 and not inCombat then "OUVRIR" else nil,
+				OnAction = function()
+					Decisions.send("OpenChest", {})
+				end,
+				LayoutOrder = 0,
+			})
+		)
+	end
 	if #entries == 0 then
 		local tutorial = snapshot and snapshot.tutorial or {}
 		table.insert(
@@ -72,6 +99,35 @@ function Crew.rows(scope: any, deps: any, snapshot: any): { Instance }
 					Chips = chips,
 					Selected = equipped,
 					LayoutOrder = index,
+					ActionLabel = if actions
+						then (if CrewModel.canUpgrade(entry, maxLevel)
+							then "AMÉLIORER"
+							elseif equipped then "RETIRER"
+							else "ÉQUIPER")
+						else nil,
+					Description = if actions and CrewModel.canUpgrade(entry, maxLevel)
+						then `Améliorer : {CrewModel.upgradeCost(entry.level or 1, maxLevel)} copies. Équiper / retirer après.`
+						else nil,
+					OnAction = function()
+						if CrewModel.canUpgrade(entry, maxLevel) then
+							deps.StateController.send(
+								deps.Actions.UpgradeCrew or "UpgradeCrew",
+								{ crewId = entry.id }
+							)
+							return
+						end
+						local ids =
+							CrewModel.toggleEquip(CrewModel.equippedIds(snapshot), entry.id, maxEquipped)
+						if ids == nil then
+							Toast.show(
+								deps.HudRoot,
+								`Équipe pleine ({maxEquipped} max) : retire d'abord un compagnon`,
+								"crew"
+							)
+							return
+						end
+						deps.StateController.send(deps.Actions.EquipCrew or "EquipCrew", { ids = ids })
+					end,
 				})
 			)
 		end
@@ -90,6 +146,8 @@ function Crew.signature(snapshot: any): string
 	end
 	local tutorial = snapshot.tutorial or {}
 	table.insert(parts, tostring(tutorial.progress))
+	local chest = snapshot.crewChest or {}
+	table.insert(parts, `{snapshot.tickets and snapshot.tickets.crew}:{chest.untilGuarantee}:{snapshot.mode}`)
 	return table.concat(parts, "|")
 end
 
@@ -101,7 +159,7 @@ function Crew.start(scope: any, deps: any)
 		content = function(inner)
 			return {
 				WindowHost.rows(inner, deps, Crew.signature, function(rowsScope, snapshot)
-					return Crew.rows(rowsScope, deps, snapshot)
+					return Crew.rows(rowsScope, deps, snapshot, true)
 				end),
 			}
 		end,

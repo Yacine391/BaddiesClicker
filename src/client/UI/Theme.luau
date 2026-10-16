@@ -27,6 +27,7 @@ Theme.Colors = table.freeze({
 	Crew = hex("#B48CF0"),
 	Style = hex("#FF5FD2"),
 	Settings = hex("#CFCAE6"),
+	Slots = hex("#D7A746"),
 	Close = hex("#E0233F"),
 	Principal = hex("#33B84A"),
 	Danger = hex("#FF3B5C"), -- zones de danger, PV bas, coup reçu (combat)

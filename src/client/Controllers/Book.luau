@@ -51,6 +51,7 @@ local function signature(snapshot: any): string
 		tostring(active.baddieId),
 		tostring(active.slotId),
 		tostring(active.masteryLevel),
+		tostring(snapshot.mode),
 		if c then table.concat(c.discovered or {}, ",") else "v1",
 		if c then table.concat(c.display or {}, ",") else "",
 	}, "|")

@@ -22,17 +22,17 @@ Icônes de trait (blanches) : teintées en jeu par `ImageColor3`. `arm` et `tick
 
 | Fichier | Usage | assetId |
 |---|---|---|
-| `png/book.png` | menu Book | |
-| `png/crew.png` | menu Crew, tutoriel | |
-| `png/style.png` | menu Style | |
-| `png/settings.png` | menu Réglages | |
-| `png/chevron.png` | flèche du menu | |
-| `png/bolt.png` | bouton principal, production | |
-| `png/arm.png` | compteur de puissance | |
-| `png/ticket.png` | compteur de tickets | |
-| `png/door.png` | carte « Parcours » | |
-| `png/lock.png` | look verrouillé | |
-| `png/eye.png` | exposer | |
-| `png/crown.png` | réservé (classement, titres) | |
-| `png/logo.png` | logo du HUD | |
-| `png/glow.png` | halo des panneaux | |
+| `png/book.png` | menu Book | `rbxassetid://94716205629835` |
+| `png/crew.png` | menu Crew, tutoriel | `rbxassetid://113913955556099` |
+| `png/style.png` | menu Style | `rbxassetid://71735145745689` |
+| `png/settings.png` | menu Réglages | `rbxassetid://115418148096622` |
+| `png/chevron.png` | flèche du menu | `rbxassetid://71242548714789` |
+| `png/bolt.png` | bouton principal, production | `rbxassetid://107048971234661` |
+| `png/arm.png` | compteur de puissance | `rbxassetid://139685984254923` |
+| `png/ticket.png` | compteur de tickets | `rbxassetid://73411537747382` |
+| `png/door.png` | carte « Parcours » | `rbxassetid://109053980589787` |
+| `png/lock.png` | look verrouillé | `rbxassetid://124733419973837` |
+| `png/eye.png` | exposer | `rbxassetid://138818406947967` |
+| `png/crown.png` | réservé (classement, titres) | `rbxassetid://76335979670718` |
+| `png/logo.png` | logo du HUD | `rbxassetid://104433435199565` |
+| `png/glow.png` | halo des panneaux | `rbxassetid://105925253038271` |

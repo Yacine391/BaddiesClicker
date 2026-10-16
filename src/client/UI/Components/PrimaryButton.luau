@@ -12,6 +12,7 @@ local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
 local Metrics = require(UI.Metrics)
 local Icon = require(script.Parent.Icon)
+local Halo = require(script.Parent.Halo)
 
 export type Props = {
 	Label: any, -- état de string
@@ -113,36 +114,22 @@ return function(scope: any, props: Props): Instance
 			},
 		}),
 	}
-	if Theme.Glow ~= "" then
-		table.insert(
-			children,
-			scope:New("ImageLabel")({
-				Name = "Glow",
-				BackgroundTransparency = 1,
-				Image = Theme.Glow,
-				ImageColor3 = base,
-				ImageTransparency = 0.45,
-				ScaleType = Enum.ScaleType.Slice,
-				SliceCenter = Theme.GlowSlice,
-				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.fromScale(0.5, 0.5),
-				Size = UDim2.new(1, 40, 1, 40),
-				ZIndex = 0,
-			})
-		)
-	end
+	-- hauteur ≥ 48 px réels même en très petite échelle (§21)
+	local size = scope:Computed(function(use)
+		return UDim2.fromOffset(300, use(height))
+	end)
+	local withHalo = Halo.enabled()
+	local fill = Halo.FILL
 
-	return scope:New("TextButton")({
+	local button = scope:New("TextButton")({
 		Name = "PrimaryButton",
 		Text = "",
 		AutoButtonColor = false,
 		BackgroundColor3 = Color3.new(1, 1, 1),
-		-- hauteur ≥ 48 px réels même en très petite échelle (§21)
-		Size = scope:Computed(function(use)
-			return UDim2.fromOffset(300, use(height))
-		end),
-		Position = props.Position or UDim2.new(),
-		AnchorPoint = props.AnchorPoint or Vector2.zero,
+		Size = if withHalo then fill.Size else size,
+		Position = if withHalo then fill.Position else props.Position or UDim2.new(),
+		AnchorPoint = if withHalo then fill.AnchorPoint else props.AnchorPoint or Vector2.zero,
+		ZIndex = if withHalo then fill.ZIndex else 1,
 		Active = props.Enabled,
 		BackgroundTransparency = scope:Computed(function(use)
 			return if use(props.Enabled) then 0 else 0.5
@@ -165,4 +152,14 @@ return function(scope: any, props: Props): Instance
 		end,
 		[scope.Children] = children,
 	})
+	if not withHalo then
+		return button
+	end
+	-- le halo prend la couleur de remplissage (cyan / rose) et reste derrière le bouton
+	return Halo.host(scope, {
+		Name = "PrimaryButtonHost",
+		Size = size,
+		Position = props.Position,
+		AnchorPoint = props.AnchorPoint,
+	}, { Color = base, Transparency = 0.45, Margin = 40 }, button)
 end

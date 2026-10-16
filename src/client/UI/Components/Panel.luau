@@ -1,12 +1,14 @@
 --!strict
 --[[
 	Panel : panneau du style mix A — fond nuit translucide, coins 10 px, contour 2 px.
-	`Glow` ajoute un halo coloré derrière (image 9-slice Theme.Glow) ; tant que l'image n'est pas
-	uploadée, le halo est remplacé par un contour plus épais de la même couleur.
+	`Glow` ajoute un halo coloré derrière (image 9-slice Theme.Glow, porté par Halo.host : un enfant
+	s'afficherait par-dessus le panneau) ; tant que l'image n'est pas uploadée, le halo est remplacé
+	par un contour plus épais de la même couleur.
 	Roblox n'a pas d'ombre portée : le halo est une image.
 ]]
 
 local Theme = require(script.Parent.Parent.Theme)
+local Halo = require(script.Parent.Halo)
 
 export type Props = {
 	Size: any,
@@ -48,40 +50,36 @@ return function(scope: any, props: Props): Frame
 			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 		}),
 	}
-	if props.Glow and hasGlowImage then
-		table.insert(
-			children,
-			scope:New("ImageLabel")({
-				Name = "Glow",
-				BackgroundTransparency = 1,
-				Image = Theme.Glow,
-				ImageColor3 = props.Glow,
-				ImageTransparency = 0.4,
-				ScaleType = Enum.ScaleType.Slice,
-				SliceCenter = Theme.GlowSlice,
-				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.fromScale(0.5, 0.5),
-				Size = UDim2.new(1, 24, 1, 24),
-				ZIndex = (props.ZIndex or 1) - 1,
-				Visible = if glowOn then glowOn else true,
-			})
-		)
-	end
 	for _, child in props.Children or {} do
 		table.insert(children, child)
 	end
 
-	return scope:New("Frame")({
-		Name = props.Name or "Panel",
-		Size = props.Size,
-		Position = props.Position or UDim2.new(),
-		AnchorPoint = props.AnchorPoint or Vector2.zero,
+	local withHalo = props.Glow ~= nil and hasGlowImage
+	local fill = Halo.FILL
+	local panel = scope:New("Frame")({
+		Name = if withHalo then "Body" else props.Name or "Panel",
+		Size = if withHalo then fill.Size else props.Size,
+		Position = if withHalo then fill.Position else props.Position or UDim2.new(),
+		AnchorPoint = if withHalo then fill.AnchorPoint else props.AnchorPoint or Vector2.zero,
 		BackgroundColor3 = Theme.Colors.Panel,
 		BackgroundTransparency = Theme.Transparency.Panel,
-		ZIndex = props.ZIndex or 1,
-		LayoutOrder = props.LayoutOrder or 0,
-		Visible = if props.Visible == nil then true else props.Visible,
+		ZIndex = if withHalo then fill.ZIndex else props.ZIndex or 1,
+		LayoutOrder = if withHalo then 0 else props.LayoutOrder or 0,
+		Visible = if withHalo or props.Visible == nil then true else props.Visible,
 		AutomaticSize = props.AutomaticSize or Enum.AutomaticSize.None,
 		[scope.Children] = children,
 	}) :: Frame
+	if not withHalo then
+		return panel
+	end
+	return Halo.host(scope, {
+		Name = props.Name or "Panel",
+		Size = props.Size,
+		Position = props.Position,
+		AnchorPoint = props.AnchorPoint,
+		LayoutOrder = props.LayoutOrder,
+		ZIndex = props.ZIndex,
+		Visible = props.Visible,
+		AutomaticSize = props.AutomaticSize,
+	}, { Color = props.Glow, Transparency = 0.4, Margin = 24, Visible = glowOn }, panel)
 end

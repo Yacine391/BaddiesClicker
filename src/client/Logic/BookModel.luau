@@ -160,7 +160,11 @@ function BookModel.detail(snapshot: any, catalog: any, format: (number) -> strin
 		masteryRatio = if isPrincipal then math.clamp(mastery / MAX_MASTERY, 0, 1) else 0,
 		looksText = if totalLooks > 0 then `{unlocked}/{totalLooks}` else "—",
 		displayed = displayed,
-		canToggleDisplay = discovered and collection ~= nil and (displayed or #display < MAX_DISPLAY),
+		-- SetDisplay est refusé par le serveur en combat : pas de bouton EXPOSER à ce moment-là
+		canToggleDisplay = discovered
+			and collection ~= nil
+			and snapshot.mode ~= "combat"
+			and (displayed or #display < MAX_DISPLAY),
 		chanceText = if def and not discovered then format(def.rollChance) .. " %" else nil,
 	}
 end

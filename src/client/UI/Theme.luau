@@ -49,23 +49,23 @@ Theme.BaseResolution = Vector2.new(1280, 720)
 Theme.MinTouch = 48
 
 -- IDs des images uploadées (assets/ui/README.md). "" = pas encore uploadée → repli.
-Theme.Logo = ""
-Theme.Glow = ""
+Theme.Logo = "rbxassetid://104433435199565"
+Theme.Glow = "rbxassetid://105925253038271" -- halo porté par Components/Halo, derrière les panneaux
 Theme.GlowSlice = Rect.new(48, 48, 80, 80)
 
 Theme.Icons = table.freeze({
-	book = "",
-	crew = "",
-	style = "",
-	settings = "",
-	chevron = "",
-	bolt = "",
-	arm = "",
-	ticket = "",
-	door = "",
-	lock = "",
-	eye = "",
-	crown = "",
+	book = "rbxassetid://94716205629835",
+	crew = "rbxassetid://113913955556099",
+	style = "rbxassetid://71735145745689",
+	settings = "rbxassetid://115418148096622",
+	chevron = "rbxassetid://71242548714789",
+	bolt = "rbxassetid://107048971234661",
+	arm = "rbxassetid://139685984254923",
+	ticket = "rbxassetid://73411537747382",
+	door = "rbxassetid://109053980589787",
+	lock = "rbxassetid://124733419973837",
+	eye = "rbxassetid://138818406947967",
+	crown = "rbxassetid://76335979670718",
 })
 
 return Theme

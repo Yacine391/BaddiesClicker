@@ -204,7 +204,10 @@ local function lookRow(scope: any, deps: any, id: string, def: any, row: StyleMo
 	return scope:New("Frame")({
 		Name = "Look" .. row.index,
 		LayoutOrder = row.index,
-		Size = UDim2.new(1, 0, 0, 100),
+		-- au moins la cible tactile + marges : sur petit téléphone, les boutons PORTER ne se chevauchent plus
+		Size = scope:Computed(function(use)
+			return UDim2.new(1, 0, 0, math.max(100, (use(height) :: number) + 16))
+		end),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		BackgroundTransparency = if row.state == "locked" then 0.4 else 0,
 		[scope.Children] = {

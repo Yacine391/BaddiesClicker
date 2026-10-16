@@ -11,6 +11,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
+local Halo = require(script.Parent.Halo)
 local Metrics = require(UI.Metrics)
 local Icon = require(script.Parent.Icon)
 
@@ -260,24 +261,29 @@ return function(scope: any, props: Props): Instance
 			},
 		}),
 	}
-	if Theme.Glow ~= "" then
-		table.insert(
-			frameChildren,
-			scope:New("ImageLabel")({
-				Name = "Glow",
-				BackgroundTransparency = 1,
-				Image = Theme.Glow,
-				ImageColor3 = Theme.Colors.Accent,
-				ImageTransparency = 0.5,
-				ScaleType = Enum.ScaleType.Slice,
-				SliceCenter = Theme.GlowSlice,
-				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.fromScale(0.5, 0.5),
-				Size = UDim2.new(1, 40, 1, 40),
-				ZIndex = 0,
-			})
-		)
-	end
+	local size = props.Size or UDim2.fromOffset(820, 500)
+	local withHalo = Halo.enabled()
+	local fill = Halo.FILL
+	local border = scope:New("Frame")({
+		Name = "Border",
+		AnchorPoint = if withHalo then fill.AnchorPoint else Vector2.new(0.5, 0.5),
+		Position = if withHalo then fill.Position else UDim2.fromScale(0.5, 0.5),
+		Size = if withHalo then fill.Size else size,
+		BackgroundColor3 = Theme.Colors.Panel,
+		BackgroundTransparency = 0.03,
+		ZIndex = if withHalo then fill.ZIndex else 11,
+		[scope.Children] = frameChildren,
+	})
+	-- halo cyan DERRIÈRE la fenêtre (frère de Border, jamais enfant : il la recouvrirait)
+	local window = if withHalo
+		then Halo.host(scope, {
+			Name = "BorderHost",
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+			Size = size,
+			ZIndex = 11,
+		}, { Color = Theme.Colors.Accent, Transparency = 0.5, Margin = 40 }, border)
+		else border
 
 	return scope:New("TextButton")({
 		Name = "WindowBackdrop",
@@ -288,17 +294,6 @@ return function(scope: any, props: Props): Instance
 		BackgroundTransparency = Theme.Transparency.Dim,
 		Size = UDim2.fromScale(1, 1),
 		ZIndex = 10,
-		[scope.Children] = {
-			scope:New("Frame")({
-				Name = "Border",
-				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.fromScale(0.5, 0.5),
-				Size = props.Size or UDim2.fromOffset(820, 500),
-				BackgroundColor3 = Theme.Colors.Panel,
-				BackgroundTransparency = 0.03,
-				ZIndex = 11,
-				[scope.Children] = frameChildren,
-			}),
-		},
+		[scope.Children] = { window },
 	})
 end

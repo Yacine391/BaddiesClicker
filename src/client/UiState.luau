@@ -6,7 +6,7 @@
 
 local UiState = {}
 
-UiState.openWindow = nil :: any -- Value<string?> : nil | "Book" | "Style" | "Crew" | "Settings"
+UiState.openWindow = nil :: any -- Value<string?> : nil | "Book" | "Slots" | "Style" | "Crew" | "Settings"
 UiState.settings = nil :: any -- { reducedEffects, showOthersFollowers, holdToTrain } : Value<boolean>
 UiState.trainPulse = nil :: any -- Value<number>, +1 à chaque clic local accepté par Input
 

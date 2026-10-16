@@ -97,6 +97,16 @@ function StateService.snapshot(player: Player, data): { [string]: any }
 	local crewMissing = CrewRules.missing(data, ctx)
 	local promotesNext = SlotRules.rebirthPromotes(data.rebirths + 1, ctx)
 
+	-- §09 : prochain niveau du parcours et puissance conseillée avec la principale actuelle
+	local nextLevelId = CombatRules.nextLevel(data, ctx)
+	local nextLevel = nil
+	if nextLevelId ~= nil then
+		nextLevel = {
+			levelId = nextLevelId,
+			recommendedPower = CombatRules.recommendedPower(nextLevelId, multiplier, masteryLevel, ctx),
+		}
+	end
+
 	local needed = B.tutorial.crewUnlockAfterTrainActions
 	return {
 		v = 2,
@@ -128,6 +138,7 @@ function StateService.snapshot(player: Player, data): { [string]: any }
 		settings = { reducedEffects = data.settings.reducedEffects == true },
 		combat = combat,
 		clearedLevels = CombatRules.clearedList(data),
+		nextLevel = nextLevel, -- { levelId, recommendedPower } ou nil quand le niveau 10 est terminé
 		run = { id = data.run.id, attempt = data.run.attempt },
 		pendingDrops = pendingDrops,
 		pendingRevision = data.pendingRevision,

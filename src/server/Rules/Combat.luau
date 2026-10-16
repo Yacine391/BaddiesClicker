@@ -103,6 +103,51 @@ function Combat.attackDamage(data: any, ctx: any): number
 	return ctx.Formulas.damagePerClick(data.power, baddie.multiplier, mastery, ctx.Balance.mastery)
 end
 
+-- Coups pour finir toute la rencontre d'un niveau (sbires puis boss) à `damage` par coup
+function Combat.attacksToClear(levelId: number, damage: number, ctx: any): number
+	local cfg = Combat.levelConfig(levelId, ctx)
+	if cfg == nil or damage <= 0 or damage ~= damage then
+		return math.huge
+	end
+	return cfg.minions * math.ceil(cfg.minionHP / damage) + math.ceil(cfg.bossHP / damage)
+end
+
+-- §09 « puissance recommandée » (un conseil, jamais une garantie) : plus petite puissance entière qui
+-- finit la rencontre en `Balance.combat.recommendedAttacks` coups avec cette principale et cette maîtrise.
+function Combat.recommendedPower(levelId: number, multiplier: number, masteryLevel: number, ctx: any): number?
+	if Combat.levelConfig(levelId, ctx) == nil or multiplier <= 0 then
+		return nil
+	end
+	local target = ctx.Balance.combat.recommendedAttacks
+	local function fits(power: number): boolean
+		local damage = ctx.Formulas.damagePerClick(power, multiplier, masteryLevel, ctx.Balance.mastery)
+		return Combat.attacksToClear(levelId, damage, ctx) <= target
+	end
+	local low, high = 1, 1
+	while not fits(high) do
+		high *= 2
+	end
+	while low < high do
+		local mid = (low + high) // 2
+		if fits(mid) then
+			high = mid
+		else
+			low = mid + 1
+		end
+	end
+	return low
+end
+
+-- Prochain niveau à vaincre dans ce parcours (nil si le niveau 10 est déjà terminé)
+function Combat.nextLevel(data: any, ctx: any): number?
+	for levelId = 1, #ctx.Balance.levels do
+		if not Combat.isCleared(data, levelId) then
+			return levelId
+		end
+	end
+	return nil
+end
+
 -- XP de maîtrise à la principale ; renvoie (baddieId, nouveau niveau si montée)
 local function addMastery(data: any, xp: number, ctx: any): (string?, number?)
 	local slot = data.slots[data.activeSlotId]

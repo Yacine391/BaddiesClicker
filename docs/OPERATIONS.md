@@ -45,6 +45,8 @@ Sortie serveur (Developer Console → Server, ou journaux de l'expérience) :
 | `[Profiles] profil <UserId> corrigé (n) : …` | le chargement a réparé des valeurs impossibles (voir `Rules/ProfileGuard`) |
 | `[Profiles] profil <UserId> refusé : …` | schéma plus récent ou migration manquante : joueur expulsé, profil intact |
 | `[Maintenance] décisions coupées : …` | un interrupteur vient de changer |
+| `[Movement] <UserId> anomalie n/3, … studs en … s (sans effet)` | déplacement impossible pendant un combat (§25) ; isolé, c'est souvent un pic de latence : rien à faire |
+| `[Movement] <UserId> rencontre invalidée (niveau N) : … ; X puissance retirée` | 3 anomalies en 20 s : combat annulé sans récompense. Des dizaines par jour chez des joueurs différents = réglage trop strict (`Balance.combat.movement`) ; toujours le même joueur = triche probable (aucune sanction automatique) |
 | `[Metrics] …` | Studio uniquement : statistique qui serait envoyée (en production, voir Creator Hub → Analytics) |
 
 Aucune donnée personnelle autre que l'identifiant Roblox n'est écrite.

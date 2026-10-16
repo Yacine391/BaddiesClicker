@@ -26,6 +26,7 @@ local ProfileGuard = require("../src/server/Rules/ProfileGuard")
 local Ranking = require("../src/server/Rules/Ranking")
 local Achievements = require("../src/server/Rules/Achievements")
 local Metrics = require("../src/server/Rules/Metrics")
+local Movement = require("../src/server/Rules/Movement")
 local profileV4P0 = require("./fixtures/profile_v4_p0")
 
 local Wardrobe = require("../src/shared/Wardrobe")
@@ -111,6 +112,24 @@ test("dix niveaux, chaque boss existe dans le catalogue", function()
 	eq(Balance.levels[1].minionHP, 50, "sbire niveau 1")
 	eq(Balance.levels[1].bossHP, 250, "boss niveau 1")
 	eq(Balance.levels[10].boss, "vega", "boss niveau 10")
+end)
+
+test("équilibrage : aucun coup ne tue d'un seul coup un joueur à PV pleins", function()
+	local C = Balance.combat
+	for levelId = 1, #Balance.levels do
+		local cfg = CombatRules.levelConfig(levelId, ctx) :: any
+		assert(cfg.minionDamage < C.playerHP, `sbire du niveau {levelId} : {cfg.minionDamage}`)
+		assert(cfg.bossDamage < C.playerHP, `boss du niveau {levelId} : {cfg.bossDamage}`)
+	end
+end)
+
+test("équilibrage : chaque niveau demande plus que le précédent", function()
+	for levelId = 2, #Balance.levels do
+		local before, level = Balance.levels[levelId - 1], Balance.levels[levelId]
+		assert(level.minionHP > before.minionHP, `PV sbire du niveau {levelId}`)
+		assert(level.bossHP > before.bossHP, `PV boss du niveau {levelId}`)
+		assert(level.minions >= before.minions, `nombre de sbires du niveau {levelId}`)
+	end
 end)
 
 test("Balance et Catalog sont gelés", function()
@@ -362,6 +381,34 @@ test("niveau 1 : 3 sbires de 50 PV puis Jade 250 PV", function()
 	eq(CombatRules.levelConfig(11, ctx), nil, "niveau 11")
 end)
 
+test("puissance conseillée (§09) : niveau 1 avec Maya = 7, moins avec une meilleure principale", function()
+	eq(CombatRules.attacksToClear(1, 10, ctx), 3 * 5 + 25, "coups à 10 par coup")
+	eq(CombatRules.attacksToClear(1, 0, ctx), math.huge, "aucun dégât")
+	eq(CombatRules.recommendedPower(1, 1, 0, ctx), 7, "Maya, maîtrise 0")
+	local cfg = CombatRules.levelConfig(1, ctx) :: any
+	local m = Balance.mastery
+	assert(CombatRules.attacksToClear(1, Formulas.damagePerClick(7, 1, 0, m), ctx) <= 60, "7 suffit")
+	assert(CombatRules.attacksToClear(1, Formulas.damagePerClick(6, 1, 0, m), ctx) > 60, "6 ne suffit pas")
+	assert(cfg ~= nil)
+	local nova = CombatRules.recommendedPower(10, Catalog.baddies.nova.multiplier, 10, ctx) :: number
+	local maya = CombatRules.recommendedPower(10, 1, 0, ctx) :: number
+	assert(nova < maya / 3, `Nova maîtrise 10 : {nova} contre {maya}`)
+	eq(CombatRules.recommendedPower(11, 1, 0, ctx), nil, "niveau inconnu")
+	eq(CombatRules.recommendedPower(1, 0, 0, ctx), nil, "pas de principale")
+end)
+
+test("prochain niveau du parcours : 1 au départ, rien quand le 10 est terminé", function()
+	local p = newProfile()
+	eq(CombatRules.nextLevel(p, ctx), 1)
+	p.run.clearedLevels["1"] = true
+	p.run.clearedLevels["2"] = true
+	eq(CombatRules.nextLevel(p, ctx), 3)
+	for levelId = 1, #Balance.levels do
+		p.run.clearedLevels[tostring(levelId)] = true
+	end
+	eq(CombatRules.nextLevel(p, ctx), nil)
+end)
+
 test("accès : niveau 1 ouvert, niveau 2 seulement après le boss 1", function()
 	local p = newProfile()
 	eq(CombatRules.isAccessible(p, 1, ctx), true, "niveau 1")
@@ -428,7 +475,8 @@ test("esquive : touché si on reste dans la zone, épargné si on en sort", func
 		end
 	end
 	eq(impacts[1].hit, true, "resté dans la zone")
-	eq(impacts[1].damage, 15, "dégâts sbire niveau 1")
+	local minion = Balance.combat.minion
+	eq(impacts[1].damage, minion.damageBase + minion.damagePerLevel, "dégâts sbire niveau 1")
 
 	local enc2 = newEncounter()
 	t, telegraph = 0, nil
@@ -466,11 +514,18 @@ test("dernier coup contre mort : aucun impact après la victoire", function()
 	eq(countType(run(enc, t, t + 3, INSIDE), "impact"), 0, "impacts après victoire")
 end)
 
-test("sbire vaincu : +2 puissance et +1 XP au niveau 1", function()
+test("sbire vaincu : +1 × niveau de puissance et +1 XP", function()
 	local p = newProfile()
 	local reward = CombatRules.applyMinionKill(p, 1, ctx)
-	eq(reward.power, 2)
-	near(p.power, 3)
+	eq(reward.power, Balance.combat.minionPowerPerLevel)
+	near(p.power, 1 + Balance.combat.minionPowerPerLevel)
+	eq(CombatRules.applyMinionKill(p, 7, ctx).power, 7 * Balance.combat.minionPowerPerLevel, "niveau 7")
+	eq(p.masteryXP.maya, 2)
+end)
+
+test("sbire vaincu au niveau 1 : +1 XP de maîtrise à la principale", function()
+	local p = newProfile()
+	CombatRules.applyMinionKill(p, 1, ctx)
 	eq(p.masteryXP.maya, 1)
 end)
 
@@ -479,7 +534,7 @@ test("boss vaincu sans drop : la porte s'ouvre quand même", function()
 	local v = CombatRules.applyBossVictory(p, 1, 0.5, ctx)
 	eq(v.drop, nil, "drop")
 	eq(CombatRules.isCleared(p, 1), true, "porte 1")
-	eq(v.power, 10, "récompense boss")
+	eq(v.power, Balance.combat.bossPowerPerLevel, "récompense boss")
 	eq(p.masteryXP.maya, 5, "XP boss")
 	eq(p.encounteredBosses.jade, true, "Jade rencontrée")
 	eq(p.discoveredBaddies.jade, nil, "rencontrée n'est pas découverte")
@@ -1663,6 +1718,121 @@ test("profil P0 sans statistiques : complété par Reconcile, réparé si illisi
 	eq(data.analytics.once.o1, nil, "valeur illisible retirée")
 	eq(data.analytics.playSeconds, 0)
 	eq(data.analytics.rollsSinceDiscovery, 0)
+end)
+
+print("Déplacements en combat (§25)")
+
+local MOVE = Balance.combat.movement
+local WALK = 16 -- WalkSpeed Roblox par défaut, lue côté serveur
+
+-- Fait courir le joueur en ligne droite à `speed` studs/s, une position tous les `step` s.
+-- Renvoie le pire statut et le traqueur.
+local function run(tracker, from: number, seconds: number, speed: number, step: number, walk: number?)
+	local worst = "ok"
+	local rank = { ok = 0, strike = 1, invalid = 2 }
+	local t = from
+	local x, z = tracker.pos.x, tracker.pos.z
+	while t < from + seconds - 1e-9 and worst ~= "invalid" do
+		t += step
+		x += speed * step
+		local o = Movement.observe(tracker, { x = x, y = 0, z = z }, t, walk or WALK, MOVE)
+		if rank[o.status] > rank[worst] then
+			worst = o.status
+		end
+	end
+	return worst, t
+end
+
+local function origin()
+	return Movement.new({ x = 0, y = 0, z = 0 }, 0, WALK, MOVE)
+end
+
+test("marche normale pendant 60 s (10 positions/s) : aucune anomalie", function()
+	local tracker = origin()
+	eq(run(tracker, 0, 60, WALK, 0.1), "ok")
+	eq(#tracker.strikes, 0)
+end)
+
+test("pic de latence : 2 s sans position puis rattrapage d'un coup → aucune anomalie", function()
+	local tracker = origin()
+	local o = Movement.observe(tracker, { x = WALK * 2, y = 0, z = 0 }, 2, WALK, MOVE)
+	eq(o.status, "ok", "32 studs en 2 s")
+	local tracker2 = origin()
+	local o2 = Movement.observe(tracker2, { x = WALK * 3, y = 0, z = 0 }, 3, WALK, MOVE)
+	eq(o2.status, "ok", "48 studs après 3 s figées")
+end)
+
+test("la hauteur ne compte pas : chute ou saut sur place n'est pas une anomalie", function()
+	local tracker = origin()
+	eq(Movement.observe(tracker, { x = 0, y = -60, z = 0 }, 0.1, WALK, MOVE).status, "ok")
+	eq(Movement.observe(tracker, { x = 0, y = 7, z = 0 }, 0.2, WALK, MOVE).status, "ok")
+end)
+
+test("une téléportation à travers l'arène : UNE anomalie, rien d'autre", function()
+	local tracker = origin()
+	local o = Movement.observe(tracker, { x = 52, y = 0, z = 52 }, 0.1, WALK, MOVE)
+	eq(o.status, "strike")
+	eq(o.strikes, 1)
+	eq(tracker.budget, 0, "la réserve repart de zéro")
+	eq(run(tracker, 0.1, 20, WALK, 0.1), "ok", "puis marche normale")
+end)
+
+test(`{MOVE.maxStrikes} téléportations en {MOVE.strikeWindowSeconds} s : rencontre invalidée`, function()
+	local tracker = origin()
+	local spots = { { x = 52, z = 52 }, { x = 0, z = 0 }, { x = 52, z = 52 } }
+	local last
+	for i, spot in spots do
+		last = Movement.observe(tracker, { x = spot.x, y = 0, z = spot.z }, i * 2, WALK, MOVE)
+	end
+	eq(last.status, "invalid")
+	eq(last.strikes, 3)
+end)
+
+test("anomalies espacées de plus de la fenêtre : jamais d'invalidation", function()
+	local tracker = origin()
+	local spots = { { x = 52, z = 52 }, { x = 0, z = 0 }, { x = 52, z = 52 }, { x = 0, z = 0 } }
+	for i, spot in spots do
+		local o = Movement.observe(
+			tracker,
+			{ x = spot.x, y = 0, z = spot.z },
+			i * (MOVE.strikeWindowSeconds + 1),
+			WALK,
+			MOVE
+		)
+		eq(o.status, "strike", `téléportation {i}`)
+		eq(o.strikes, 1, `fenêtre glissante {i}`)
+	end
+end)
+
+test("vitesse ×2 (32 studs/s) : invalidée en quelques secondes ; ×1,2 tolérée", function()
+	local fast = origin()
+	local status, t = run(fast, 0, 30, WALK * 2, 0.1)
+	eq(status, "invalid", "×2")
+	assert(t < 30, "invalidée avant la fin")
+	local slow = origin()
+	eq(run(slow, 0, 120, WALK * 1.2, 0.1), "ok", "×1,2")
+end)
+
+test("WalkSpeed relevée PAR LE SERVEUR : la vitesse permise suit", function()
+	local tracker = Movement.new({ x = 0, y = 0, z = 0 }, 0, 30, MOVE)
+	eq(run(tracker, 0, 30, 30, 0.1, 30), "ok")
+	near(
+		Movement.allowedSpeed(16, MOVE),
+		16 * MOVE.speedTolerance + MOVE.extraStudsPerSecond,
+		"vitesse permise"
+	)
+	near(Movement.allowedSpeed(0 / 0, MOVE), MOVE.extraStudsPerSecond, "WalkSpeed illisible")
+end)
+
+test("position illisible (NaN) : traitée comme une téléportation", function()
+	local tracker = origin()
+	eq(Movement.observe(tracker, { x = 0 / 0, y = 0, z = 0 }, 0.1, WALK, MOVE).status, "strike")
+end)
+
+test("déplacement voulu par le serveur (reset) : pas d'anomalie", function()
+	local tracker = origin()
+	Movement.reset(tracker, { x = 400, y = 0, z = 0 }, 1, WALK, MOVE)
+	eq(Movement.observe(tracker, { x = 401, y = 0, z = 0 }, 1.1, WALK, MOVE).status, "ok")
 end)
 
 print(`\n{passed} réussi(s), {failed} échec(s)`)

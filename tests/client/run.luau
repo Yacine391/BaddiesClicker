@@ -46,6 +46,9 @@ local StyleModel = require("../../src/client/Logic/StyleModel")
 local Wardrobe = require("../../src/shared/Wardrobe")
 local BookModel = require("../../src/client/Logic/BookModel")
 local CombatModel = require("../../src/client/Logic/CombatModel")
+local SlotsModel = require("../../src/client/Logic/SlotsModel")
+local CrewModel = require("../../src/client/Logic/CrewModel")
+local RankingModel = require("../../src/client/Logic/RankingModel")
 
 print("Runner")
 test("smoke", function()
@@ -582,6 +585,182 @@ test("combat : toasts de fin de rencontre", function()
 		"invalidé"
 	)
 	eq(CombatModel.toastFor({ kind = "ticket" }, Catalog, Format.number), nil, "laissé au HUD")
+end)
+
+print("Slots, drops, renaissance et crew")
+
+local function slotsSnapshot()
+	return {
+		mode = "rest",
+		saving = false,
+		maintenance = {},
+		tickets = { baddie = 3, crew = 2 },
+		rolls = { untilGuarantee = 12, bookComplete = false },
+		slots = {
+			{
+				id = "s1",
+				order = 1,
+				conserved = true,
+				temporary = false,
+				baddieId = "nova",
+				revision = 4,
+				rollLocked = true,
+				active = true,
+			},
+			{
+				id = "s2",
+				order = 2,
+				conserved = false,
+				temporary = true,
+				baddieId = "lina",
+				revision = 2,
+				rollLocked = false,
+				active = false,
+			},
+		},
+		pendingDrops = { vega = 1, jade = 2 },
+		pendingRevision = 7,
+		collection = { discovered = { "maya", "nova", "lina", "jade" } },
+		rebirth = { count = 0, available = true, promotesNext = true, baddieTickets = 5, crewTickets = 1 },
+		run = { id = 3 },
+		crewOwned = {
+			{ id = "malik", level = 2, copies = 3, equipped = true },
+			{ id = "enzo", level = 1, copies = 1, equipped = false },
+		},
+		crewChest = { untilGuarantee = 1, complete = false },
+	}
+end
+
+test("slots : verrou, ticket et garantie expliqués", function()
+	local rows = SlotsModel.slotRows(slotsSnapshot(), Catalog, Format.number)
+	eq(#rows, 2)
+	eq(rows[1].kind, "CONSERVÉ")
+	eq(rows[1].canRoll, false, "verrouillé")
+	eq(rows[2].kind, "TEMPORAIRE")
+	eq(rows[2].canRoll, true)
+	eq(rows[2].rollHint, "1 ticket · garantie dans 12")
+	eq(rows[2].multiplierText, "×1,2")
+	local s = slotsSnapshot()
+	s.tickets.baddie = 0
+	eq(SlotsModel.slotRows(s, Catalog, Format.number)[2].canRoll, false, "sans ticket")
+	s = slotsSnapshot()
+	s.mode = "combat"
+	eq(SlotsModel.slotRows(s, Catalog, Format.number)[2].rollHint, "impossible en combat")
+	s = slotsSnapshot()
+	s.maintenance = { "Roll" }
+	eq(SlotsModel.slotRows(s, Catalog, Format.number)[2].canRoll, false, "maintenance")
+end)
+
+test("drops : ordre du catalogue, cible = slot temporaire, nouveauté", function()
+	local rows = SlotsModel.dropRows(slotsSnapshot(), Catalog, Format.number)
+	eq(#rows, 2)
+	eq(rows[1].baddieId, "jade")
+	eq(rows[1].count, 2)
+	eq(rows[1].isNew, false)
+	eq(rows[2].baddieId, "vega")
+	eq(rows[2].isNew, true)
+	eq(rows[2].replaceText, "remplacera LINA dans le SLOT 2")
+	eq(rows[2].slotRevision, 2)
+	eq(rows[2].pendingRevision, 7)
+	eq(SlotsModel.dropCount(slotsSnapshot()), 3)
+end)
+
+test("renaissance : palier qui promeut, ou temporaire effacé", function()
+	local view = SlotsModel.rebirthView(slotsSnapshot(), Catalog)
+	eq(view.available, true)
+	eq(view.runId, 3)
+	eq(view.title, "RENAISSANCE 1")
+	assert(string.find(view.lose, "devient CONSERVÉ", 1, true), view.lose)
+	local s = slotsSnapshot()
+	s.rebirth.promotesNext = false
+	assert(
+		string.find(
+			SlotsModel.rebirthView(s, Catalog).lose,
+			"LINA (SLOT 2, temporaire) sera effacée",
+			1,
+			true
+		)
+	)
+	s.mode = "combat"
+	eq(SlotsModel.rebirthView(s, Catalog).available, false, "pas en combat")
+end)
+
+test("décisions : textes de résultat et de refus", function()
+	eq(
+		SlotsModel.resultText({
+			kind = "mutation",
+			action = "Roll",
+			ok = true,
+			result = { previousId = "lina", baddieId = "vega", isNew = true },
+		}, Catalog),
+		"SLOT : LINA → VEGA · NOUVELLE !"
+	)
+	eq(
+		SlotsModel.resultText(
+			{ kind = "mutation", action = "Roll", ok = false, reason = "no_ticket" },
+			Catalog
+		),
+		"Refusé : pas de ticket"
+	)
+	eq(
+		SlotsModel.resultText({
+			kind = "mutation",
+			action = "OpenChest",
+			ok = true,
+			result = { crewId = "malik", isNew = false },
+		}, Catalog),
+		"Coffre : MALIK, +1 copie"
+	)
+	eq(SlotsModel.resultText({ kind = "ticket" }, Catalog), nil)
+	eq(SlotsModel.reasonText("inconnue"), "inconnue")
+end)
+
+test("crew : amélioration, équipe de deux, coffre", function()
+	eq(CrewModel.upgradeCost(1, 10), 2)
+	eq(CrewModel.upgradeCost(10, 10), nil)
+	eq(CrewModel.canUpgrade({ level = 2, copies = 3 }, 10), true)
+	eq(CrewModel.canUpgrade({ level = 2, copies = 2 }, 10), false)
+	local ids = CrewModel.toggleEquip({ "malik" }, "enzo", 2) :: { string }
+	eq(#ids, 2)
+	eq(CrewModel.toggleEquip({ "malik", "enzo" }, "rafael", 2), nil, "équipe pleine")
+	eq(#(CrewModel.toggleEquip({ "malik", "enzo" }, "malik", 2) :: { string }), 1, "retirer")
+	eq(#CrewModel.equippedIds(slotsSnapshot()), 1)
+	eq(CrewModel.chestText(slotsSnapshot()), "2 tickets compagnon · le prochain est garanti")
+end)
+
+print("Classement du lobby et titres")
+
+test("classement : top 5, scores sur le total, joueur local surligné ou ajouté", function()
+	local ranking = { lot = "V1", total = 8, crewTotal = 6, baddies = {}, crew = {} }
+	for i = 1, 7 do
+		table.insert(ranking.baddies, { userId = i, name = `Joueur{i}`, score = 8 - i, rank = i })
+	end
+	local board = RankingModel.board(ranking, "baddies", 5, 2)
+	eq(#board.lines, 5)
+	eq(board.lines[1].rank, "#1")
+	eq(board.lines[1].score, "7/8")
+	eq(board.lines[2].isMe, true)
+	local far = RankingModel.board(ranking, "baddies", 5, 7)
+	eq(far.lines[5].name, "Joueur7", "joueur local hors du top 5 en dernière ligne")
+	eq(far.lines[5].isMe, true)
+	local crew = RankingModel.board(ranking, "crew", 5, 1)
+	eq(crew.title, "CLASSEMENT · CREW")
+	assert(crew.empty ~= nil, "onglet crew vide")
+	eq(RankingModel.board(nil, "baddies", 5, 1).empty ~= nil, true)
+	local long = RankingModel.board(
+		{ total = 8, baddies = { { userId = 1, name = "UnTrèsLongPseudoRoblox", score = 1, rank = 1 } } },
+		"baddies",
+		5,
+		nil
+	)
+	eq(long.lines[1].name, "UnTrèsLongPseud…")
+end)
+
+test("titres : nom du Wardrobe, rien si vide ou inconnu", function()
+	eq(RankingModel.titleText("boss_manager", Wardrobe), "Gérant de Baddies")
+	eq(RankingModel.titleText("", Wardrobe), nil)
+	eq(RankingModel.titleText("inconnu", Wardrobe), nil)
+	eq(RankingModel.titleText(nil, Wardrobe), nil)
 end)
 
 print(`\n{passed} réussi(s), {failed} échec(s)`)

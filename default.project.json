@@ -21,7 +21,8 @@
     },
     "Workspace": {
       "$className": "Workspace",
-      "Lobby": { "$path": "assets/world/Lobby.rbxm" }
+      "Lobby": { "$path": "assets/world/Lobby.rbxm" },
+      "Levels": { "$path": "assets/world/Levels.rbxm" }
     },
     "ServerScriptService": {
       "$className": "ServerScriptService",

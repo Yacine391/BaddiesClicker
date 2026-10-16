@@ -18,7 +18,7 @@ local App = {}
 
 -- Contrôleurs visuels, démarrés dans cet ordre (chacun expose start(scope, deps))
 local VISUAL_CONTROLLERS: { string } =
-	{ "Ambience", "HUD", "Book", "Style", "Crew", "Settings", "FX", "Followers", "Podium" }
+	{ "Ambience", "HUD", "Combat", "Book", "Style", "Crew", "Settings", "FX", "Followers", "Podium" }
 
 function App.start(stateController: any)
 	local scope = Fusion.scoped(Fusion)
@@ -43,6 +43,8 @@ function App.start(stateController: any)
 	for _, name in VISUAL_CONTROLLERS do
 		require(Controllers:WaitForChild(name)).start(scope, deps)
 	end
+	-- Portes individuelles (§08) : présentation seulement, l'accès est vérifié par le serveur
+	require(Controllers:WaitForChild("DoorController")).start(stateController)
 	App.deps = deps
 	return scope
 end

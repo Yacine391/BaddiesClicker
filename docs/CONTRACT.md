@@ -235,15 +235,17 @@ cercles au sol). Positions en studs dans le plan XZ ; la hauteur vient de `floor
 | `hit` | `targetId`, `damage`, `hp`, `killed` | coup du joueur sur un ennemi |
 | `end` | `encounterId`, `reason` ("victory", "death", "left") | tout nettoyer |
 
-Rendu de test actuel (Studio uniquement) : `Dev/DevCombatView` (blocs, cercles rouges, barres de PV) et
-`Dev/DevCombatPanel` (bouton ATTAQUER, touche F, « rejouer »), lancés par `CombatBootstrap.client.luau`.
-À remplacer par le HUD de combat du codeur B, qui démarre alors `DoorController` depuis son App.
+Rendu : `Controllers/Combat` (démarré par l'App, logique pure dans `Logic/CombatModel`) — ennemis,
+plaques de PV, zones de danger, chiffres de dégâts, barre de vague / boss, PV du joueur, flash rouge,
+bouton REJOUER (`StartWave`) dans l'arène d'un niveau terminé, « puissance conseillée » hors combat.
+L'attaque passe par le bouton principal du HUD (ou la touche F). L'App démarre aussi `DoorController`.
 
 ## Monde : arènes et portes (§05, §09)
 
-Le serveur lit `Workspace.Levels` ; sans carte et dans Studio uniquement, il construit une carte grise
-de test, placée juste au nord de `Workspace.Lobby` s'il existe.
-La vraie carte du codeur B doit garder ces noms :
+Le serveur lit `Workspace.Levels`, synchronisé par Rojo depuis `assets/world/Levels.rbxm` (généré par
+`lune run assets/world/export-levels` à partir de `LevelsBuilder.luau`, qui vérifie aussi ce contrat).
+Sans `Workspace.Levels` (place sans Rojo), Studio construit encore la carte grise de secours (`World/DevWorld`).
+Les arènes doivent garder ces noms :
 
 | Instance | Rôle |
 |---|---|

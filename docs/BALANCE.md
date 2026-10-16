@@ -80,8 +80,10 @@ deux façons de jouer viables, aucune dominante.
 
 - **Production passive** : 39 % de la puissance du premier parcours, 55 % sur l'ensemble (les compagnons
   produisent aussi en combat et en trajet). §29 demande de revoir les taux si l'attente passive domine.
-  Leviers sans toucher au dossier confirmé : un ticket compagnon toutes les 750 actions au lieu de 500,
-  ou des taux de base plus bas. À trancher avec les premières statistiques réelles.
+  **Décision du 16/10 : on garde 1 ticket compagnon / 500 actions.** Testé à 750 (40 parties) : passif
+  39 → 36 % au premier parcours, 55 → 53 % sur l'ensemble, mais les 6 compagnons arrivent 26 min plus tard
+  (1 h 06 → 1 h 32). Le poids du passif vient de ce qu'il tourne aussi en combat et en trajet, pas du
+  rythme des coffres. Seul levier efficace : les taux de base (§16), à revoir avec les statistiques réelles.
 - **Saut après le tutoriel** : le niveau 2 demande ~900 de puissance avec Maya (contre 7 au niveau 1).
   Le HUD du codeur B doit afficher `nextLevel.recommendedPower` (« Puissance conseillée : 886 »).
 - **Contenu V1 court pour un joueur investi** (Book en 22 min, crew en 40 min) : normal pour 8 baddies et

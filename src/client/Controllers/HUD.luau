@@ -1,9 +1,10 @@
 --!strict
 --[[
-	HUD : écran principal du style V3 (maquette hud-v3c).
+	HUD : écran principal du style mix A (maquette hud-mix.html, variante A ; spec refonte §4).
 	Tous les textes viennent de HudModel.build(snapshot) : le HUD n'invente aucun chiffre.
-	Le clic donne un retour immédiat (bouton qui s'écrase, « +1 ») ; la puissance affichée
-	ne change qu'à l'arrivée du snapshot suivant.
+	Le clic donne un retour immédiat (bouton qui s'écrase, « +1 puissance », compteur qui pop) ;
+	la puissance affichée ne change qu'à l'arrivée du snapshot suivant.
+	Mode compact (échelle < 0,6, LayoutMode) : menu en grille 2 × 2, cartes réduites au bandeau.
 ]]
 
 local Players = game:GetService("Players")
@@ -11,20 +12,25 @@ local Workspace = game:GetService("Workspace")
 
 local Client = script.Parent.Parent
 local HudModel = require(Client.Logic.HudModel)
+local LayoutMode = require(Client.Logic.LayoutMode)
 local Theme = require(Client.UI.Theme)
 local Text = require(Client.UI.Text)
 local Metrics = require(Client.UI.Metrics)
-local TouchSize = require(Client.Logic.TouchSize)
 local Components = Client.UI.Components
-local MenuTile = require(Components.MenuTile)
-local BigStat = require(Components.BigStat)
-local ActionButton = require(Components.ActionButton)
+local CounterPill = require(Components.CounterPill)
+local MenuItem = require(Components.MenuItem)
+local CharacterCard = require(Components.CharacterCard)
+local ProgressCard = require(Components.ProgressCard)
+local PrimaryButton = require(Components.PrimaryButton)
 local FloatingNumber = require(Components.FloatingNumber)
 local Toast = require(Components.Toast)
 
 local HUD = {}
 
 HUD.gui = nil :: ScreenGui?
+
+local MAX_CARDS = 3 -- principale + 2 compagnons
+local TOAST_ICON = { ticket = "ticket", crewJoined = "crew" }
 
 -- `size` suit l'AbsoluteSize réelle du ScreenGui (zones sûres déjà retirées), pas la caméra
 local function viewportScale(scope: any, size: any)
@@ -40,103 +46,40 @@ local function viewportScale(scope: any, size: any)
 	return scale, canvas
 end
 
-local function principalPill(scope: any, view: any)
-	local children: { any } = Theme.bevel(scope, Theme.Colors.Orange, 32)
-	table.insert(
-		children,
-		scope:New("TextLabel")({
-			Position = UDim2.fromOffset(6, 6),
-			Size = UDim2.fromOffset(52, 52),
-			BackgroundColor3 = Color3.fromHex("#3A2617"),
-			Text = scope:Computed(function(use)
-				local p = use(view).principal
-				return if p then string.sub(p.name, 1, 1) else "?"
-			end),
-			TextScaled = true,
-			FontFace = Theme.Fonts.Display,
-			TextColor3 = Theme.Colors.Blanc,
-			[scope.Children] = {
-				scope:New("UICorner")({ CornerRadius = UDim.new(1, 0) }),
-				scope:New("UIStroke")({
-					Color = Theme.Colors.Contour,
-					Thickness = Theme.Stroke.Frame,
-					ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-				}),
-			},
+-- Logo uploadé (assets/ui/png/logo.png) ; repli : « BADDIE » blanc + « CLICKER » cyan, incliné
+local function logo(scope: any)
+	if Theme.Logo ~= "" then
+		return scope:New("ImageLabel")({
+			Name = "Logo",
+			BackgroundTransparency = 1,
+			Position = UDim2.fromOffset(12, 4),
+			Size = UDim2.fromOffset(300, 120),
+			Image = Theme.Logo,
+			ScaleType = Enum.ScaleType.Fit,
 		})
-	)
-	table.insert(
-		children,
-		Text.label(scope, {
-			Text = scope:Computed(function(use)
-				local p = use(view).principal
-				return if p then `{string.upper(p.name)} {p.multiplierText}` else ""
-			end),
-			Size = UDim2.new(1, -80, 0, 28),
-			Position = UDim2.fromOffset(68, 6),
-			XAlignment = Enum.TextXAlignment.Left,
-		})
-	)
-	table.insert(
-		children,
-		Text.label(scope, {
-			Text = scope:Computed(function(use)
-				local p = use(view).principal
-				return if p then `● {p.rarityLabel} · {p.slotText} · Principale` else ""
-			end),
-			Font = Theme.Fonts.Body,
-			Size = UDim2.new(1, -80, 0, 18),
-			Position = UDim2.fromOffset(68, 38),
-			XAlignment = Enum.TextXAlignment.Left,
-			StrokeSize = 2,
-		})
-	)
+	end
 	return scope:New("Frame")({
-		Name = "Principal",
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 16),
-		Size = UDim2.fromOffset(360, 64),
-		BackgroundColor3 = Color3.new(1, 1, 1),
-		Visible = scope:Computed(function(use)
-			return use(view).principal ~= nil
-		end),
-		[scope.Children] = children,
-	})
-end
-
-local function tutorialBar(scope: any, view: any)
-	return scope:New("Frame")({
-		Name = "Tutorial",
-		AnchorPoint = Vector2.new(1, 1),
-		Position = UDim2.new(1, -24, 1, -136),
-		Size = UDim2.fromOffset(240, 34),
-		BackgroundColor3 = Theme.Colors.Nuit,
-		Visible = scope:Computed(function(use)
-			return use(view).tutorial.visible
-		end),
+		Name = "Logo",
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(16, 14),
+		Size = UDim2.fromOffset(240, 96),
+		Rotation = -6,
 		[scope.Children] = {
-			scope:New("UICorner")({ CornerRadius = UDim.new(0, 12) }),
-			scope:New("UIStroke")({ Color = Theme.Colors.Contour, Thickness = Theme.Stroke.Frame }),
-			scope:New("Frame")({
-				Name = "Fill",
-				BackgroundColor3 = Theme.Colors.Cyan,
-				Size = scope:Spring(
-					scope:Computed(function(use)
-						return UDim2.fromScale(use(view).tutorial.ratio, 1)
-					end),
-					25,
-					0.8
-				),
-				[scope.Children] = { scope:New("UICorner")({ CornerRadius = UDim.new(0, 12) }) },
+			Text.label(scope, {
+				Text = "BADDIE",
+				Weight = "Heavy",
+				Stroke = true,
+				Size = UDim2.new(1, 0, 0, 54),
+				XAlignment = Enum.TextXAlignment.Left,
 			}),
 			Text.label(scope, {
-				Text = scope:Computed(function(use)
-					return use(view).tutorial.text
-				end),
-				Font = Theme.Fonts.Body,
-				Size = UDim2.new(1, -16, 1, -8),
-				Position = UDim2.fromOffset(8, 4),
-				ZIndex = 2,
+				Text = "CLICKER",
+				Weight = "Heavy",
+				Stroke = true,
+				Color = Theme.Colors.Accent,
+				Size = UDim2.new(0.8, 0, 0, 38),
+				Position = UDim2.fromOffset(40, 52),
+				XAlignment = Enum.TextXAlignment.Left,
 			}),
 		},
 	})
@@ -147,21 +90,96 @@ function HUD.start(scope: any, deps: any)
 	local view = scope:Computed(function(use)
 		return HudModel.build(use(Store.snapshot), deps.Catalog, deps.Format.number)
 	end)
-	local function textOf(field: string)
-		return scope:Computed(function(use)
-			return use(view)[field] or ""
-		end)
-	end
 	local guiSize = scope:Value(Workspace.CurrentCamera.ViewportSize)
 	local scale, canvas = viewportScale(scope, guiSize)
 	Metrics.scale = scale
+	local mode = scope:Computed(function(use)
+		return LayoutMode.mode(use(scale))
+	end)
+	deps.LayoutMode = mode -- les fenêtres s'en servent aussi
+	local compact = scope:Computed(function(use)
+		return use(mode) == "compact"
+	end)
 
-	local function open(name: string)
-		return function()
-			UiState.openWindow:set(name)
+	-- Entrée de menu active : la fenêtre ouverte, sinon la dernière ouverte
+	local lastOpened = scope:Value(nil)
+	-- Badge NEW du Book : une découverte arrivée depuis la dernière ouverture du Book
+	local bookBadge = scope:Value("")
+	scope:Observer(UiState.openWindow):onChange(function()
+		local name = deps.peek(UiState.openWindow)
+		if name ~= nil then
+			lastOpened:set(name)
 		end
+		if name == "Book" then
+			bookBadge:set("")
+		end
+	end)
+
+	local function menuItem(
+		order: number,
+		name: string,
+		icon: string,
+		label: string,
+		color: Color3,
+		badge: any?
+	)
+		return MenuItem(scope, {
+			Icon = icon,
+			Label = label,
+			Color = color,
+			Mode = mode,
+			Active = scope:Computed(function(use)
+				return (use(UiState.openWindow) or use(lastOpened)) == name
+			end),
+			Badge = badge,
+			LayoutOrder = order,
+			OnClick = function()
+				UiState.openWindow:set(name)
+			end,
+		})
 	end
 
+	local function card(index: number)
+		local data = scope:Computed(function(use)
+			return use(view).cards[index]
+		end)
+		local function field(key: string)
+			return scope:Computed(function(use)
+				local c = use(data)
+				return if c then c[key] else ""
+			end)
+		end
+		return CharacterCard(scope, {
+			Rarity = scope:Computed(function(use)
+				local c = use(data)
+				return if c then c.rarity else nil
+			end),
+			Name = field("name"),
+			Line1 = field("line1"),
+			Line2 = field("line2"),
+			Accent = scope:Computed(function(use)
+				local c = use(data)
+				return if c then Color3.fromHex(c.accent) else Theme.Colors.PanelLine
+			end),
+			Mode = mode,
+			LayoutOrder = index,
+			Visible = scope:Computed(function(use)
+				return use(data) ~= nil
+			end),
+		})
+	end
+	local cards: { any } = {
+		scope:New("UIListLayout")({
+			Padding = UDim.new(0, 10),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			HorizontalAlignment = Enum.HorizontalAlignment.Right,
+		}),
+	}
+	for i = 1, MAX_CARDS do
+		table.insert(cards, card(i))
+	end
+
+	local menuHeight = Metrics.touch(scope, 54)
 	local root
 	local gui = scope:New("ScreenGui")({
 		Name = "HUD",
@@ -177,121 +195,94 @@ function HUD.start(scope: any, deps: any)
 				Size = canvas,
 				[scope.Children] = {
 					scope:New("UIScale")({ Scale = scale }),
-					principalPill(scope, view),
+					logo(scope),
 					scope:New("Frame")({
-						Name = "Tiles",
+						Name = "Counters",
 						BackgroundTransparency = 1,
-						Position = UDim2.fromOffset(24, 190),
-						Size = scope:Computed(function(use)
-							local k = use(scale)
-							local w = TouchSize.offset(74, k, Theme.MinTouch)
-							local h = TouchSize.offset(70, k, Theme.MinTouch)
-							return UDim2.fromOffset(2 * w + 18, 2 * h + 34)
-						end),
+						AnchorPoint = Vector2.new(1, 0),
+						Position = UDim2.new(1, -16, 0, 14),
+						Size = UDim2.fromOffset(500, 46),
 						[scope.Children] = {
-							-- Grille : les tuiles grandissent sur petit écran pour rester ≥ 48 px réels
-							scope:New("UIGridLayout")({
-								CellSize = scope:Computed(function(use)
-									local k = use(scale)
-									return UDim2.fromOffset(
-										TouchSize.offset(74, k, Theme.MinTouch),
-										TouchSize.offset(70, k, Theme.MinTouch)
-									)
-								end),
-								CellPadding = UDim2.fromOffset(18, 34),
+							scope:New("UIListLayout")({
+								FillDirection = Enum.FillDirection.Horizontal,
+								HorizontalAlignment = Enum.HorizontalAlignment.Right,
+								Padding = UDim.new(0, 10),
 								SortOrder = Enum.SortOrder.LayoutOrder,
 							}),
-							MenuTile(scope, {
-								Name = "BOOK",
+							CounterPill(scope, {
+								Name = "Power",
+								Icon = "arm",
+								Glow = true,
+								Pulse = UiState.trainPulse,
 								LayoutOrder = 1,
-								Icon = Theme.Icons.Book,
-								Color = Theme.Colors.Cyan,
-								Position = UDim2.fromOffset(0, 0),
-								OnClick = open("Book"),
+								Text = scope:Computed(function(use)
+									return use(view).powerText
+								end),
 							}),
-							MenuTile(scope, {
-								Name = "CREW",
+							CounterPill(scope, {
+								Name = "Tickets",
+								Icon = "ticket",
+								Glow = false,
 								LayoutOrder = 2,
-								Icon = Theme.Icons.Crew,
-								Color = Theme.Colors.Violet,
-								Position = UDim2.fromOffset(92, 0),
-								OnClick = open("Crew"),
-							}),
-							MenuTile(scope, {
-								Name = "STYLE",
-								LayoutOrder = 3,
-								Icon = Theme.Icons.Style,
-								Color = Theme.Colors.Or,
-								Position = UDim2.fromOffset(0, 104),
-								OnClick = open("Style"),
-							}),
-							MenuTile(scope, {
-								Name = "RÉGLAGES",
-								LayoutOrder = 4,
-								Icon = Theme.Icons.Settings,
-								Color = Theme.Colors.Gris,
-								Position = UDim2.fromOffset(92, 104),
-								OnClick = open("Settings"),
+								Text = scope:Computed(function(use)
+									return use(view).ticketText
+								end),
 							}),
 						},
 					}),
 					scope:New("Frame")({
-						Name = "Stats",
+						Name = "Menu",
 						BackgroundTransparency = 1,
-						AnchorPoint = Vector2.new(0, 1),
-						Position = UDim2.new(0, 24, 1, -24),
-						Size = UDim2.fromOffset(340, 140),
+						Position = UDim2.fromOffset(16, 150),
+						Size = UDim2.fromOffset(240, 400),
 						[scope.Children] = {
-							BigStat(scope, {
-								Icon = Theme.Icons.Power,
-								Text = textOf("powerText"),
-								Pulse = UiState.trainPulse,
-								Height = 56,
-								Position = UDim2.fromOffset(0, 0),
-							}),
-							scope:New("Frame")({
-								BackgroundTransparency = 1,
-								Size = UDim2.fromOffset(340, 34),
-								Position = UDim2.fromOffset(0, 64),
-								Visible = scope:Computed(function(use)
-									return use(view).productionText ~= nil
+							-- full : une colonne de lignes 236 × h ; compact : grille 2 × 2 de tuiles h × h
+							scope:New("UIGridLayout")({
+								SortOrder = Enum.SortOrder.LayoutOrder,
+								CellPadding = UDim2.fromOffset(10, 10),
+								FillDirectionMaxCells = scope:Computed(function(use)
+									return if use(compact) then 2 else 1
 								end),
-								[scope.Children] = {
-									BigStat(scope, {
-										Icon = Theme.Icons.DJ,
-										Text = textOf("productionText"),
-										Height = 34,
-										Font = Theme.Fonts.Body,
-									}),
-								},
+								CellSize = scope:Computed(function(use)
+									local h = use(menuHeight)
+									return if use(compact)
+										then UDim2.fromOffset(h, h)
+										else UDim2.fromOffset(236, h)
+								end),
 							}),
-							BigStat(scope, {
-								Icon = Theme.Icons.Ticket,
-								Text = textOf("ticketText"),
-								Height = 30,
-								Font = Theme.Fonts.Body,
-								Position = UDim2.fromOffset(0, 104),
-							}),
+							menuItem(1, "Book", "book", "BOOK", Theme.Colors.Book, bookBadge),
+							menuItem(2, "Crew", "crew", "CREW", Theme.Colors.Crew),
+							menuItem(3, "Style", "style", "STYLE", Theme.Colors.Style),
+							menuItem(4, "Settings", "settings", "RÉGLAGES", Theme.Colors.Settings),
 						},
 					}),
-					tutorialBar(scope, view),
-					ActionButton(scope, {
+					scope:New("Frame")({
+						Name = "Cards",
+						BackgroundTransparency = 1,
+						AnchorPoint = Vector2.new(1, 0),
+						Position = UDim2.new(1, -16, 0, 74),
+						Size = UDim2.fromOffset(150, 520),
+						[scope.Children] = cards,
+					}),
+					ProgressCard(scope, {
+						Model = scope:Computed(function(use)
+							return use(view).progress
+						end),
+						AnchorPoint = Vector2.new(0, 1),
+						Position = UDim2.new(0, 16, 1, -16),
+					}),
+					PrimaryButton(scope, {
 						Label = scope:Computed(function(use)
 							return use(view).button.label
 						end),
-						Sub = scope:Computed(function(use)
-							local s = use(Store.snapshot)
-							return `+{deps.Format.number(if s then s.gainPerTrain or 0 else 0)} puissance`
-						end),
-						Icon = Theme.Icons.Power,
-						Color = scope:Computed(function(use)
-							return Theme.Colors[use(view).button.colorKey]
+						ColorKey = scope:Computed(function(use)
+							return use(view).button.colorKey
 						end),
 						Enabled = scope:Computed(function(use)
 							return use(view).ready
 						end),
-						AnchorPoint = Vector2.new(1, 1),
-						Position = UDim2.new(1, -24, 1, -24),
+						AnchorPoint = Vector2.new(0.5, 1),
+						Position = UDim2.new(0.5, 0, 1, -18),
 						OnActivated = function()
 							if not deps.peek(UiState.settings.holdToTrain) then
 								Input.train()
@@ -303,12 +294,12 @@ function HUD.start(scope: any, deps: any)
 					scope:New("TextLabel")({
 						Name = "Loading",
 						Size = UDim2.fromScale(1, 1),
-						BackgroundColor3 = Theme.Colors.Nuit,
-						BackgroundTransparency = 0.3,
+						BackgroundColor3 = Theme.Colors.Panel,
+						BackgroundTransparency = 0.2,
 						Text = "Chargement…",
-						FontFace = Theme.Fonts.Display,
+						FontFace = Theme.Fonts.Heavy,
 						TextSize = 40,
-						TextColor3 = Theme.Colors.Blanc,
+						TextColor3 = Theme.Colors.Text,
 						ZIndex = 50,
 						Visible = scope:Computed(function(use)
 							return not use(view).ready
@@ -322,24 +313,26 @@ function HUD.start(scope: any, deps: any)
 	deps.HudRoot = root -- les fenêtres se montent ici (même UIScale que le HUD)
 	HUD.gui = gui
 
-	-- « +gain » qui s'envole au-dessus du bouton à chaque entraînement envoyé
+	-- « +gain puissance » qui monte au-dessus du bouton à chaque entraînement envoyé
 	scope:Observer(UiState.trainPulse):onChange(function()
 		local s = deps.peek(Store.snapshot)
 		local gain = if s then s.gainPerTrain or 1 else 1
 		FloatingNumber.spawn(
 			root,
-			"+" .. deps.Format.number(gain),
-			UDim2.new(1, -144 + math.random(-30, 30), 1, -150)
+			`+{deps.Format.number(gain)} puissance`,
+			UDim2.new(0.5, math.random(-24, 24), 1, -120),
+			Theme.Colors.Accent
 		)
 	end)
 
+	-- Toasts : seulement « +1 copie » et tickets (le nouveau compagnon a la bannière RGB du codeur A)
 	deps.StateController.onResult(function(event)
-		if event.kind == "crewJoined" then
-			local def = deps.Catalog.crew[event.crewId]
-			Toast.show(root, `{if def then def.name else "Un compagnon"} rejoint ton crew !`)
-		elseif event.kind == "ticket" then
-			local what = if event.ticket == "crew" then "compagnon" else "baddie"
-			Toast.show(root, `+{event.amount or 1} ticket {what}`)
+		if event.kind == "discovery" and deps.peek(UiState.openWindow) ~= "Book" then
+			bookBadge:set("NEW")
+		end
+		local text = HudModel.toastFor(event, deps.Catalog)
+		if text then
+			Toast.show(root, text, TOAST_ICON[event.kind])
 		end
 	end)
 end

@@ -16,18 +16,18 @@ function FloatingNumber.spawn(parent: Instance, text: string, position: UDim2, c
 	local label = Instance.new("TextLabel")
 	label.Name = "FloatingNumber"
 	label.BackgroundTransparency = 1
-	label.Size = UDim2.fromOffset(120, 48)
+	label.Size = UDim2.fromOffset(240, 36)
 	label.AnchorPoint = Vector2.new(0.5, 0.5)
 	label.Position = position
 	label.Text = text
 	label.TextScaled = true
-	label.FontFace = Theme.Fonts.Display
-	label.TextColor3 = color or Theme.Colors.Blanc
-	label.Rotation = math.random(-8, 8)
+	label.FontFace = Theme.Fonts.Heavy
+	label.TextColor3 = color or Theme.Colors.Text
+	label.Rotation = math.random(-4, 4)
 	label.ZIndex = 20
 
 	local stroke = Instance.new("UIStroke")
-	stroke.Color = Theme.Colors.Contour
+	stroke.Color = Theme.Colors.Ink
 	stroke.Thickness = Theme.Stroke.Text
 	stroke.Parent = label
 	label.Parent = parent

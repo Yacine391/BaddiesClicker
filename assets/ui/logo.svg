@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 210" width="520" height="210">
+ <defs>
+  <filter id="glow" x="-20%" y="-40%" width="140%" height="180%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+ </defs>
+ <g transform="rotate(-6 260 105)">
+  <text x="22" y="112" font-family="Roboto Condensed" font-weight="900" font-style="italic" font-size="112" fill="#ffffff" stroke="#0d0b16" stroke-width="14" stroke-linejoin="round" paint-order="stroke fill" letter-spacing="-1">BADDIE</text>
+  <text x="120" y="178" font-family="Permanent Marker" font-size="74" fill="#3EE6C8" stroke="#0d0b16" stroke-width="10" stroke-linejoin="round" paint-order="stroke fill" filter="url(#glow)">Clicker</text>
+ </g>
+</svg>

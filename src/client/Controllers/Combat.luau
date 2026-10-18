@@ -532,7 +532,7 @@ function Combat.start(scope: any, dependencies: any)
 	deps.StateController.onCombat(function(message)
 		local enemy = CombatModel.apply(state, message)
 		local t = message.t
-		if t == "start" then
+		if t == "start" or t == "end" then
 			clearWorld()
 		elseif t == "spawn" and enemy ~= nil then
 			spawnEnemy(enemy)
@@ -566,8 +566,6 @@ function Combat.start(scope: any, dependencies: any)
 			end
 		elseif t == "hit" then
 			onHit(message, enemy)
-		elseif t == "end" then
-			clearWorld()
 		end
 		bump()
 	end)

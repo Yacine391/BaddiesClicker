@@ -20,7 +20,7 @@ export type Tab = { id: string, label: string, count: string? }
 export type Props = {
 	Title: string,
 	Icon: string,
-	Tabs: { Tab }?,
+	Tabs: any?, -- { Tab } ou état Fusion de { Tab } (compteurs en direct)
 	ActiveTab: any?, -- état de string
 	OnTab: ((id: string) -> ())?,
 	Content: { any },
@@ -134,7 +134,7 @@ return function(scope: any, props: Props): Instance
 			TextColor3 = Theme.Colors.Text,
 		}),
 	}
-	if props.Tabs and #props.Tabs > 0 then
+	if props.Tabs ~= nil then
 		local tabs: { any } = {
 			scope:New("UIListLayout")({
 				FillDirection = Enum.FillDirection.Horizontal,
@@ -143,10 +143,14 @@ return function(scope: any, props: Props): Instance
 				SortOrder = Enum.SortOrder.LayoutOrder,
 			}),
 			scope:New("UIPadding")({ PaddingLeft = UDim.new(0, 4) }),
+			scope:Computed(function(use, inner)
+				local buttons = {}
+				for i, tab in use(props.Tabs) or {} do
+					table.insert(buttons, tabButton(inner, props, tab, i))
+				end
+				return buttons
+			end),
 		}
-		for i, tab in props.Tabs do
-			table.insert(tabs, tabButton(scope, props, tab, i))
-		end
 		table.insert(
 			headerChildren,
 			scope:New("Frame")({

@@ -13,6 +13,7 @@ local Workspace = game:GetService("Workspace")
 local Client = script.Parent.Parent
 local HudModel = require(Client.Logic.HudModel)
 local LayoutMode = require(Client.Logic.LayoutMode)
+local WindowModel = require(Client.Logic.WindowModel)
 local Theme = require(Client.UI.Theme)
 local Text = require(Client.UI.Text)
 local Metrics = require(Client.UI.Metrics)
@@ -112,6 +113,16 @@ function HUD.start(scope: any, deps: any)
 		end
 		if name == "Book" then
 			bookBadge:set("")
+		end
+	end)
+	-- Un combat qui commence ferme la fenêtre ouverte (elle cacherait l'arène)
+	local playMode = scope:Computed(function(use)
+		local snapshot = use(Store.snapshot)
+		return snapshot and snapshot.mode
+	end)
+	scope:Observer(playMode):onChange(function()
+		if WindowModel.closesOnMode(deps.peek(playMode)) then
+			UiState.openWindow:set(nil)
 		end
 	end)
 

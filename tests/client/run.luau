@@ -45,6 +45,7 @@ local LayoutMode = require("../../src/client/Logic/LayoutMode")
 local StyleModel = require("../../src/client/Logic/StyleModel")
 local Wardrobe = require("../../src/shared/Wardrobe")
 local BookModel = require("../../src/client/Logic/BookModel")
+local WindowModel = require("../../src/client/Logic/WindowModel")
 
 print("Runner")
 test("smoke", function()
@@ -461,6 +462,26 @@ test("index", function()
 	eq(LookRotation.index(6.1, 6, 3), 2)
 	eq(LookRotation.index(12, 6, 3), 3)
 	eq(LookRotation.index(18, 6, 3), 1)
+end)
+
+print("WindowModel")
+test("un combat qui commence ferme la fenêtre ouverte", function()
+	eq(WindowModel.closesOnMode("combat"), true)
+	eq(WindowModel.closesOnMode("lobby"), false)
+	eq(WindowModel.closesOnMode(nil), false)
+end)
+test("signature des onglets : change seulement si un libellé ou un compteur change", function()
+	local function tabs(drops: string)
+		return {
+			{ id = "slots", label = "SLOTS", count = "1" },
+			{ id = "drops", label = "DROPS", count = drops },
+		}
+	end
+	eq(WindowModel.tabsSignature(tabs("2")), WindowModel.tabsSignature(tabs("2")))
+	eq(WindowModel.tabsSignature(tabs("2")) == WindowModel.tabsSignature(tabs("1")), false)
+	local looks = { { id = "looks", label = "LOOKS" }, { id = "aura", label = "AURA" } }
+	eq(WindowModel.tabsSignature(looks) == WindowModel.tabsSignature({ looks[1] }), false)
+	eq(WindowModel.tabsSignature(nil), "")
 end)
 
 print(`\n{passed} réussi(s), {failed} échec(s)`)

@@ -14,7 +14,7 @@ KEYS = [
 ]
 
 _FACE = {
-    "skin": "#D9A27E", "hair": "#1C1512", "eye": "#4A2C1D", "eye_white": "#FFFFFF",
+    "skin": "#E2B18E", "hair": "#1C1512", "eye": "#4A2C1D", "eye_white": "#FFFFFF",
     "brow": "#24180F", "lip": "#B8665A", "gold": "#D7A746",
 }
 
@@ -79,14 +79,15 @@ def palette_image(look, out_path=None):
 def apply_palette(objs, look):
     """Remplace les matériaux M_<clé> par une seule texture-palette : UV de chaque face au centre de sa case."""
     img = palette_image(look)
+    import bc_common
     mat = bpy.data.materials.get(f"M_Palette_{look}") or bpy.data.materials.new(f"M_Palette_{look}")
-    mat.use_nodes = True
+    bsdf = bc_common.principled(mat)
     nodes = mat.node_tree.nodes
     tex = nodes.get("PaletteTex") or nodes.new("ShaderNodeTexImage")
     tex.name = "PaletteTex"
     tex.image = img
     tex.interpolation = "Closest"
-    mat.node_tree.links.new(tex.outputs["Color"], nodes["Principled BSDF"].inputs["Base Color"])
+    mat.node_tree.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
     for obj in objs:
         if obj.type != "MESH":
             continue

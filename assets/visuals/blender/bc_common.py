@@ -27,12 +27,24 @@ def hex_rgba(hex_color):
     return tuple(srgb_to_linear(int(h[i:i + 2], 16) / 255) for i in (0, 2, 4)) + (1.0,)
 
 
+def principled(mat):
+    """Nœud Principled BSDF du matériau, créé et relié à la sortie s'il manque (Blender 5 n'en crée plus)."""
+    if hasattr(mat, "use_nodes") and not mat.use_nodes:
+        mat.use_nodes = True
+    nodes = mat.node_tree.nodes
+    bsdf = next((n for n in nodes if n.type == "BSDF_PRINCIPLED"), None)
+    if bsdf is None:
+        bsdf = nodes.new("ShaderNodeBsdfPrincipled")
+        out = next((n for n in nodes if n.type == "OUTPUT_MATERIAL"), None) or nodes.new("ShaderNodeOutputMaterial")
+        mat.node_tree.links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
+    return bsdf
+
+
 def material(key, hex_color, roughness=0.6, metallic=0.0):
     """Matériau « M_<key> » (réutilisé s'il existe), couleur de base en hex sRGB."""
     name = f"M_{key}"
     mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
-    mat.use_nodes = True
-    bsdf = mat.node_tree.nodes.get("Principled BSDF")
+    bsdf = principled(mat)
     bsdf.inputs["Base Color"].default_value = hex_rgba(hex_color)
     bsdf.inputs["Roughness"].default_value = roughness
     bsdf.inputs["Metallic"].default_value = metallic
@@ -135,6 +147,55 @@ def remove_doubles(obj, dist=0.0005):
     bm = bmesh.new()
     bm.from_mesh(obj.data)
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=dist)
+    bm.to_mesh(obj.data)
+    bm.free()
+    return obj
+
+
+def skin_mesh(name, points, edges, root, subsurf=1):
+    """Maillage organique : `points` = {nom: ((x, y, z), (rx, ry))}, `edges` = [(a, b)], `root` = nom du point racine.
+
+    Le modificateur Skin habille le squelette de points, puis une subdivision lisse le tout (modificateurs appliqués).
+    """
+    names = list(points)
+    index = {n: i for i, n in enumerate(names)}
+    mesh = bpy.data.meshes.new(name)
+    mesh.from_pydata([points[n][0] for n in names], [(index[a], index[b]) for a, b in edges], [])
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.scene.collection.objects.link(obj)
+    bpy.context.view_layer.objects.active = obj
+    skin = obj.modifiers.new("Skin", "SKIN")
+    skin.use_smooth_shade = True
+    for n in names:
+        sv = mesh.skin_vertices[0].data[index[n]]
+        sv.radius = points[n][1]
+        sv.use_root = n == root
+    if subsurf:
+        sub = obj.modifiers.new("Subsurf", "SUBSURF")
+        sub.levels = subsurf
+    apply_modifiers(obj)
+    return shade_smooth(obj, angle_deg=180)
+
+
+def assign_material_where(obj, mat, predicate):
+    """Ajoute `mat` à l'objet et l'applique aux faces dont le centre (repère monde) vérifie `predicate(Vector)`."""
+    if mat.name not in [m.name for m in obj.data.materials if m]:
+        obj.data.materials.append(mat)
+    slot = [m.name for m in obj.data.materials].index(mat.name)
+    mw = obj.matrix_world
+    for p in obj.data.polygons:
+        if predicate(mw @ p.center):
+            p.material_index = slot
+    return obj
+
+
+def delete_faces_where(obj, predicate):
+    """Supprime les faces dont le centre (repère monde) vérifie `predicate(Vector)`."""
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    mw = obj.matrix_world
+    doomed = [f for f in bm.faces if predicate(mw @ f.calc_center_median())]
+    bmesh.ops.delete(bm, geom=doomed, context="FACES")
     bm.to_mesh(obj.data)
     bm.free()
     return obj

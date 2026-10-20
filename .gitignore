@@ -14,3 +14,8 @@ sourcemap.json
 
 # Maquettes du brainstorming (compagnon visuel)
 .superpowers/
+
+# Blender : fichiers de travail et exports régénérables (scripts dans assets/visuals/blender)
+assets/visuals/**/*.blend
+assets/visuals/**/*.blend1
+assets/visuals/**/*.fbx

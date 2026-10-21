@@ -19,3 +19,4 @@ sourcemap.json
 assets/visuals/**/*.blend
 assets/visuals/**/*.blend1
 assets/visuals/**/*.fbx
+assets/visuals/blender/__pycache__/

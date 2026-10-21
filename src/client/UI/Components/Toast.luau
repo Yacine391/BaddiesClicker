@@ -1,57 +1,90 @@
 --!strict
 --[[
-	Toast : message court en haut de l'écran (nouveau compagnon, ticket…), visible 2 s.
-	Instances simples, détruites à la fin.
+	Toast : message court en haut de l'écran (+1 copie, ticket…), visible 2 s.
+	Panneau mix A au contour Accent. Les toasts simultanés s'empilent (58 px par toast visible)
+	et remontent quand le premier part. Chaque toast a son propre scope Fusion, nettoyé à la fin.
 ]]
 
 local TweenService = game:GetService("TweenService")
 
-local Theme = require(script.Parent.Parent.Theme)
+local Client = script.Parent.Parent.Parent
+local Fusion = require(Client.Packages.Fusion)
+local UI = script.Parent.Parent
+local Theme = require(UI.Theme)
+local Text = require(UI.Text)
+local Panel = require(script.Parent.Panel)
+local Icon = require(script.Parent.Icon)
 
 local Toast = {}
 
 local SHOW_SECONDS = 2
+local TOP = 96
+local STEP = 58
+local HIDDEN = UDim2.new(0.5, 0, 0, -60)
 
-function Toast.show(parent: Instance, text: string)
-	local frame = Instance.new("Frame")
-	frame.Name = "Toast"
-	frame.AnchorPoint = Vector2.new(0.5, 0)
-	frame.Position = UDim2.new(0.5, 0, 0, -60)
-	frame.Size = UDim2.fromOffset(420, 52)
-	frame.BackgroundColor3 = Theme.Colors.Violet
-	frame.ZIndex = 30
+local active: { Frame } = {}
 
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 14)
-	corner.Parent = frame
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = Theme.Colors.Contour
-	stroke.Thickness = Theme.Stroke.Frame
-	stroke.Parent = frame
+local function slotPosition(index: number): UDim2
+	return UDim2.new(0.5, 0, 0, TOP + (index - 1) * STEP)
+end
 
-	local label = Instance.new("TextLabel")
-	label.BackgroundTransparency = 1
-	label.Size = UDim2.new(1, -24, 1, -12)
-	label.Position = UDim2.fromOffset(12, 6)
-	label.Text = text
-	label.TextScaled = true
-	label.FontFace = Theme.Fonts.Body
-	label.TextColor3 = Theme.Colors.Blanc
-	label.ZIndex = 31
-	local textStroke = Instance.new("UIStroke")
-	textStroke.Color = Theme.Colors.Contour
-	textStroke.Thickness = Theme.Stroke.Text
-	textStroke.Parent = label
-	label.Parent = frame
+local function relayout()
+	local slide = TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+	for i, frame in active do
+		TweenService:Create(frame, slide, { Position = slotPosition(i) }):Play()
+	end
+end
+
+function Toast.show(parent: Instance, text: string, icon: string?)
+	local scope = Fusion.scoped(Fusion)
+	local children: { any } = {
+		Text.label(scope, {
+			Text = text,
+			Weight = "ExtraBold",
+			Size = UDim2.new(1, if icon then -66 else -24, 0, 26),
+			Position = UDim2.new(0, if icon then 54 else 12, 0.5, 0),
+			AnchorPoint = Vector2.new(0, 0.5),
+			XAlignment = if icon then Enum.TextXAlignment.Left else Enum.TextXAlignment.Center,
+			ZIndex = 31,
+		}),
+	}
+	if icon then
+		table.insert(
+			children,
+			Icon(scope, {
+				Name = icon,
+				Color = Theme.Colors.Accent,
+				Size = UDim2.fromOffset(30, 30),
+				Position = UDim2.new(0, 14, 0.5, 0),
+				AnchorPoint = Vector2.new(0, 0.5),
+				ZIndex = 31,
+			})
+		)
+	end
+	local frame = Panel(scope, {
+		Name = "Toast",
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = HIDDEN,
+		Size = UDim2.fromOffset(420, 50),
+		Line = Theme.Colors.Accent,
+		ZIndex = 30,
+		Children = children,
+	})
 	frame.Parent = parent
+	table.insert(active, frame)
+	relayout()
 
-	local slide = TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-	TweenService:Create(frame, slide, { Position = UDim2.new(0.5, 0, 0, 96) }):Play()
 	task.delay(SHOW_SECONDS, function()
-		local out = TweenService:Create(frame, TweenInfo.new(0.25), { Position = UDim2.new(0.5, 0, 0, -60) })
+		local index = table.find(active, frame)
+		if index then
+			table.remove(active, index)
+		end
+		relayout()
+		local out = TweenService:Create(frame, TweenInfo.new(0.25), { Position = HIDDEN })
 		out:Play()
 		out.Completed:Wait()
 		frame:Destroy()
+		Fusion.doCleanup(scope)
 	end)
 end
 

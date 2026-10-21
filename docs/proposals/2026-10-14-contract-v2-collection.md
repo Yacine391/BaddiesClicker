@@ -1,5 +1,7 @@
 # Proposition : contrat réseau v2 — collection, exposition et looks (lot P0)
 
+> **Statut : implémenté dans le contrat v3, PR #3** (`docs/CONTRACT.md`). Ce document reste comme trace de la proposition.
+
 **De :** Codeur B — **Pour :** Codeur A (relecture et implémentation serveur)
 **Base :** `docs/CONTRACT.md` v1 — **Dossier :** rubriques 02, 03, 11, 13, 15, 19, 25, 30
 

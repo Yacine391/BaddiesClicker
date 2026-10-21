@@ -106,6 +106,15 @@ function HUD.start(scope: any, deps: any)
 	local lastOpened = scope:Value(nil)
 	-- Badge NEW du Book : une découverte arrivée depuis la dernière ouverture du Book
 	local bookBadge = scope:Value("")
+	-- Badge du menu SLOTS : nombre de drops en attente (une décision attend le joueur)
+	local slotsBadge = scope:Computed(function(use)
+		local snapshot = use(deps.Store.snapshot)
+		local drops = 0
+		for _, count in (snapshot and snapshot.pendingDrops) or {} do
+			drops += tonumber(count) or 0
+		end
+		return if drops > 0 then tostring(drops) else ""
+	end)
 	scope:Observer(UiState.openWindow):onChange(function()
 		local name = deps.peek(UiState.openWindow)
 		if name ~= nil then
@@ -262,9 +271,10 @@ function HUD.start(scope: any, deps: any)
 								end),
 							}),
 							menuItem(1, "Book", "book", "BOOK", Theme.Colors.Book, bookBadge),
-							menuItem(2, "Crew", "crew", "CREW", Theme.Colors.Crew),
-							menuItem(3, "Style", "style", "STYLE", Theme.Colors.Style),
-							menuItem(4, "Settings", "settings", "RÉGLAGES", Theme.Colors.Settings),
+							menuItem(2, "Slots", "ticket", "SLOTS", Theme.Colors.Slots, slotsBadge),
+							menuItem(3, "Crew", "crew", "CREW", Theme.Colors.Crew),
+							menuItem(4, "Style", "style", "STYLE", Theme.Colors.Style),
+							menuItem(5, "Settings", "settings", "RÉGLAGES", Theme.Colors.Settings),
 						},
 					}),
 					scope:New("Frame")({

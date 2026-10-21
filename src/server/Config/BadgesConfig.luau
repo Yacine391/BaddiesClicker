@@ -7,7 +7,7 @@
 	sont déjà données : un badge n'est jamais la seule source de vérité du profil.
 
 	Expérience « Click For u Baddies » (universe 10770935031). Icônes : assets/badges/ (tools/make_badges.py).
-	Roblox crée 5 badges gratuits par 24 h (GMT), 100 Robux au-delà : les 5 derniers restent à créer.
+	Les 10 badges existent (5 le 15/10, 5 le 16/10 ; 5 gratuits par 24 h GMT, 100 Robux au-delà).
 ]]
 
 return table.freeze({
@@ -16,9 +16,9 @@ return table.freeze({
 	first_boss = 1304157737291845,
 	first_crew = 1315516787837261,
 	run_complete = 3967999521664107,
-	first_rebirth = 0,
-	book_baddies_v1 = 0,
-	book_crew_v1 = 0,
-	mythic_found = 0,
-	collection_v1 = 0,
+	first_rebirth = 608418536267242,
+	book_baddies_v1 = 2687933298613433,
+	book_crew_v1 = 1396893262067907,
+	mythic_found = 2811471966761546,
+	collection_v1 = 1916248291929445,
 } :: { [string]: number })

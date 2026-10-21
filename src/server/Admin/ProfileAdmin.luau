@@ -77,6 +77,9 @@ function ProfileAdmin.versions(userId: number, count: number?, studio: boolean?)
 	local store, name = storeFor(studio)
 	local query = store:VersionQuery(keyOf(userId), Enum.SortDirection.Descending)
 	print(`[ProfileAdmin] {name} / {keyOf(userId)} : versions les plus récentes`)
+	print(
+		"  (une version de l'heure UTC en cours est écrasée par la sauvegarde suivante : restaurer une heure passée)"
+	)
 	for index = 1, count or 10 do
 		local profile = query:NextAsync()
 		if profile == nil then
@@ -93,7 +96,10 @@ function ProfileAdmin.show(userId: number, version: string?, studio: boolean?)
 	local store, name = storeFor(studio)
 	local profile = store:GetAsync(keyOf(userId), version)
 	if profile == nil then
-		warn(`[ProfileAdmin] {name} / {keyOf(userId)} : aucune donnée pour la version {tostring(version)}`)
+		warn(
+			`[ProfileAdmin] {name} / {keyOf(userId)} : aucune donnée pour la version {tostring(version)}`
+				.. " (absente, ou écrasée dans la même heure UTC)"
+		)
 		return nil
 	end
 	print(
@@ -108,7 +114,11 @@ function ProfileAdmin.restore(userId: number, version: string, studio: boolean?)
 	local store, name = storeFor(studio)
 	local profile = store:GetAsync(keyOf(userId), version)
 	if profile == nil then
-		warn(`[ProfileAdmin] restauration annulée : version {version} introuvable`)
+		warn(
+			`[ProfileAdmin] restauration annulée : version {version} introuvable ou écrasée. Roblox ne garde que`
+				.. " la 1re sauvegarde de chaque heure UTC (les suivantes de la même heure l'écrasent) :"
+				.. " choisir une version d'une heure passée dans Admin.versions."
+		)
 		return false
 	end
 	print(

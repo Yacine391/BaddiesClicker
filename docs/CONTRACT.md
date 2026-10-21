@@ -46,7 +46,7 @@ peut être découverte (dans le Baddies Book), possédée (dans un slot) ou expo
 | `EquipCrew` | `{ ids: { string } }` | 4/s | ≤ 2 compagnons **possédés**, sans doublon ; remplace la liste (vide = aucun) |
 | `SetStyle` | `{ slot, id? }` | 4/s | hors combat ; `slot` ∈ `Wardrobe.slots` ou `"title"` ; `id` débloqué et du bon emplacement ; `id` absent = retirer |
 | `DevSetMastery` 🧪 | `{ baddieId, xp }` | 4/s | **Studio uniquement** : fixe l'XP de maîtrise (tester les looks) |
-| `DevGrant` 🧪 | `{ what = "tickets" \| "crewTickets" \| "drop" \| "finishRun", baddieId? }` | 4/s | **Studio uniquement** : +10 tickets baddie, +5 tickets compagnon, un drop en attente, ou les 10 niveaux terminés |
+| `DevGrant` 🧪 | `{ what = "tickets" \| "crewTickets" \| "power" \| "drop" \| "finishRun" \| "teleport", baddieId? }` | 4/s | **Studio uniquement** : +10 tickets baddie, +5 tickets compagnon, +5 000 puissance, un drop en attente, les 10 niveaux terminés, ou (en combat) un saut au coin opposé de l'arène pour tester le contrôle des déplacements |
 
 ⏳ = **décision durable** (ci-dessous) : réponse `Result { kind = "mutation" }` après l'écriture.
 Les autres intentions invalides sont ignorées sans réponse : le client se fie au snapshot suivant.
@@ -145,6 +145,8 @@ Envoyé au chargement, sur `Hello`, puis à chaque changement (regroupé, au plu
 		boss = "jade",
 	},
 	clearedLevels = { 1, 2 },     -- portes ouvertes pour CE joueur (refermées à la mort)
+	nextLevel = { levelId = 3, recommendedPower = 1043 }, -- §09 : conseil « puissance recommandée »
+	                              -- avec la principale actuelle (~60 coups) ; nil quand le niveau 10 est terminé
 	run = { id = 1, attempt = 1 },
 	pendingDrops = { jade = 1 },  -- drops de boss en attente de décision (accepter / refuser 1)
 	pendingRevision = 3,          -- à renvoyer avec AcceptDrop / RefuseDrop
@@ -213,6 +215,7 @@ Noms, raretés, couleurs et looks : lire `Shared/Catalog` avec l'ID (`Catalog.ba
 | `masteryUp` | `baddieId`, `level` | la principale monte en maîtrise |
 | `death` | — | « Retour au lobby. Ta puissance et tes baddies restent ; les portes se referment. » |
 | `combatLeft` | — | sorti de l'arène plus de 3 s : combat abandonné, aucune récompense |
+| `combatInvalid` | `level` | déplacements impossibles répétés (§25) : combat annulé, gains de la vague retirés ; toast neutre « Combat annulé : déplacement anormal détecté. » (pas d'accusation, pas de sanction) |
 | `mutation` | voir « Décisions durables » | réponse à `Roll`, `AcceptDrop`, `RefuseDrop`, `Rebirth` |
 | `discovery` | `baddieId` | nouvelle identité au Baddies Book (relance ou drop accepté), après l'écriture |
 | `rebirth` | `count` | renaissance confirmée |
@@ -233,7 +236,7 @@ cercles au sol). Positions en studs dans le plan XZ ; la hauteur vient de `floor
 | `telegraph` | `enemyId`, `x`, `z`, `radius`, `duration` | cercle de danger au sol qui se remplit pendant `duration` s |
 | `impact` | `enemyId`, `x`, `z`, `radius`, `hit`, `damage`, `hp` | frappe ; `hp` = PV du joueur après coup |
 | `hit` | `targetId`, `damage`, `hp`, `killed` | coup du joueur sur un ennemi |
-| `end` | `encounterId`, `reason` ("victory", "death", "left") | tout nettoyer |
+| `end` | `encounterId`, `reason` ("victory", "death", "left", "invalid") | tout nettoyer |
 
 Rendu de test actuel (Studio uniquement) : `Dev/DevCombatView` (blocs, cercles rouges, barres de PV) et
 `Dev/DevCombatPanel` (bouton ATTAQUER, touche F, « rejouer »), lancés par `CombatBootstrap.client.luau`.
@@ -252,6 +255,17 @@ La vraie carte du codeur B doit garder ces noms :
 
 Ouvrir une porte n'est qu'une présentation : le serveur vérifie lui-même que le joueur a le droit
 d'être dans une arène. Traverser un mur côté client ne donne ni combat ni gain.
+
+Déplacements pendant un combat (§25, `Rules/Movement`) : le serveur compare chaque position du
+personnage à la précédente (vitesse permise = `Humanoid.WalkSpeed` **lue côté serveur** × 1,25 + 4,
+réserve de 2 s pour la latence). Conséquences pour le client :
+
+- toute vitesse de marche (sprint, bonus) doit être réglée **par le serveur** : une WalkSpeed changée
+  seulement côté client est vue comme une téléportation ;
+- une téléportation voulue par le jeu pendant un combat passe par le serveur, qui appelle
+  `CombatService.forgiveMovement(player)` juste après ;
+- une anomalie isolée (pic de latence, chute) n'a aucun effet visible ; 3 en 20 s annulent le combat
+  (`end` avec `reason = "invalid"`, puis `Result` `combatInvalid`). Jamais de bannissement automatique.
 
 ## Effets RGB (`Controllers/CelebrationController`)
 

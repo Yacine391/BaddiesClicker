@@ -54,7 +54,8 @@ Détails : `docs/P1-COMBAT.md`.
 
 ## V1 puis bêta
 
-- [x] Dix rencontres configurées, cinq quartiers (paramètres de test, à régler en bêta)
+- [x] Dix rencontres configurées, cinq quartiers ; équilibrage v4-p1 au simulateur (`docs/BALANCE.md`), à confirmer en bêta
+- [x] Anti-triche des déplacements en combat (§25) : rencontre invalidée après 3 anomalies, sans bannissement
 - [x] Classement du lobby, garde-robe, titres et 10 succès, statistiques serveur (PR #4 à #6, `docs/V1-CODEUR-A.md`)
 - [x] Flags serveur de maintenance (§36) ; outil de restauration écrit
 - [ ] Restauration répétée avec succès sur un compte de test

@@ -26,8 +26,8 @@ du codeur B ; à reporter dans la feuille de route après fusion des deux branch
 ## Côté codeur B (P1)
 
 - [x] `Input` : envoyer `Attack { encounterId }` quand `snapshot.combat.active` (au lieu de `Train`) — PR #1, `Logic/PrimaryAction`
-- [ ] Retirer la barrière « lot P1 » de la rue dans `assets/world/Lobby.rbxm` ; arènes réelles aux noms du contrat (`Levels/LevelN/Arena`, `Door`)
-- [ ] Rendu du combat (ennemis, cercles de danger lisibles en qualité basse, PV) via `StateController.onCombat` ; démarrer `DoorController` depuis l'App ; supprimer `CombatBootstrap.client.luau`
+- [x] Retirer la barrière « lot P1 » de la rue (refonte UI) ; arènes réelles aux noms du contrat : `assets/world/LevelsBuilder.luau`, `lune run assets/world/export-levels` → `Levels.rbxm` (Workspace.Levels)
+- [x] Rendu du combat (ennemis, cercles de danger, PV) via `StateController.onCombat` : `Controllers/Combat` + `Logic/CombatModel` (7 tests) ; `DoorController` démarré par l'App ; `CombatBootstrap` et `Dev/DevCombat*` supprimés
 
 ## Tester dans Studio
 

@@ -46,6 +46,7 @@ local LayoutMode = require("../../src/client/Logic/LayoutMode")
 local StyleModel = require("../../src/client/Logic/StyleModel")
 local Wardrobe = require("../../src/shared/Wardrobe")
 local BookModel = require("../../src/client/Logic/BookModel")
+local CombatModel = require("../../src/client/Logic/CombatModel")
 
 print("Runner")
 test("smoke", function()
@@ -482,6 +483,126 @@ test("index", function()
 	eq(LookRotation.index(6.1, 6, 3), 2)
 	eq(LookRotation.index(12, 6, 3), 3)
 	eq(LookRotation.index(18, 6, 3), 1)
+end)
+
+print("Combat (flux serveur → affichage)")
+
+local function startedCombat()
+	local s = CombatModel.new()
+	CombatModel.apply(
+		s,
+		{ t = "start", encounterId = "1-1", levelId = 2, floorY = 0.05, boss = "iris", minionsTotal = 3 }
+	)
+	CombatModel.apply(
+		s,
+		{ t = "spawn", enemy = { id = "1-1:1", kind = "minion", hp = 50, maxHP = 50, x = 0, z = -15 } }
+	)
+	return s
+end
+
+test("combat : vague puis boss, la barre suit le serveur", function()
+	local s = startedCombat()
+	eq(CombatModel.active(s), true)
+	local bar = CombatModel.bar(s, Catalog, Format.number)
+	eq(bar.visible, true)
+	eq(bar.isBoss, false)
+	eq(bar.text, "0 / 3 · puis IRIS")
+	local hit = CombatModel.apply(s, { t = "hit", targetId = "1-1:1", damage = 50, hp = 0, killed = true })
+	assert(hit ~= nil and hit.hp == 0, "ennemi touché renvoyé")
+	eq(s.minionsKilled, 1)
+	eq(s.enemies["1-1:1"], nil, "sbire retiré")
+	CombatModel.apply(s, {
+		t = "spawn",
+		enemy = { id = "1-1:4", kind = "boss", baddieId = "iris", hp = 450, maxHP = 450, x = 0, z = -18 },
+	})
+	CombatModel.apply(s, { t = "hit", targetId = "1-1:4", damage = 225, hp = 225, killed = false })
+	bar = CombatModel.bar(s, Catalog, Format.number)
+	eq(bar.isBoss, true)
+	eq(bar.title, "NIVEAU 2 · BOSS IRIS")
+	near(bar.ratio, 0.5, 1e-9)
+end)
+
+test("combat : positions interpolées et fin de rencontre", function()
+	local s = startedCombat()
+	CombatModel.apply(s, { t = "pos", list = { { "1-1:1", 3.5, -8 }, { "inconnu", 1, 1 } } })
+	eq(s.enemies["1-1:1"].x, 3.5)
+	eq(s.enemies["1-1:1"].z, -8)
+	CombatModel.apply(s, { t = "end", encounterId = "1-1", reason = "death" })
+	eq(CombatModel.active(s), false)
+	eq(next(s.enemies), nil)
+	eq(CombatModel.bar(s, Catalog, Format.number).visible, false)
+end)
+
+test("combat : messages invalides ignorés", function()
+	local s = CombatModel.new()
+	eq(CombatModel.apply(s, { t = "spawn", enemy = "x" }), nil)
+	eq(CombatModel.apply(s, { t = "hit", targetId = "absent", hp = 0, killed = true }), nil)
+	eq(CombatModel.apply(s, { t = "inconnu" }), nil)
+	eq(s.minionsKilled, 0)
+end)
+
+test("combat : PV du joueur depuis le snapshot", function()
+	eq(CombatModel.playerBar(nil).visible, false)
+	eq(CombatModel.playerBar({ combat = { active = false, hp = 100, maxHP = 100 } }).visible, false)
+	local bar = CombatModel.playerBar({ combat = { active = true, hp = 25, maxHP = 100 } })
+	eq(bar.visible, true)
+	eq(bar.text, "25 PV")
+	eq(bar.low, true)
+	eq(CombatModel.playerBar({ combat = { active = true, hp = 80, maxHP = 100 } }).low, false)
+end)
+
+test("combat : rejouer seulement dans l'arène d'un niveau terminé, hors combat", function()
+	local snap = { mode = "rest", clearedLevels = { 1, 2 } }
+	eq(CombatModel.replayLevel(snap, 2), 2)
+	eq(CombatModel.replayLevel(snap, 3), nil)
+	eq(CombatModel.replayLevel(snap, nil), nil)
+	eq(CombatModel.replayLevel({ mode = "combat", clearedLevels = { 1 } }, 1), nil)
+end)
+
+test("combat : puissance conseillée (§09), absente si le serveur ne l'envoie pas", function()
+	local hint = CombatModel.hint(
+		{ mode = "rest", power = 900, nextLevel = { levelId = 2, recommendedPower = 886 } },
+		Format.number
+	)
+	eq(hint.visible, true)
+	eq(hint.ready, true)
+	eq(hint.text, "NIVEAU 2 · puissance conseillée 886")
+	eq(
+		CombatModel.hint(
+			{ mode = "rest", power = 10, nextLevel = { levelId = 2, recommendedPower = 886 } },
+			Format.number
+		).ready,
+		false
+	)
+	eq(CombatModel.hint({ mode = "rest", power = 10 }, Format.number).visible, false)
+	eq(
+		CombatModel.hint(
+			{ mode = "combat", nextLevel = { levelId = 2, recommendedPower = 1 } },
+			Format.number
+		).visible,
+		false
+	)
+end)
+
+test("combat : toasts de fin de rencontre", function()
+	local cleared = CombatModel.toastFor(
+		{ kind = "levelCleared", level = 1, power = 15, firstClear = true, baddieTickets = 1 },
+		Catalog,
+		Format.number
+	)
+	eq(cleared, "Niveau 1 terminé : +15 puissance, +1 ticket · pas de drop (10 % par victoire)")
+	local drop = CombatModel.toastFor(
+		{ kind = "levelCleared", level = 1, power = 15, drop = "jade" },
+		Catalog,
+		Format.number
+	)
+	eq(drop, "Niveau 1 terminé : +15 puissance · drop de JADE en attente")
+	assert(CombatModel.toastFor({ kind = "death" }, Catalog, Format.number) ~= nil, "mort")
+	assert(
+		CombatModel.toastFor({ kind = "combatInvalid", level = 1 }, Catalog, Format.number) ~= nil,
+		"invalidé"
+	)
+	eq(CombatModel.toastFor({ kind = "ticket" }, Catalog, Format.number), nil, "laissé au HUD")
 end)
 
 print(`\n{passed} réussi(s), {failed} échec(s)`)

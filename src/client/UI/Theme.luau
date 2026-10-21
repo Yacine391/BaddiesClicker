@@ -29,6 +29,7 @@ Theme.Colors = table.freeze({
 	Settings = hex("#CFCAE6"),
 	Close = hex("#E0233F"),
 	Principal = hex("#33B84A"),
+	Danger = hex("#FF3B5C"), -- zones de danger, PV bas, coup reçu (combat)
 })
 
 Theme.Transparency = table.freeze({ Panel = 0.14, PanelLine = 0.72, Dim = 0.38 })

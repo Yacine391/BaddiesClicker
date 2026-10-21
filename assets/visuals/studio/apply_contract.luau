@@ -58,6 +58,13 @@ for i = 1, LOOKS do
 		controller.Parent = src
 	end
 
+	-- l'unité du FBX dépend des réglages de l'importeur : on ramène la hauteur à 5,5 studs
+	local _, imported = src:GetBoundingBox()
+	if math.abs(imported.Y - 5.5) > 0.05 then
+		src:ScaleTo(src:GetScale() * 5.5 / imported.Y)
+		print(`[Contrat] {name} : hauteur importée {math.floor(imported.Y * 100) / 100} → 5,5 studs`)
+	end
+
 	local hrp = src:FindFirstChild("HumanoidRootPart") :: BasePart
 	assert(hrp, `{name} : pas de HumanoidRootPart (importer avec le type de rig R15)`)
 	local lower = src:FindFirstChild("LowerTorso") :: BasePart

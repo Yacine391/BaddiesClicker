@@ -36,6 +36,7 @@ end
 local Catalog = require("../../src/shared/Catalog")
 local Format = require("../../src/shared/Format")
 local HudModel = require("../../src/client/Logic/HudModel")
+local WindowModel = require("../../src/client/Logic/WindowModel")
 local Formation = require("../../src/client/Logic/Formation")
 local LookRotation = require("../../src/client/Logic/LookRotation")
 local HoldPolicy = require("../../src/client/Logic/HoldPolicy")
@@ -457,6 +458,26 @@ test("compteurs", function()
 	eq(c.baddiesTotal, 8)
 	eq(c.crew, 1)
 	eq(c.crewTotal, 6)
+end)
+
+print("WindowModel")
+test("un combat qui commence ferme la fenêtre ouverte", function()
+	eq(WindowModel.closesOnMode("combat"), true)
+	eq(WindowModel.closesOnMode("lobby"), false)
+	eq(WindowModel.closesOnMode(nil), false)
+end)
+test("signature des onglets : change seulement si un libellé ou un compteur change", function()
+	local function tabs(drops: string)
+		return {
+			{ id = "slots", label = "SLOTS", count = "1" },
+			{ id = "drops", label = "DROPS", count = drops },
+		}
+	end
+	eq(WindowModel.tabsSignature(tabs("2")), WindowModel.tabsSignature(tabs("2")))
+	eq(WindowModel.tabsSignature(tabs("2")) == WindowModel.tabsSignature(tabs("1")), false)
+	local looks = { { id = "looks", label = "LOOKS" }, { id = "aura", label = "AURA" } }
+	eq(WindowModel.tabsSignature(looks) == WindowModel.tabsSignature({ looks[1] }), false)
+	eq(WindowModel.tabsSignature(nil), "")
 end)
 
 print("LookRotation")

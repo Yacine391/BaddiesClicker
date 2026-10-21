@@ -6,6 +6,7 @@
 ]]
 
 local Window = require(script.Parent.Components.Window)
+local WindowModel = require(script.Parent.Parent.Logic.WindowModel)
 
 local WindowHost = {}
 
@@ -22,6 +23,17 @@ export type Spec = {
 	content: (inner: any) -> { any },
 }
 
+-- Onglets calculés depuis le snapshot : reconstruits seulement quand libellés ou compteurs changent
+local function liveTabs(inner: any, deps: any, build: (any) -> any): any
+	local signature = inner:Computed(function(use)
+		return WindowModel.tabsSignature(build(use(deps.Store.snapshot)))
+	end)
+	return inner:Computed(function(use)
+		use(signature)
+		return build(deps.peek(deps.Store.snapshot))
+	end)
+end
+
 function WindowHost.mount(scope: any, deps: any, parent: Instance, spec: Spec)
 	local mounted = scope:Computed(function(use, inner)
 		if use(deps.UiState.openWindow) ~= spec.name then
@@ -30,9 +42,7 @@ function WindowHost.mount(scope: any, deps: any, parent: Instance, spec: Spec)
 		return Window(inner, {
 			Title = spec.title,
 			Icon = spec.icon,
-			Tabs = if type(spec.tabs) == "function"
-				then spec.tabs(deps.peek(deps.Store.snapshot))
-				else spec.tabs,
+			Tabs = if type(spec.tabs) == "function" then liveTabs(inner, deps, spec.tabs) else spec.tabs,
 			ActiveTab = spec.activeTab,
 			OnTab = spec.onTab,
 			Layout = spec.layout,

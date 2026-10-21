@@ -16,6 +16,37 @@ local function trimZeros(s: string): string
 	return (string.gsub(s, "%.?0+$", ""))
 end
 
+-- string.upper ne touche qu'à l'ASCII (« Première » → « PREMIèRE ») : on complète les lettres accentuées
+local ACCENTS: { [string]: string } = {
+	["à"] = "À",
+	["â"] = "Â",
+	["ä"] = "Ä",
+	["á"] = "Á",
+	["ç"] = "Ç",
+	["é"] = "É",
+	["è"] = "È",
+	["ê"] = "Ê",
+	["ë"] = "Ë",
+	["î"] = "Î",
+	["ï"] = "Ï",
+	["í"] = "Í",
+	["ô"] = "Ô",
+	["ö"] = "Ö",
+	["ó"] = "Ó",
+	["ù"] = "Ù",
+	["û"] = "Û",
+	["ü"] = "Ü",
+	["ú"] = "Ú",
+	["ÿ"] = "Ÿ",
+	["ñ"] = "Ñ",
+	["œ"] = "Œ",
+	["æ"] = "Æ",
+}
+
+function Format.upper(text: string): string
+	return (string.gsub(string.upper(text), utf8.charpattern, ACCENTS))
+end
+
 function Format.number(n: number): string
 	if n ~= n or n == math.huge or n == -math.huge then
 		return "—"

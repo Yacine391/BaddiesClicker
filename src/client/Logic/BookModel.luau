@@ -34,6 +34,7 @@ export type Detail = {
 	looksText: string,
 	displayed: boolean,
 	canToggleDisplay: boolean,
+	displayFullText: string?,
 	chanceText: string?,
 }
 
@@ -165,6 +166,14 @@ function BookModel.detail(snapshot: any, catalog: any, format: (number) -> strin
 			and collection ~= nil
 			and snapshot.mode ~= "combat"
 			and (displayed or #display < MAX_DISPLAY),
+		-- Exposition pleine : bouton grisé « EXPOSITION PLEINE 3/3 » (il faut d'abord en retirer une)
+		displayFullText = if discovered
+				and collection ~= nil
+				and snapshot.mode ~= "combat"
+				and not displayed
+				and #display >= MAX_DISPLAY
+			then `EXPOSITION PLEINE {#display}/{MAX_DISPLAY}`
+			else nil,
 		chanceText = if def and not discovered then format(def.rollChance) .. " %" else nil,
 	}
 end

@@ -1,4 +1,4 @@
-# Checklist bêta — lot P0 (dossier §02, §30)
+# Checklist bêta — P0, P1 et V1 (dossier §02, §30)
 
 À remplir par le bêta-testeur **sans explication préalable** des menus. Une fiche par session.
 
@@ -26,19 +26,40 @@
 | 6 | Réglages → Maintien du clic : OUI, puis garde ENTRAÎNER appuyé 2 s | Environ 6 à 7 entraînements, pas plus | |
 | 7 | Réglages → Effets réduits : OUI | Auras de Maya, Malik et du podium nettement atténuées ; les néons du lobby ne « bavent » plus (bloom coupé) | |
 | 8 | Fermer une fenêtre | La croix rouge carrée ferme ; un clic à côté de la fenêtre ne fait rien ; Échap ouvre le menu Roblox (normal) | |
-| 8b | Annonces | Gagner un ticket (250 entraînements) ou une copie de compagnon : petit message en haut ; plusieurs messages s'empilent sans se recouvrir | |
+| 8b | Annonces | Gagner un ticket (250 entraînements) ou une copie de compagnon : petit message en haut (« +1 ticket baddie », « +5 tickets baddie ») ; jamais plus de 4 messages à la fois, le bouton ENTRAÎNER reste visible | |
 | 9 | **À deux joueurs** (Studio : Test → Clients and Servers, 2 joueurs) | Chacun voit l'équipe de l'autre ; quand un joueur part, ses suiveurs disparaissent | |
 | 10 | Réglages → Suiveurs des autres : NON | Les équipes des autres joueurs disparaissent, la sienne reste | |
 | 11 | Téléphone (ou émulation Studio, paysage) | Rien de coupé, boutons faciles à toucher, bouton ENTRAÎNER visible | |
 | 12 | Fluidité sur le téléphone de référence | Pas de saccade visible en marchant avec Maya et Malik | |
 
-## 3. Compréhension (questions ouvertes, à poser après la session)
+## 3. Combat et progression (P1, V1)
+
+| # | Contrôle | Attendu | Obtenu |
+|---|---|---|---|
+| 13 | Entrer dans l'arène 1 | Les sbires arrivent ; barre du haut « NIVEAU 1 · SBIRES », tes PV dessous ; le bouton devient ATTAQUER (touche F sur PC) | |
+| 14 | Cercle rouge au sol | Il se remplit puis frappe ; en sortir à temps évite le coup ; touché : écran rouge et « −X PV » | |
+| 15 | Battre le boss | Message « Niveau 1 terminé… », la porte du fond s'ouvre ; « puissance conseillée » pour le niveau 2 | |
+| 16 | Mourir (rester dans les cercles) | « K.O. », retour au lobby ; la puissance reste ; les portes sont refermées ; **aucun combat ne recommence tout seul** | |
+| 17 | Revenir dans une arène déjà gagnée | Bouton REJOUER LE NIVEAU N | |
+| 18 | Menu SLOTS → onglet SLOTS | RELANCER demande une confirmation ; résultat « SLOT : X → Y » ; VERROUILLER empêche la relance | |
+| 19 | Drop de boss (rare, 10 %) | Badge sur SLOTS ; onglet DROPS : ACCEPTER remplace le slot temporaire, REFUSER le supprime | |
+| 20 | Fin du niveau 10 → onglet RENAISSANCE | Texte de ce qui est gardé / perdu ; après confirmation : retour au lobby, puissance 1 | |
+| 21 | Menu CREW | OUVRIR un coffre, AMÉLIORER avec les copies, ÉQUIPER deux compagnons au maximum | |
+| 22 | BOOK, exposition pleine | Une 4e baddie affiche « EXPOSITION PLEINE 3/3 » (il faut en retirer une) | |
+| 23 | Écran CLASSEMENT du lobby (à 2 joueurs) | Les deux noms, ta ligne surlignée, alterne BADDIES / CREW | |
+| 24 | Titre (après le boss 1 : STYLE → titre) | Le titre s'affiche au-dessus de ta tête, aussi chez l'autre joueur | |
+| 25 | Annonces de succès | Accents corrects (« PREMIÈRE RENAISSANCE ») et texte entièrement visible à l'écran | |
+
+## 4. Compréhension (questions ouvertes, à poser après la session)
 
 - Qu'est-ce qui fait monter ta puissance ?
 - À quoi sert la principale ? Et l'exposition ?
 - Qu'as-tu cherché sans le trouver ?
+- Que se passe-t-il quand tu meurs ? Qu'est-ce que tu gardes ?
+- À quoi sert un slot « conservé » ?
 
-## 4. Notes
+## 5. Notes
 
-Les personnages sont des **placeholders** (rigs simples, sans visage) : juger la lisibilité et la silhouette, pas la finition.
-L'exposition et le choix de look ne sont actifs qu'après la fusion de la proposition `docs/proposals/2026-10-14-contract-v2-collection.md`.
+Les personnages sont des **placeholders** (rigs simples, sans visage ; tous les boss utilisent Maya) : juger la
+lisibilité et la silhouette, pas la finition. Matrice complète des tests et de ce qui est automatisé :
+[`TEST-MATRIX.md`](TEST-MATRIX.md).

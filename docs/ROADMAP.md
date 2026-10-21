@@ -18,9 +18,9 @@ backlog ; pendant P0/P1, seules les corrections de la boucle entrent.
 - [x] Vérifier la sauvegarde réelle (place publié + accès API Studio) : puissance et Malik conservés après Stop / Play
 
 **Codeur B**
-- [ ] Maya, 3 looks (Blender, rig R15 commun) → valider avant tout autre personnage *(placeholders R15 en place : `assets/visuals/`)*
+- [ ] Maya, 3 looks (Blender, rig R15 commun, régénérée en A-pose sur `b/maya`) → valider avant tout autre personnage *(placeholders R15 en place : `assets/visuals/`)*
 - [ ] Malik : modèle, casque, aura, idle + animation de mixage *(placeholder + aura + idle en place)*
-- [x] Lobby compact : spawn, sortie visible dans l'axe, podium, entraînement, emplacements « prototype » *(greybox `assets/world/Lobby.rbxm`)*
+- [x] Lobby compact : spawn, sortie visible dans l'axe, podium, entraînement, classement en direct et vitrine Style *(`assets/world/LobbyBuilder.luau` → `Lobby.rbxm`)*
 - [x] HUD final branché sur `StateController`, puis `Flags.DEV_HUD = false`
 - [x] Suiveurs (principale + crew) depuis les attributs `BC_*`
 
@@ -62,4 +62,7 @@ Détails : `docs/P1-COMBAT.md`.
 - [x] Badges Roblox : les 10 créés et renseignés dans `Config/BadgesConfig` (16/10) ; attribués après publication
 - [x] Codeur B : tableau du lobby (`Controllers/Leaderboard`), écran Style, titres au-dessus des avatars (`Controllers/Titles`), vraies arènes et rendu du combat
 - [ ] Catalogue validé (modèles et looks des 8 baddies et 6 compagnons)
-- [ ] Mobile, présentation, matrice de tests complète
+- [x] PR #8 à #11 fusionnées (21/10) ; retours du test Studio d'Alejandro corrigés (relance de combat après une mort, accents, bannière, toasts, petit écran)
+- [x] Matrice de tests §30 (`docs/TEST-MATRIX.md`) et fiche du bêta-testeur (`docs/beta-checklist-p0.md`)
+- [ ] Studio : annulation à 3 téléportations (F4 → TÉLÉPORT ×3), maintenance `Roll`, 2 joueurs, émulateur téléphone, équipe pleine
+- [ ] Mobile réel, présentation (vidéo 15 s après Maya et Malik)

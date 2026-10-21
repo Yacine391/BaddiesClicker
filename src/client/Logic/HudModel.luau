@@ -165,7 +165,8 @@ function HudModel.toastFor(event: { [string]: any }, catalog: any): string?
 		return "+1 copie : " .. (if def then def.name else "compagnon")
 	elseif event.kind == "ticket" then
 		local what = if event.ticket == "crew" then "compagnon" else "baddie"
-		return `+{tonumber(event.amount) or 1} ticket {what}`
+		local amount = tonumber(event.amount) or 1
+		return `+{amount} ticket{if amount > 1 then "s" else ""} {what}`
 	end
 	return nil
 end

@@ -142,6 +142,12 @@ local function textLabel(text: string, size: number, font: Enum.Font, rainbow: b
 	label.Size = UDim2.new(1, 0, 0, size + 10)
 	label.Font = font
 	label.TextSize = size
+	-- texte réduit (jamais agrandi) pour tenir dans la largeur de la bannière
+	label.TextScaled = true
+	local limit = Instance.new("UITextSizeConstraint")
+	limit.MaxTextSize = size
+	limit.MinTextSize = math.floor(size * 0.4)
+	limit.Parent = label
 	label.TextColor3 = Color3.new(1, 1, 1)
 	label.Text = text
 	label.ZIndex = 5
@@ -163,8 +169,11 @@ local function banner(item: Celebration): number
 	frame.Name = "Banner"
 	frame.AnchorPoint = Vector2.new(0.5, 0.5)
 	frame.Position = UDim2.fromScale(0.5, 0.3)
-	frame.Size = UDim2.fromOffset(760, 0)
+	frame.Size = UDim2.fromScale(0.9, 0) -- 90 % de l'écran, 760 px au plus
 	frame.AutomaticSize = Enum.AutomaticSize.Y
+	local maxWidth = Instance.new("UISizeConstraint")
+	maxWidth.MaxSize = Vector2.new(760, math.huge)
+	maxWidth.Parent = frame
 	frame.BackgroundTransparency = 1
 	frame.ZIndex = 5
 	local layout = Instance.new("UIListLayout")
@@ -251,7 +260,7 @@ local function onResult(event: { [string]: any })
 			local def = Catalog.baddies[event.drop]
 			local rarity = if def then Catalog.rarities[def.rarity] else nil
 			CelebrationController.play({
-				title = `DROP : {if def then string.upper(def.name) else event.drop} !`,
+				title = `DROP : {if def then Format.upper(def.name) else event.drop} !`,
 				subtitle = `{if rarity then rarity.label else ""} · dans tes drops en attente`,
 				big = true,
 			})
@@ -266,7 +275,7 @@ local function onResult(event: { [string]: any })
 	elseif kind == "crewLevelUp" then
 		local def = Catalog.crew[event.crewId]
 		CelebrationController.play({
-			title = `{if def then string.upper(def.name) else "CREW"} NIVEAU {event.level}`,
+			title = `{if def then Format.upper(def.name) else "CREW"} NIVEAU {event.level}`,
 			big = true,
 		})
 	elseif kind == "rebirth" then
@@ -283,7 +292,7 @@ local function onResult(event: { [string]: any })
 			table.insert(rewards, `titre « {if title then title.name else id} »`)
 		end
 		CelebrationController.play({
-			title = `SUCCÈS : {if def then string.upper(def.name) else event.id}`,
+			title = `SUCCÈS : {if def then Format.upper(def.name) else event.id}`,
 			subtitle = if #rewards > 0 then `Débloqué : {table.concat(rewards, " · ")}` else nil,
 			big = true,
 		})

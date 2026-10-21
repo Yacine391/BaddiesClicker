@@ -329,6 +329,12 @@ local function detailPanel(scope: any, deps: any, snapshot: any, id: string): { 
 				)
 			end)
 		)
+	elseif d.displayFullText then
+		local full = button(scope, d.displayFullText, false, 9, function() end) :: TextButton
+		full.Active = false
+		full.AutoButtonColor = false
+		full.TextTransparency = 0.45
+		table.insert(items, full)
 	end
 	return items
 end

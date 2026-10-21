@@ -8,6 +8,23 @@ local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 
+-- Une place enregistrée peut garder un ancien exemplaire d'un remote à côté de celui de Rojo : le serveur
+-- et le client écoutent alors deux objets différents (vu le 21/10 : ennemis invisibles, Remotes.Combat ×2).
+-- On ne garde que le premier de chaque nom, avant l'arrivée des joueurs.
+do
+	local seen: { [string]: boolean } = {}
+	for _, remote in ReplicatedStorage:WaitForChild("Remotes"):GetChildren() do
+		if seen[remote.Name] then
+			warn(
+				`[BaddieClicker] Remotes.{remote.Name} en double supprimé : enregistrer la place pour le retirer`
+			)
+			remote:Destroy()
+		else
+			seen[remote.Name] = true
+		end
+	end
+end
+
 -- Dans Studio seulement, le catalogue inclut les identités de test (Shared/TestCatalog, jamais en relance)
 local Catalog = require(Shared.Catalog)
 if RunService:IsStudio() then

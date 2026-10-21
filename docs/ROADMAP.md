@@ -58,7 +58,7 @@ Détails : `docs/P1-COMBAT.md`.
 - [x] Anti-triche des déplacements en combat (§25) : rencontre invalidée après 3 anomalies, sans bannissement
 - [x] Classement du lobby, garde-robe, titres et 10 succès, statistiques serveur (PR #4 à #6, `docs/V1-CODEUR-A.md`)
 - [x] Flags serveur de maintenance (§36) ; outil de restauration écrit
-- [ ] Restauration répétée avec succès sur un compte de test
+- [x] Restauration répétée avec succès sur un compte de test (21/10, store Studio ; voir `OPERATIONS.md` §3)
 - [x] Badges Roblox : les 10 créés et renseignés dans `Config/BadgesConfig` (16/10) ; attribués après publication
 - [x] Codeur B : tableau du lobby (`Controllers/Leaderboard`), écran Style, titres au-dessus des avatars (`Controllers/Titles`), vraies arènes et rendu du combat
 - [ ] Catalogue validé (modèles et looks des 8 baddies et 6 compagnons)

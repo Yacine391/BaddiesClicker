@@ -67,12 +67,32 @@ Admin.restore(123456789, "<version>")  -- la remet comme profil courant
 Admin.show(123456789)                  -- vérifier
 ```
 
-`123456789` = UserId du joueur. Ajouter `true` en dernier argument pour viser le store Studio
-(`BC_Profiles_STUDIO_v1`) au lieu de la production. La restauration ferme la session du joueur s'il est
-connecté ; au retour, son profil repasse par les garde-fous. La version remplacée reste dans l'historique.
+`123456789` = UserId du joueur (pendant un Play : `game.Players:GetPlayers()[1].UserId`). Ajouter `true`
+en dernier argument pour viser le store Studio (`BC_Profiles_STUDIO_v1`) au lieu de la production.
+La restauration ferme la session du joueur s'il est connecté ; au retour, son profil repasse par les
+garde-fous. La version remplacée reste dans l'historique.
+
+**Pièges constatés pendant l'exercice du 21/10 :**
+
+- La commande doit tourner dans l'onglet **Serveur** (l'Explorateur affiche « Explorer (serveur) ») ; côté
+  Client, ServerScriptService n'existe pas.
+- **Roblox ne garde que la 1re sauvegarde de chaque heure UTC** : les écritures suivantes de la même heure
+  l'écrasent définitivement ([doc Roblox](https://create.roblox.com/docs/cloud-services/data-stores/versioning-listing-and-caching)).
+  On ne peut donc revenir qu'à l'état du début d'une heure passée, pas à « il y a 5 minutes ». Une version
+  écrasée répond « introuvable ou écrasée ».
+- Après la restauration, arrêter puis relancer le Play : la partie en cours affiche encore l'ancien état.
 
 **À répéter avant la bêta** sur un compte de test (§36 « restauration répétée avec succès ») :
-noter la version, faire une relance, restaurer la version notée, vérifier que la relance a disparu.
+noter une version d'une **heure passée**, faire une relance, restaurer la version notée, arrêter et relancer,
+vérifier que la relance a disparu. Fait le 21/10 dans Studio (Iris ← Sienna, 18 tickets) : réussi.
+
+## Dépannage
+
+- **Ennemis invisibles alors que le combat tourne** (bouton ATTAQUER, sans barre de vague) : vérifier dans la
+  barre de commande, hors Play, qu'il n'y a qu'un exemplaire de chaque remote :
+  `for _,c in game.ReplicatedStorage:GetDescendants() do if c:IsA("BaseRemoteEvent") then print(c:GetFullName()) end end`.
+  Depuis le 21/10, le serveur supprime un doublon au démarrage et l'écrit dans la sortie ; supprimer aussi
+  le doublon de la place puis republier.
 
 ## 4. Badges Roblox
 

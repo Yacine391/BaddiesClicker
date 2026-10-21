@@ -341,7 +341,7 @@ local function wardrobeTab(scope: any, deps: any, snapshot: any, slot: "aura" | 
 			ListRow(scope, {
 				Portrait = string.sub(row.name, 1, 1),
 				PortraitColor = if slot == "aura" then Theme.Colors.Style else Theme.Colors.Crew,
-				Name = string.upper(row.name),
+				Name = deps.Format.upper(row.name),
 				Chips = chips,
 				Description = if slot == "aura"
 					then "Apparence uniquement · aucune puissance"

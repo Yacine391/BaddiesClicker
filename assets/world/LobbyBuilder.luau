@@ -563,7 +563,7 @@ local function stage(lobby: Instance)
 	end
 end
 
--- Classement (nord-ouest) et vitrine Style (nord-est) : prototypes jusqu'à leurs écrans
+-- Classement (nord-ouest, rempli en direct par Controllers/Leaderboard) et vitrine Style (nord-est)
 local function boards(lobby: Instance)
 	local ranking = group(lobby, "Model", "Ranking")
 	for _, x in { -37, -23 } do
@@ -584,7 +584,7 @@ local function boards(lobby: Instance)
 	sign(led, Enum.NormalId.Back, {
 		{ text = "CLASSEMENT", color = CYAN, h = 0.22 },
 		{ text = "BADDIES DÉCOUVERTES", color = WHITE, h = 0.12, weight = Enum.FontWeight.Bold },
-		{ text = "PROTOTYPE · BIENTÔT ICI", color = DIM, h = 0.1, weight = Enum.FontWeight.Bold },
+		{ text = "JOUEURS PRÉSENTS SUR LE SERVEUR", color = DIM, h = 0.1, weight = Enum.FontWeight.Bold },
 	}, 30)
 	P(ranking, {
 		Name = "Frame",
@@ -666,7 +666,7 @@ local function boards(lobby: Instance)
 		vitrine,
 		{ Name = "Sign", Size = Vector3.new(10, 1.6, 0.3), Position = Vector3.new(30, 11, -31), Color = DARK }
 	)
-	sign(top, Enum.NormalId.Back, { { text = "STYLE · PROTOTYPE", color = PINK, h = 0.8 } })
+	sign(top, Enum.NormalId.Back, { { text = "STYLE · LOOKS ET TITRES", color = PINK, h = 0.8 } })
 end
 
 -- Palmiers, bancs, lampadaires néon, demi-terrain de basket

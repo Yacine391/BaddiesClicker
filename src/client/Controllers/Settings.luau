@@ -12,7 +12,11 @@ local ListRow = require(Client.UI.Components.ListRow)
 local Settings = {}
 
 local ENTRIES = {
-	{ key = "reducedEffects", label = "EFFETS RÉDUITS", hint = "Auras et particules atténuées" },
+	{
+		key = "reducedEffects",
+		label = "EFFETS RÉDUITS",
+		hint = "Auras et particules atténuées, halo lumineux (bloom) coupé",
+	},
 	{
 		key = "showOthersFollowers",
 		label = "SUIVEURS DES AUTRES",

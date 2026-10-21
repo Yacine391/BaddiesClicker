@@ -238,6 +238,9 @@ end
 local function onDeath(player: Player, session, data, respawn: boolean)
 	local levelId = if session.encounter ~= nil then session.encounter.levelId else nil
 	endEncounter(player, session, "death")
+	-- Le personnage reste dans l'arène jusqu'au respawn (1,5 s) : sans ce délai, le tick suivant
+	-- relançait aussitôt la vague du niveau 1 (toujours accessible) et faussait RepriseApresMort.
+	session.combatBlockedUntil = os.clock() + ctx.Balance.combat.respawnDelay + 2
 	CombatRules.applyDeath(data, ctx)
 	if levelId ~= nil then
 		deps.Metrics.died(player, data, session, levelId)

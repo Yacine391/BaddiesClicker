@@ -9,7 +9,8 @@
 	- DevGrant { what = "power" }          : +5 000 puissance (atteindre vite les niveaux suivants).
 	- DevGrant { what = "drop", baddieId } : ajoute un drop en attente (tester accepter / refuser).
 	- DevGrant { what = "finishRun" }      : marque les 10 niveaux terminés (tester la renaissance).
-	- DevGrant { what = "teleport" }       : en combat, saute au coin opposé de l'arène (tester §25).
+	- DevGrant { what = "teleport", times? } : en combat, saute d'un coin à l'autre de l'arène, 1 ou 3 fois
+	                                         (3 fois d'affilée = combat annulé, test du §25).
 	Hors Studio, ces intentions ne sont même pas déclarées (Bootstrap.server) et chaque fonction refuse.
 ]]
 
@@ -99,11 +100,22 @@ function DevService.onGrant(player: Player, payload: { [any]: any }?)
 		if arena == nil or character == nil then
 			return
 		end
-		local pivot = character:GetPivot()
 		local b = arena.bounds
-		local x = if pivot.Position.X < (b.minX + b.maxX) / 2 then b.maxX - 4 else b.minX + 4
-		local z = if pivot.Position.Z < (b.minZ + b.maxZ) / 2 then b.maxZ - 4 else b.minZ + 4
-		character:PivotTo(pivot.Rotation + Vector3.new(x, pivot.Position.Y, z))
+		local jumps = if payload.times == 3 then 3 else 1
+		task.spawn(function()
+			for jump = 1, jumps do
+				if session.encounter == nil or player.Character ~= character then
+					return -- combat déjà annulé (ou personnage remplacé)
+				end
+				-- coins opposés en alternance : chaque saut traverse l'arène (≈ 73 studs)
+				local pivot = character:GetPivot()
+				local corner = jump % 2 == 1
+				local x = if corner then b.maxX - 4 else b.minX + 4
+				local z = if corner then b.maxZ - 4 else b.minZ + 4
+				character:PivotTo(pivot.Rotation + Vector3.new(x, pivot.Position.Y, z))
+				task.wait(0.35)
+			end
+		end)
 		return -- aucune donnée de profil modifiée
 	else
 		return

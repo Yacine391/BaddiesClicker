@@ -22,6 +22,7 @@ local TOP = 96
 local STEP = 58
 local HIDDEN = UDim2.new(0.5, 0, 0, -60)
 
+local MAX_VISIBLE = 4
 local active: { Frame } = {}
 
 local function slotPosition(index: number): UDim2
@@ -72,6 +73,11 @@ function Toast.show(parent: Instance, text: string, icon: string?)
 	})
 	frame.Parent = parent
 	table.insert(active, frame)
+	-- Le plus ancien part tout de suite (son départ normal ne trouvera plus sa place dans la liste)
+	while #active > MAX_VISIBLE do
+		local oldest = table.remove(active, 1) :: Frame
+		oldest.Visible = false
+	end
 	relayout()
 
 	task.delay(SHOW_SECONDS, function()

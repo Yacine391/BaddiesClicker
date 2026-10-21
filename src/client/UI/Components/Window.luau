@@ -104,6 +104,20 @@ end
 
 return function(scope: any, props: Props): Instance
 	local closeSide = Metrics.touch(scope, 42)
+	-- Sous l'échelle ~0,77, les cibles tactiles (≥ 48 px réels) dépassent 62 px de référence :
+	-- l'en-tête grandit avec elles au lieu de les laisser déborder
+	local tabHit = Metrics.touch(scope, Theme.MinTouch)
+	local headerHeight = scope:Computed(function(use)
+		return math.max(HEADER, (use(closeSide) :: number) + 14, (use(tabHit) :: number) + 8)
+	end)
+	local function belowHeader(extra: number)
+		return scope:Computed(function(use)
+			return UDim2.fromOffset(0, (use(headerHeight) :: number) + extra)
+		end)
+	end
+	local bodySize = scope:Computed(function(use)
+		return UDim2.new(1, 0, 1, -((use(headerHeight) :: number) + 2))
+	end)
 	table.insert(
 		scope,
 		UserInputService.InputBegan:Connect(function(input, processed)
@@ -158,7 +172,9 @@ return function(scope: any, props: Props): Instance
 				LayoutOrder = 2,
 				BackgroundTransparency = 1,
 				AutomaticSize = Enum.AutomaticSize.X,
-				Size = UDim2.fromOffset(0, HEADER),
+				Size = scope:Computed(function(use)
+					return UDim2.fromOffset(0, use(headerHeight))
+				end),
 				[scope.Children] = tabs,
 			})
 		)
@@ -169,16 +185,16 @@ return function(scope: any, props: Props): Instance
 		body = scope:New("Frame")({
 			Name = "Content",
 			BackgroundTransparency = 1,
-			Position = UDim2.fromOffset(0, HEADER + 2),
-			Size = UDim2.new(1, 0, 1, -(HEADER + 2)),
+			Position = belowHeader(2),
+			Size = bodySize,
 			[scope.Children] = props.Content,
 		})
 	else
 		body = scope:New("ScrollingFrame")({
 			Name = "Content",
 			BackgroundTransparency = 1,
-			Position = UDim2.fromOffset(0, HEADER + 2),
-			Size = UDim2.new(1, 0, 1, -(HEADER + 2)),
+			Position = belowHeader(2),
+			Size = bodySize,
 			CanvasSize = UDim2.new(),
 			AutomaticCanvasSize = Enum.AutomaticSize.Y,
 			ScrollBarThickness = 6,
@@ -212,7 +228,9 @@ return function(scope: any, props: Props): Instance
 			BackgroundColor3 = Theme.Colors.Accent,
 			BackgroundTransparency = 0.88,
 			BorderSizePixel = 0,
-			Size = UDim2.new(1, 0, 0, HEADER),
+			Size = scope:Computed(function(use)
+				return UDim2.new(1, 0, 0, use(headerHeight))
+			end),
 			[scope.Children] = {
 				scope:New("UICorner")({ CornerRadius = UDim.new(0, 14) }),
 				scope:New("UIGradient")({
@@ -225,7 +243,9 @@ return function(scope: any, props: Props): Instance
 				scope:New("Frame")({
 					Name = "Row",
 					BackgroundTransparency = 1,
-					Size = UDim2.new(1, -80, 1, 0),
+					Size = scope:Computed(function(use)
+						return UDim2.new(1, -((use(closeSide) :: number) + 30), 1, 0)
+					end),
 					[scope.Children] = headerChildren,
 				}),
 			},
@@ -235,7 +255,7 @@ return function(scope: any, props: Props): Instance
 			BackgroundColor3 = Theme.Colors.PanelLine,
 			BackgroundTransparency = 0.82,
 			BorderSizePixel = 0,
-			Position = UDim2.fromOffset(0, HEADER),
+			Position = belowHeader(0),
 			Size = UDim2.new(1, 0, 0, 2),
 		}),
 		body,
@@ -247,7 +267,9 @@ return function(scope: any, props: Props): Instance
 			TextColor3 = Theme.Colors.Text,
 			AutoButtonColor = false,
 			AnchorPoint = Vector2.new(1, 0.5),
-			Position = UDim2.new(1, -12, 0, HEADER / 2),
+			Position = scope:Computed(function(use)
+				return UDim2.new(1, -12, 0, (use(headerHeight) :: number) / 2)
+			end),
 			Size = scope:Computed(function(use)
 				local side = use(closeSide)
 				return UDim2.fromOffset(side, side)

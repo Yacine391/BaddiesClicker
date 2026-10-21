@@ -85,8 +85,11 @@ function DevToolsPanel.start(state)
 			state.send(Net.Actions.DevSetMastery, { baddieId = active.baddieId, xp = 250 })
 		end
 	end)
-	button("TÉLÉPORT (en combat, §25)", function()
-		grant("teleport")
+	button("TÉLÉPORT ×1 (en combat, §25)", function()
+		grant("teleport", { times = 1 })
+	end)
+	button("TÉLÉPORT ×3 (combat annulé)", function()
+		grant("teleport", { times = 3 })
 	end)
 
 	gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")

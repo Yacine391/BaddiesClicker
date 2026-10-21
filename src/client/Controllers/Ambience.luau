@@ -46,6 +46,17 @@ function Ambience.start(scope: any, deps: any)
 	bloom.Size = 28
 	bloom.Threshold = 0.95
 
+	-- Ciel du coucher de soleil (spec §7.3) : soleil bas et large, premières étoiles, pas de nuages lourds
+	local sky: Sky = Lighting:FindFirstChildOfClass("Sky") or ensure("Sky", "BC_Sky")
+	sky.CelestialBodiesShown = true
+	sky.SunAngularSize = 18
+	sky.MoonAngularSize = 9
+	sky.StarCount = 1500
+	local clouds = workspace.Terrain:FindFirstChildOfClass("Clouds")
+	if clouds then
+		clouds.Cover = math.min(clouds.Cover, 0.35)
+	end
+
 	local grade: ColorCorrectionEffect = ensure("ColorCorrectionEffect", "BC_ColorCorrection")
 	grade.Saturation = 0.12
 	grade.Contrast = 0.08

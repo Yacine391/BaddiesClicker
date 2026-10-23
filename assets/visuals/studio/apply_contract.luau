@@ -21,9 +21,42 @@ local SOURCE = "B01_Maya_Look%02d" -- nom des modèles importés dans Workspace
 local LOOKS = 3
 
 local PARTS = {
-	"Head", "UpperTorso", "LowerTorso",
-	"LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm", "RightLowerArm", "RightHand",
-	"LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "RightUpperLeg", "RightLowerLeg", "RightFoot",
+	"Head",
+	"UpperTorso",
+	"LowerTorso",
+	"LeftUpperArm",
+	"LeftLowerArm",
+	"LeftHand",
+	"RightUpperArm",
+	"RightLowerArm",
+	"RightHand",
+	"LeftUpperLeg",
+	"LeftLowerLeg",
+	"LeftFoot",
+	"RightUpperLeg",
+	"RightLowerLeg",
+	"RightFoot",
+}
+
+-- Articulations R15 : nom du Motor6D, partie parente, partie enfant (même table que Humanoid:BuildRigFromAttachments).
+-- L'importeur crée les *RigAttachment mais pas toujours les Motor6D (le Humanoid les construit au lancement) :
+-- comme le contrat retire le Humanoid, on les construit ici.
+local JOINTS = {
+	{ "Root", "HumanoidRootPart", "LowerTorso" },
+	{ "Waist", "LowerTorso", "UpperTorso" },
+	{ "Neck", "UpperTorso", "Head" },
+	{ "LeftShoulder", "UpperTorso", "LeftUpperArm" },
+	{ "LeftElbow", "LeftUpperArm", "LeftLowerArm" },
+	{ "LeftWrist", "LeftLowerArm", "LeftHand" },
+	{ "RightShoulder", "UpperTorso", "RightUpperArm" },
+	{ "RightElbow", "RightUpperArm", "RightLowerArm" },
+	{ "RightWrist", "RightLowerArm", "RightHand" },
+	{ "LeftHip", "LowerTorso", "LeftUpperLeg" },
+	{ "LeftKnee", "LeftUpperLeg", "LeftLowerLeg" },
+	{ "LeftAnkle", "LeftLowerLeg", "LeftFoot" },
+	{ "RightHip", "LowerTorso", "RightUpperLeg" },
+	{ "RightKnee", "RightUpperLeg", "RightLowerLeg" },
+	{ "RightAnkle", "RightLowerLeg", "RightFoot" },
 }
 
 local dir = game:GetService("ReplicatedStorage").Visuals.Characters[FOLDER]
@@ -45,7 +78,10 @@ end
 for i = 1, LOOKS do
 	local name = ("Look%02d"):format(i)
 	local src = workspace:FindFirstChild(SOURCE:format(i))
-	assert(src and src:IsA("Model"), `{SOURCE:format(i)} introuvable dans Workspace : importer le FBX d'abord`)
+	assert(
+		src and src:IsA("Model"),
+		`{SOURCE:format(i)} introuvable dans Workspace : importer le FBX d'abord`
+	)
 	local old = dir:FindFirstChild(name)
 
 	local humanoid = src:FindFirstChildWhichIsA("Humanoid", true)
@@ -67,6 +103,34 @@ for i = 1, LOOKS do
 
 	local hrp = src:FindFirstChild("HumanoidRootPart") :: BasePart
 	assert(hrp, `{name} : pas de HumanoidRootPart (importer avec le type de rig R15)`)
+
+	-- Motor6D depuis les attachements « <Joint>RigAttachment » (sans rien déplacer)
+	for _, j in JOINTS do
+		local jointName, p0, p1 = j[1], src:FindFirstChild(j[2]), src:FindFirstChild(j[3])
+		if p0 and p1 and p0:IsA("BasePart") and p1:IsA("BasePart") then
+			local existing = motorInto(p1)
+			if not (existing and existing.Part0 == p0) then
+				if existing then
+					existing:Destroy()
+				end
+				local a0 = p0:FindFirstChild(jointName .. "RigAttachment")
+				local a1 = p1:FindFirstChild(jointName .. "RigAttachment")
+				local motor = Instance.new("Motor6D")
+				motor.Name = jointName
+				motor.Part0, motor.Part1 = p0, p1
+				if a1 and a1:IsA("Attachment") then
+					motor.C1 = a1.CFrame
+					motor.C0 = if a0 and a0:IsA("Attachment")
+						then a0.CFrame
+						else p0.CFrame:ToObjectSpace(a1.WorldCFrame)
+				else
+					motor.C0 = p0.CFrame:ToObjectSpace(p1.CFrame)
+				end
+				motor.Parent = p1
+			end
+		end
+	end
+
 	local lower = src:FindFirstChild("LowerTorso") :: BasePart
 	local root = motorInto(lower)
 	assert(root and root.Part0 == hrp, `{name} : LowerTorso n'est pas relié au HumanoidRootPart`)
@@ -128,5 +192,7 @@ for i = 1, LOOKS do
 		old:Destroy()
 	end
 	src.Parent = dir
-	print(`[Contrat] {name} OK : hauteur {math.floor(size.Y * 100) / 100} studs, HRP à {lift} studs des pieds`)
+	print(
+		`[Contrat] {name} OK : hauteur {math.floor(size.Y * 100) / 100} studs, HRP à {lift} studs des pieds`
+	)
 end

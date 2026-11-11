@@ -49,7 +49,9 @@ return function(scope: any, props: Props): Frame
 			Position = UDim2.fromOffset(4, 3),
 			Size = UDim2.new(1, -8, 0.34, 0),
 			ZIndex = z + 1,
-			[scope.Children] = { scope:New("UICorner")({ CornerRadius = UDim.new(0, (props.Radius or 12) - 3) }) },
+			[scope.Children] = {
+				scope:New("UICorner")({ CornerRadius = UDim.new(0, (props.Radius or 12) - 3) }),
+			},
 		}),
 	}
 	for _, child in props.Children or {} do

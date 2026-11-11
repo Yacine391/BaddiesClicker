@@ -245,7 +245,10 @@ local function detailPanel(scope: any, deps: any, snapshot: any, id: string): { 
 			ClipsDescendants = true,
 			[scope.Children] = {
 				scope:New("UICorner")({ CornerRadius = UDim.new(0, Theme.Radius.Panel) }),
-				scope:New("UIGradient")({ Rotation = 90, Color = ColorSequence.new(Theme.Colors.PanelInner, Theme.Colors.Panel) }),
+				scope:New("UIGradient")({
+					Rotation = 90,
+					Color = ColorSequence.new(Theme.Colors.PanelInner, Theme.Colors.Panel),
+				}),
 				scope:New("UIStroke")({
 					Color = Theme.Colors.PanelLine,
 					Transparency = Theme.Transparency.PanelLine,

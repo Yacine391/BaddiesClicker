@@ -14,6 +14,7 @@ local Client = script.Parent.Parent
 local HudModel = require(Client.Logic.HudModel)
 local RewardsModel = require(Client.Logic.RewardsModel)
 local LayoutMode = require(Client.Logic.LayoutMode)
+local HudLayout = require(Client.Logic.HudLayout)
 local WindowModel = require(Client.Logic.WindowModel)
 local Theme = require(Client.UI.Theme)
 local Motion = require(Client.UI.Motion)
@@ -232,9 +233,16 @@ function HUD.start(scope: any, deps: any)
 		Motion.Fill
 	)
 	-- Tuile cadeau : secondes écoulées depuis le dernier snapshot (un seul compteur, 1 s)
+	-- remis à zéro seulement quand le serveur envoie de nouvelles secondes de jeu (tick de 5 s),
+	-- pas à chaque snapshot d'entraînement : sinon le minuteur se fige pendant les clics
 	local since = scope:Value(0)
+	local lastPlaytime: number? = nil
 	scope:Observer(Store.snapshot):onChange(function()
-		since:set(0)
+		local seconds = RewardsModel.playtimeSeconds(deps.peek(Store.snapshot))
+		if seconds ~= lastPlaytime then
+			lastPlaytime = seconds
+			since:set(0)
+		end
 	end)
 	local alive = true
 	table.insert(scope, function()
@@ -247,6 +255,15 @@ function HUD.start(scope: any, deps: any)
 				since:set(deps.peek(since) + 1)
 			end
 		end
+	end)
+	-- Positions calculées depuis les tailles réelles (téléphone : tuiles et bouton plus grands)
+	local buttonHeight = Metrics.touch(scope, 84)
+	local giftSide = scope:Computed(function(use)
+		return math.max(76, use(touch) :: number)
+	end)
+	local layout = scope:Computed(function(use)
+		local size: UDim2 = use(canvas)
+		return HudLayout.compute(size.Y.Offset, use(tileSide), use(buttonHeight), use(giftSide))
 	end)
 	local giftText = scope:Computed(function(use)
 		return RewardsModel.giftText(use(Store.snapshot), deps.Balance, use(since))
@@ -324,7 +341,7 @@ function HUD.start(scope: any, deps: any)
 						AnchorPoint = Vector2.new(1, 0),
 						Position = UDim2.new(1, -16, 0, 14),
 						Size = scope:Computed(function(use)
-							local side = math.max(76, use(touch) :: number)
+							local side = use(giftSide)
 							return UDim2.fromOffset(side, side)
 						end),
 						Visible = scope:Computed(function(use)
@@ -362,8 +379,9 @@ function HUD.start(scope: any, deps: any)
 					scope:New("Frame")({
 						Name = "Menu",
 						BackgroundTransparency = 1,
-						AnchorPoint = Vector2.new(0, 0.5),
-						Position = UDim2.new(0, 16, 0.5, -14),
+						Position = scope:Computed(function(use)
+							return UDim2.fromOffset(16, use(layout).menuTop)
+						end),
 						Size = scope:Computed(function(use)
 							local side = use(tileSide) :: number
 							return UDim2.fromOffset(side * 2 + 12, side * 3 + 28)
@@ -391,7 +409,9 @@ function HUD.start(scope: any, deps: any)
 						Name = "Cards",
 						BackgroundTransparency = 1,
 						AnchorPoint = Vector2.new(1, 0),
-						Position = UDim2.new(1, -16, 0, 118),
+						Position = scope:Computed(function(use)
+							return UDim2.new(1, -16, 0, use(layout).cardsTop)
+						end),
 						Size = UDim2.fromOffset(150, 470),
 						[scope.Children] = cards,
 					}),
@@ -406,7 +426,9 @@ function HUD.start(scope: any, deps: any)
 					scope:New("Frame")({
 						Name = "TicketBar",
 						AnchorPoint = Vector2.new(0.5, 1),
-						Position = UDim2.new(0.5, 0, 1, -116),
+						Position = scope:Computed(function(use)
+							return UDim2.new(0.5, 0, 1, use(layout).ticketBarOffset)
+						end),
 						Size = UDim2.fromOffset(260, 22),
 						BackgroundColor3 = Theme.Colors.Panel,
 						[scope.Children] = {

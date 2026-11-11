@@ -55,6 +55,7 @@ local RewardsModel = require("../../src/client/Logic/RewardsModel")
 local SoundModel = require("../../src/client/Logic/SoundModel")
 local Balance = require("../../src/shared/Balance")
 local BadgeModel = require("../../src/client/Logic/BadgeModel")
+local HudLayout = require("../../src/client/Logic/HudLayout")
 
 print("Runner")
 test("smoke", function()
@@ -1074,6 +1075,21 @@ test("cardLabel : ??? tant que non découverte", function()
 		end
 	end
 	eq(hidden > 0, true, "au moins une carte cachée")
+end)
+
+test("HudLayout : grille centrée sur ordinateur, jamais sur les compteurs", function()
+	local l = HudLayout.compute(720, 96, 84, 76)
+	eq(l.menuTop, 182, "centrée, remontée de 4 px pour garder 8 px au-dessus des compteurs")
+	eq(l.menuTop + 3 * 96 + 28 + 6 <= l.countersTop - 8, true, "ordinateur : pas de recouvrement")
+	local m = HudLayout.compute(720, 110, 110, 110) -- téléphone, échelle ≈ 0,44
+	eq(m.menuTop + 3 * 110 + 28 + 6 <= m.countersTop - 8, true, "grille au-dessus des compteurs")
+	eq(m.ticketBarOffset, -(18 + 110 + 8), "barre au-dessus du bouton")
+	eq(m.cardsTop, 14 + 110 + 24, "cartes sous la tuile cadeau")
+end)
+test("playtimeSeconds : secondes de jeu du snapshot ou nil", function()
+	eq(RewardsModel.playtimeSeconds(rewardsSnapshot()), 400)
+	eq(RewardsModel.playtimeSeconds(nil), nil)
+	eq(RewardsModel.playtimeSeconds({}), nil)
 end)
 
 print("Sons, accessoires et succès")

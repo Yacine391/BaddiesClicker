@@ -294,6 +294,16 @@ function RewardsModel.playtime(snapshot: any, balance: any): { MilestoneRow }
 	return rows
 end
 
+-- Secondes de jeu du jour telles qu'envoyées par le serveur (nil si absentes) : le HUD ne remet son
+-- compte local à zéro que quand cette valeur change, pas à chaque snapshot
+function RewardsModel.playtimeSeconds(snapshot: any): number?
+	local rewards = rewardsOf(snapshot)
+	if not rewards or type(rewards.playtime) ~= "table" then
+		return nil
+	end
+	return tonumber(rewards.playtime.seconds)
+end
+
 -- Texte de la tuile cadeau : "PRÊT" si un palier attend, sinon le temps restant avant le prochain,
 -- "" quand tout est reçu. `extraSeconds` = secondes écoulées depuis le snapshot (compte côté client).
 function RewardsModel.giftText(snapshot: any, balance: any, extraSeconds: number): string

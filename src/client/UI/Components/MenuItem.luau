@@ -1,22 +1,24 @@
 --!strict
 --[[
-	MenuItem : entrée du menu de gauche (Book, Crew, Style, Réglages).
-	full : 236 × 54, icône teintée, libellé, chevron ; actif = contour coloré + barre gauche + halo.
-	compact (petits écrans) : tuile carrée, icône au-dessus d'un petit libellé.
-	La hauteur suit Metrics.touch pour rester ≥ 48 px réels à l'écran (§21).
+	MenuItem : tuile du menu de gauche (style simulateur, spec §3.3 et §4.1).
+	full : 96 × 96 ; compact (petits écrans) : 72 × 72 ; toujours ≥ 48 px réels (Metrics.touch, §21).
+	Icône pleine au centre, libellé contouré qui déborde en bas, pastille rouge (BadgeModel.pip) en haut à droite.
+	Active (fenêtre ouverte) = contour blanc 4 px. Survol et pression passent par Motion (interruptibles).
 ]]
 
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
 local Text = require(UI.Text)
 local Metrics = require(UI.Metrics)
-local Panel = require(script.Parent.Panel)
+local Motion = require(UI.Motion)
 local Icon = require(script.Parent.Icon)
+local Tile = require(script.Parent.Tile)
+local BadgeModel = require(UI.Parent.Logic.BadgeModel)
 
 export type Props = {
 	Icon: string,
 	Label: string,
-	Color: Color3,
+	Gradient: { top: Color3, bottom: Color3 },
 	Mode: any, -- état de "full" | "compact"
 	Active: any, -- état de boolean
 	Badge: any?, -- état de string ; "" = pas de badge
@@ -25,93 +27,71 @@ export type Props = {
 }
 
 return function(scope: any, props: Props): Instance
-	local height = Metrics.touch(scope, 54)
-	local compact = scope:Computed(function(use)
-		return use(props.Mode) == "compact"
+	local touch = Metrics.touch(scope, Theme.MinTouch)
+	local side = scope:Computed(function(use)
+		local base = if use(props.Mode) == "compact" then 72 else 96
+		return math.max(base, use(touch) :: number)
 	end)
-	local function pick(full: any, small: any): any
-		return scope:Computed(function(use)
-			return if use(compact) then small else full
-		end)
-	end
+	local scale = scope:New("UIScale")({ Scale = 1 })
 
 	local children: { any } = {
-		-- barre gauche de l'entrée active
-		scope:New("Frame")({
-			Name = "ActiveBar",
-			BackgroundColor3 = props.Color,
-			BorderSizePixel = 0,
-			Position = UDim2.fromOffset(-2, 8),
-			Size = UDim2.new(0, 4, 1, -16),
-			ZIndex = 3,
-			Visible = props.Active,
-			[scope.Children] = { scope:New("UICorner")({ CornerRadius = UDim.new(0, 2) }) },
-		}),
 		Icon(scope, {
 			Name = props.Icon,
-			Color = props.Color,
-			Size = pick(UDim2.fromOffset(30, 30), UDim2.fromOffset(28, 28)),
-			Position = pick(UDim2.new(0, 14, 0.5, 0), UDim2.new(0.5, 0, 0, 5)),
-			AnchorPoint = pick(Vector2.new(0, 0.5), Vector2.new(0.5, 0)),
+			Size = UDim2.fromScale(0.62, 0.62),
+			Position = UDim2.fromScale(0.5, 0.42),
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			ZIndex = 3,
 		}),
 		Text.label(scope, {
 			Name = "Title",
 			Text = props.Label,
-			Weight = "ExtraBold",
-			Size = pick(UDim2.new(1, -96, 0, 22), UDim2.new(1, -4, 0, 12)),
-			Position = pick(UDim2.new(0, 58, 0.5, 0), UDim2.new(0.5, 0, 1, -4)),
-			AnchorPoint = pick(Vector2.new(0, 0.5), Vector2.new(0.5, 1)),
-			XAlignment = pick(Enum.TextXAlignment.Left, Enum.TextXAlignment.Center),
-			ZIndex = 2,
-		}),
-		scope:New("Frame")({
-			Name = "Chevron",
-			BackgroundTransparency = 1,
-			AnchorPoint = Vector2.new(1, 0.5),
-			Position = UDim2.new(1, -12, 0.5, 0),
-			Size = UDim2.fromOffset(16, 16),
-			Visible = scope:Computed(function(use)
-				return not use(compact)
-			end),
-			[scope.Children] = {
-				Icon(scope, {
-					Name = "chevron",
-					Size = UDim2.fromScale(1, 1),
-					Color = scope:Computed(function(use)
-						return if use(props.Active) then props.Color else Theme.Colors.TextDim
-					end),
-				}),
-			},
+			Weight = "Heavy",
+			Stroke = true,
+			Size = UDim2.fromScale(1.15, 0.26),
+			Position = UDim2.new(0.5, 0, 1, 6),
+			AnchorPoint = Vector2.new(0.5, 1),
+			ZIndex = 4,
 		}),
 	}
 	if props.Badge ~= nil then
+		local pip = scope:Computed(function(use)
+			return BadgeModel.pip(use(props.Badge))
+		end)
 		table.insert(
 			children,
 			scope:New("Frame")({
 				Name = "Badge",
-				BackgroundColor3 = Theme.Colors.Accent2,
-				AnchorPoint = pick(Vector2.new(1, 0.5), Vector2.new(1, 0)),
-				Position = pick(UDim2.new(1, -38, 0.5, 0), UDim2.new(1, 6, 0, -6)),
-				Size = UDim2.fromOffset(34, 16),
-				ZIndex = 4,
+				BackgroundColor3 = Theme.Colors.Badge,
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.new(1, -6, 0, 6),
+				Size = UDim2.fromOffset(26, 26),
+				ZIndex = 6,
 				Visible = scope:Computed(function(use)
-					local b = use(props.Badge)
-					return b ~= nil and b ~= ""
+					return use(pip) ~= ""
 				end),
 				[scope.Children] = {
-					scope:New("UICorner")({ CornerRadius = UDim.new(0, 4) }),
-					Text.label(scope, {
-						Text = props.Badge,
-						Weight = "ExtraBold",
+					scope:New("UICorner")({ CornerRadius = UDim.new(1, 0) }),
+					scope:New("UIStroke")({
 						Color = Theme.Colors.Ink,
-						Size = UDim2.new(1, -6, 1, -3),
+						Thickness = 2,
+						ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+					}),
+					Text.label(scope, {
+						Text = pip,
+						Weight = "Heavy",
+						Size = UDim2.new(1, -6, 1, -6),
 						Position = UDim2.fromScale(0.5, 0.5),
 						AnchorPoint = Vector2.new(0.5, 0.5),
-						ZIndex = 5,
+						ZIndex = 7,
 					}),
 				},
 			})
 		)
+	end
+
+	local function isPointer(input: InputObject): boolean
+		local kind = input.UserInputType
+		return kind == Enum.UserInputType.MouseButton1 or kind == Enum.UserInputType.Touch
 	end
 
 	return scope:New("TextButton")({
@@ -121,21 +101,38 @@ return function(scope: any, props: Props): Instance
 		BackgroundTransparency = 1,
 		LayoutOrder = props.LayoutOrder or 0,
 		Size = scope:Computed(function(use)
-			local h = use(height)
-			return if use(compact) then UDim2.fromOffset(h, h) else UDim2.fromOffset(236, h)
+			local s = use(side)
+			return UDim2.fromOffset(s, s)
 		end),
 		[scope.OnEvent("Activated")] = props.OnClick,
+		[scope.OnEvent("MouseEnter")] = function()
+			Motion.hover(scale, true)
+		end,
+		[scope.OnEvent("MouseLeave")] = function()
+			Motion.hover(scale, false)
+		end,
+		[scope.OnEvent("InputBegan")] = function(input: InputObject)
+			if isPointer(input) then
+				Motion.press(scale, true)
+			end
+		end,
+		[scope.OnEvent("InputEnded")] = function(input: InputObject)
+			if isPointer(input) then
+				Motion.press(scale, false)
+			end
+		end,
 		[scope.Children] = {
-			Panel(scope, {
+			scale,
+			Tile(scope, {
+				Name = "Tile",
+				Gradient = props.Gradient,
 				Size = UDim2.fromScale(1, 1),
-				Line = scope:Computed(function(use)
-					return if use(props.Active) then props.Color else Theme.Colors.PanelLine
+				StrokeColor = scope:Computed(function(use)
+					return if use(props.Active) then Color3.new(1, 1, 1) else Theme.Colors.Ink
 				end),
-				LineTransparency = scope:Computed(function(use)
-					return if use(props.Active) then 0 else Theme.Transparency.PanelLine
+				StrokeThickness = scope:Computed(function(use)
+					return if use(props.Active) then 4 else Theme.Stroke.Frame
 				end),
-				Glow = props.Color,
-				GlowVisible = props.Active,
 				Children = children,
 			}),
 		},

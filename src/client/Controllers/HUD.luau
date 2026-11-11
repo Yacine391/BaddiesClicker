@@ -145,13 +145,13 @@ function HUD.start(scope: any, deps: any)
 		name: string,
 		icon: string,
 		label: string,
-		color: Color3,
+		gradient: { top: Color3, bottom: Color3 },
 		badge: any?
 	)
 		return MenuItem(scope, {
 			Icon = icon,
 			Label = label,
-			Color = color,
+			Gradient = gradient,
 			Mode = mode,
 			Active = scope:Computed(function(use)
 				return (use(UiState.openWindow) or use(lastOpened)) == name
@@ -288,12 +288,12 @@ function HUD.start(scope: any, deps: any)
 										else UDim2.fromOffset(236, h)
 								end),
 							}),
-							menuItem(1, "Bonus", "crown", "BONUS", Theme.Colors.Accent2, bonusBadge),
-							menuItem(2, "Book", "book", "BOOK", Theme.Colors.Book, bookBadge),
-							menuItem(3, "Slots", "ticket", "SLOTS", Theme.Colors.Slots, slotsBadge),
-							menuItem(4, "Crew", "crew", "CREW", Theme.Colors.Crew),
-							menuItem(5, "Style", "style", "STYLE", Theme.Colors.Style),
-							menuItem(6, "Settings", "settings", "RÉGLAGES", Theme.Colors.Settings),
+							menuItem(1, "Book", "book", "BOOK", Theme.Gradients.Book, bookBadge),
+							menuItem(2, "Style", "style", "STYLE", Theme.Gradients.Style),
+							menuItem(3, "Crew", "crew", "CREW", Theme.Gradients.Crew),
+							menuItem(4, "Slots", "slots", "ÉQUIPE", Theme.Gradients.Slots, slotsBadge),
+							menuItem(5, "Bonus", "bonus", "BONUS", Theme.Gradients.Bonus, bonusBadge),
+							menuItem(6, "Settings", "settings", "RÉGLAGES", Theme.Gradients.Settings),
 						},
 					}),
 					scope:New("Frame")({

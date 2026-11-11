@@ -252,7 +252,7 @@ function Rewards.checkPlaytime(data: any, index: any, day: number, ctx: any): st
 	return nil
 end
 
-function Rewards.applyPlaytime(data: any, index: number, day: number, ctx: any): { [string]: any }
+function Rewards.applyPlaytime(data: any, index: number, _day: number, ctx: any): { [string]: any }
 	local playtime = data.rewards.playtime
 	local milestone = ctx.Balance.playtime.milestones[index]
 	playtime.claimed[tostring(index)] = true

@@ -12,6 +12,7 @@ local Workspace = game:GetService("Workspace")
 
 local Client = script.Parent.Parent
 local HudModel = require(Client.Logic.HudModel)
+local RewardsModel = require(Client.Logic.RewardsModel)
 local LayoutMode = require(Client.Logic.LayoutMode)
 local WindowModel = require(Client.Logic.WindowModel)
 local Theme = require(Client.UI.Theme)
@@ -114,6 +115,10 @@ function HUD.start(scope: any, deps: any)
 			drops += tonumber(count) or 0
 		end
 		return if drops > 0 then tostring(drops) else ""
+	end)
+	-- Badge du menu BONUS : tour gratuit, connexion du jour et paliers de temps de jeu à prendre
+	local bonusBadge = scope:Computed(function(use)
+		return RewardsModel.badge(use(deps.Store.snapshot))
 	end)
 	scope:Observer(UiState.openWindow):onChange(function()
 		local name = deps.peek(UiState.openWindow)
@@ -225,7 +230,7 @@ function HUD.start(scope: any, deps: any)
 						BackgroundTransparency = 1,
 						AnchorPoint = Vector2.new(1, 0),
 						Position = UDim2.new(1, -16, 0, 14),
-						Size = UDim2.fromOffset(500, 46),
+						Size = UDim2.fromOffset(640, 46),
 						[scope.Children] = {
 							scope:New("UIListLayout")({
 								FillDirection = Enum.FillDirection.Horizontal,
@@ -244,10 +249,19 @@ function HUD.start(scope: any, deps: any)
 								end),
 							}),
 							CounterPill(scope, {
+								Name = "Coins",
+								Icon = "coin",
+								Glow = false,
+								LayoutOrder = 2,
+								Text = scope:Computed(function(use)
+									return RewardsModel.coinsText(use(Store.snapshot), deps.Format.number)
+								end),
+							}),
+							CounterPill(scope, {
 								Name = "Tickets",
 								Icon = "ticket",
 								Glow = false,
-								LayoutOrder = 2,
+								LayoutOrder = 3,
 								Text = scope:Computed(function(use)
 									return use(view).ticketText
 								end),
@@ -257,8 +271,8 @@ function HUD.start(scope: any, deps: any)
 					scope:New("Frame")({
 						Name = "Menu",
 						BackgroundTransparency = 1,
-						Position = UDim2.fromOffset(16, 150),
-						Size = UDim2.fromOffset(240, 400),
+						Position = UDim2.fromOffset(16, 138),
+						Size = UDim2.fromOffset(240, 440),
 						[scope.Children] = {
 							-- full : une colonne de lignes 236 × h ; compact : grille 2 × 2 de tuiles h × h
 							scope:New("UIGridLayout")({
@@ -274,11 +288,12 @@ function HUD.start(scope: any, deps: any)
 										else UDim2.fromOffset(236, h)
 								end),
 							}),
-							menuItem(1, "Book", "book", "BOOK", Theme.Colors.Book, bookBadge),
-							menuItem(2, "Slots", "ticket", "SLOTS", Theme.Colors.Slots, slotsBadge),
-							menuItem(3, "Crew", "crew", "CREW", Theme.Colors.Crew),
-							menuItem(4, "Style", "style", "STYLE", Theme.Colors.Style),
-							menuItem(5, "Settings", "settings", "RÉGLAGES", Theme.Colors.Settings),
+							menuItem(1, "Bonus", "crown", "BONUS", Theme.Colors.Accent2, bonusBadge),
+							menuItem(2, "Book", "book", "BOOK", Theme.Colors.Book, bookBadge),
+							menuItem(3, "Slots", "ticket", "SLOTS", Theme.Colors.Slots, slotsBadge),
+							menuItem(4, "Crew", "crew", "CREW", Theme.Colors.Crew),
+							menuItem(5, "Style", "style", "STYLE", Theme.Colors.Style),
+							menuItem(6, "Settings", "settings", "RÉGLAGES", Theme.Colors.Settings),
 						},
 					}),
 					scope:New("Frame")({

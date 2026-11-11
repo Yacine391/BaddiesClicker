@@ -28,6 +28,7 @@ type Follower = {
 	pos: Formation.Point,
 	idle: AnimationTrack?,
 	walk: AnimationTrack?,
+	animated: boolean, -- animations chargées (possible seulement une fois le modèle dans le monde)
 }
 type Team = { signature: string, followers: { Follower } }
 
@@ -76,7 +77,12 @@ local function buildModel(player: Player, member: Member): Model?
 	return model
 end
 
+-- Un Animator ne charge une animation qu'une fois son modèle dans le monde : appelé au premier affichage
 local function playAnims(follower: Follower)
+	if follower.animated or follower.model.Parent == nil then
+		return
+	end
+	follower.animated = true
 	local tracks = Visuals.animate(follower.model)
 	follower.idle = tracks.idle
 	follower.walk = tracks.walk
@@ -164,8 +170,12 @@ local function refresh(player: Player)
 			model.Name = `{player.Name}_{member.id}`
 			model:PivotTo(CFrame.new(start))
 			model.Parent = if visible then folder else nil
-			local f: Follower =
-				{ member = member, model = model, pos = { x = start.X, y = start.Y, z = start.Z } }
+			local f: Follower = {
+				member = member,
+				model = model,
+				pos = { x = start.X, y = start.Y, z = start.Z },
+				animated = false,
+			}
 			playAnims(f)
 			table.insert(followers, f)
 		end
@@ -232,6 +242,7 @@ local function step(dt: number)
 			if far then
 				continue
 			end
+			playAnims(f)
 			local offset = Formation.offset(index)
 			local target = (hrp.CFrame * CFrame.new(offset.x, 0, offset.z)).Position
 			f.pos = Formation.step(f.pos, { x = target.X, y = target.Y, z = target.Z }, dt)

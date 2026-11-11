@@ -22,6 +22,7 @@ local VISUAL_CONTROLLERS: { string } = {
 	"HUD",
 	"Combat",
 	"Slots",
+	"Bonus",
 	"Book",
 	"Style",
 	"Crew",
@@ -31,6 +32,7 @@ local VISUAL_CONTROLLERS: { string } = {
 	"Podium",
 	"Leaderboard",
 	"Titles",
+	"LobbyWheel",
 }
 
 function App.start(stateController: any)

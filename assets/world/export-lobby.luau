@@ -58,6 +58,11 @@ end
 assert(lobby:FindFirstChild("Spawn") and lobby.Spawn.ClassName == "SpawnLocation", "Lobby.Spawn manquant")
 assert(lobby:FindFirstChild("Podium") and lobby.Podium:FindFirstChild("Stand"), "Lobby.Podium.Stand manquant")
 assert(banned == 0, "ClickDetector, ProximityPrompt ou Barrier interdits dans le lobby")
+-- Roue du jour : contrat de Controllers/LobbyWheel
+local wheel = lobby:FindFirstChild("Wheel")
+assert(wheel ~= nil and wheel:FindFirstChild("Pad") ~= nil, "Lobby.Wheel.Pad manquant")
+local rotor = wheel:FindFirstChild("Rotor")
+assert(rotor ~= nil and rotor.PrimaryPart ~= nil, "Lobby.Wheel.Rotor (PrimaryPart) manquant")
 assert(math.abs(north + 78.5) < 0.01, `bord nord attendu -78,5, obtenu {north}`)
 
 fs.writeFile(HERE .. "Lobby.rbxm", roblox.serializeModel({ lobby }))

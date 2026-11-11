@@ -63,6 +63,12 @@ SlotsModel.REASONS = table.freeze({
 	duplicate = "déjà traité",
 	error = "erreur serveur, nouvel essai automatique",
 	maintenance = "coupé temporairement pour maintenance",
+	-- récompenses (roue, connexion quotidienne, temps de jeu)
+	no_free = "tour gratuit déjà pris aujourd'hui",
+	no_token = "aucun jeton de roue",
+	no_coins = "pas assez de pièces",
+	already = "déjà réclamé",
+	not_ready = "palier pas encore atteint",
 })
 
 function SlotsModel.reasonText(reason: string?): string

@@ -848,9 +848,129 @@ local function skyline(lobby: Instance)
 	end
 end
 
+-- Roue du jour (récompenses, décision du 11/11) : à droite du spawn, tournée vers l'allée.
+-- Contrat lu par Controllers/LobbyWheel : Lobby.Wheel.Rotor (Model, PrimaryPart = Disc, tourne autour de X)
+-- et Lobby.Wheel.Pad (dalle au sol : y marcher ouvre la fenêtre BONUS). Ni ClickDetector ni ProximityPrompt.
+local function wheel(lobby: Instance)
+	local w = group(lobby, "Model", "Wheel")
+	local X, Y, Z = 14, 5.9, 19
+	P(w, {
+		Name = "Base",
+		Size = Vector3.new(3.4, 0.6, 4.4),
+		Position = Vector3.new(X + 0.6, 0.8, Z),
+		Color = hex("#1B1530"),
+	})
+	P(w, {
+		Name = "Post",
+		Size = Vector3.new(0.7, 5.4, 0.9),
+		Position = Vector3.new(X + 0.75, 3.6, Z),
+		Color = DARK,
+		Material = Enum.Material.Metal,
+	})
+	local ring = P(w, {
+		Name = "Ring",
+		Size = Vector3.new(0.3, 8.9, 8.9),
+		Position = Vector3.new(X + 0.2, Y, Z),
+		Shape = Enum.PartType.Cylinder,
+		Color = CYAN,
+		Material = Enum.Material.Neon,
+		CanCollide = false,
+	})
+	local glow = Instance.new("PointLight")
+	glow.Color = CYAN
+	glow.Range = 16
+	glow.Brightness = 1.1
+	glow.Parent = ring
+
+	local rotor = group(w, "Model", "Rotor") :: Model
+	local disc = P(rotor, {
+		Name = "Disc",
+		Size = Vector3.new(0.5, 8.2, 8.2),
+		Position = Vector3.new(X, Y, Z),
+		Shape = Enum.PartType.Cylinder,
+		Color = hex("#16132A"),
+		CanCollide = false,
+	})
+	rotor.PrimaryPart = disc
+	-- dix parts : une gemme par part (pièces, tickets, baddies par rareté) et un rayon entre deux
+	local gems = {
+		GOLD,
+		hex("#9C98A8"),
+		CYAN,
+		hex("#A7C3E6"),
+		GOLD,
+		hex("#D7A746"),
+		hex("#B48CF0"),
+		VIOLET,
+		CYAN,
+		hex("#13A6B5"),
+	}
+	for i, color in gems do
+		local a = math.rad((i - 1) * 36)
+		P(rotor, {
+			Name = "Gem",
+			Size = Vector3.new(0.9, 0.9, 0.9),
+			Position = Vector3.new(X - 0.3, Y + math.cos(a) * 3.1, Z + math.sin(a) * 3.1),
+			Shape = Enum.PartType.Ball,
+			Color = color,
+			Material = if i % 2 == 0 then Enum.Material.Neon else Enum.Material.SmoothPlastic,
+			CanCollide = false,
+		})
+		local b = a + math.rad(18)
+		P(rotor, {
+			Name = "Spoke",
+			Size = Vector3.new(0.1, 3.9, 0.12),
+			CFrame = CFrame.new(X - 0.27, Y + math.cos(b) * 2.05, Z + math.sin(b) * 2.05)
+				* CFrame.Angles(b, 0, 0),
+			Color = hex("#A08CFF"),
+			CanCollide = false,
+		})
+	end
+	P(rotor, {
+		Name = "Hub",
+		Size = Vector3.new(0.7, 1.6, 1.6),
+		Position = Vector3.new(X - 0.2, Y, Z),
+		Shape = Enum.PartType.Cylinder,
+		Color = PINK,
+		Material = Enum.Material.Neon,
+		CanCollide = false,
+	})
+
+	P(w, {
+		Name = "Pointer",
+		Size = Vector3.new(0.5, 1.1, 0.7),
+		Position = Vector3.new(X - 0.35, Y + 4.5, Z),
+		Color = PINK,
+		Material = Enum.Material.Neon,
+		CanCollide = false,
+	})
+	local board = P(w, {
+		Name = "Sign",
+		Size = Vector3.new(0.4, 2, 8),
+		Position = Vector3.new(X + 0.3, Y + 6.2, Z),
+		Color = hex("#0D0B16"),
+		CanCollide = false,
+	})
+	sign(board, Enum.NormalId.Left, {
+		{ text = "ROUE DU JOUR", color = PINK, h = 0.5 },
+		{ text = "1 TOUR GRATUIT PAR JOUR", color = WHITE, h = 0.26, weight = Enum.FontWeight.Bold },
+	}, 30)
+	-- dalle : anneau néon au sol, hors de l'allée (bord de l'allée à X = 7,2)
+	P(w, {
+		Name = "Pad",
+		Size = Vector3.new(0.12, 5.4, 5.4),
+		CFrame = CFrame.new(X - 3.6, 0.58, Z) * FLAT,
+		Shape = Enum.PartType.Cylinder,
+		Color = PINK,
+		Material = Enum.Material.Neon,
+		Transparency = 0.35,
+		CanCollide = false,
+	})
+end
+
 return function(lobby: Model)
 	lobby:ClearAllChildren()
-	for _, step in { ground, exitAndStreet, gym, stage, boards, decor, skyline } do
+	for _, step in { ground, exitAndStreet, gym, stage, boards, decor, skyline, wheel } do
 		step(lobby)
 		task.wait()
 	end

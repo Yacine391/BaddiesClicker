@@ -51,6 +51,8 @@ local SlotsModel = require("../../src/client/Logic/SlotsModel")
 local CrewModel = require("../../src/client/Logic/CrewModel")
 local RankingModel = require("../../src/client/Logic/RankingModel")
 local VisualsModel = require("../../src/client/Logic/VisualsModel")
+local RewardsModel = require("../../src/client/Logic/RewardsModel")
+local Balance = require("../../src/shared/Balance")
 
 print("Runner")
 test("smoke", function()
@@ -861,6 +863,167 @@ test("cartes du HUD et du Book : identité et look pour le portrait", function()
 	local hud = HudModel.build(baseSnapshot(), Catalog, Format.number)
 	eq(hud.cards[1].id, "maya")
 	eq(hud.cards[1].look, 1)
+end)
+
+print("Récompenses (fenêtre BONUS)")
+local function rewardsSnapshot(changes: { [string]: any }?): { [string]: any }
+	local s = with({
+		coins = 250,
+		rewards = {
+			day = 20000,
+			resetIn = 5 * 3600 + 12 * 60,
+			claimable = 3,
+			wheel = { free = true, tokens = 0, cost = 100, spins = 4 },
+			daily = { claimed = false, streak = 3, dayIndex = 3 },
+			playtime = {
+				seconds = 400,
+				milestones = {
+					{ minutes = 5, claimed = false, ready = true },
+					{ minutes = 10, claimed = false, ready = false },
+					{ minutes = 30, claimed = false, ready = false },
+					{ minutes = 60, claimed = false, ready = false },
+					{ minutes = 180, claimed = false, ready = false },
+				},
+			},
+		},
+	})
+	for key, value in changes or {} do
+		s.rewards[key] = value
+	end
+	return s
+end
+test("durées et lots", function()
+	eq(RewardsModel.duration(45), "45 s")
+	eq(RewardsModel.duration(12 * 60 + 5), "12 min")
+	eq(RewardsModel.duration(3600 + 5 * 60), "1 h 05")
+	eq(RewardsModel.clock(200), "3:20")
+	eq(RewardsModel.clock(3600 + 65), "1:01:05")
+	eq(RewardsModel.bundleText({ coins = 50 }), "50 pièces")
+	eq(RewardsModel.bundleText({ coins = 300, wheelTokens = 1 }), "300 pièces + 1 jeton de roue")
+	eq(RewardsModel.bundleText({ baddieTickets = 3 }), "3 tickets baddie")
+	eq(RewardsModel.bundleText({ crewTickets = 1 }), "1 ticket compagnon")
+	eq(RewardsModel.bundleText(nil), "—")
+end)
+test("roue : dix parts, chances affichées, baddies nommées par rareté", function()
+	local segments = RewardsModel.segments(Balance, Catalog, Format.number)
+	eq(#segments, #Balance.wheel.segments)
+	eq(segments[1].short, "40")
+	eq(segments[1].chance, "24 %")
+	local byId = {}
+	for _, s in segments do
+		byId[s.id] = s
+	end
+	eq(byId.mythic.chance, "0,5 %")
+	eq(byId.mythic.label, "Baddie Mythic (Vega)")
+	eq(byId.legendary.label, "Baddie Legendary (Zuri ou Cherry)")
+	eq(byId.gold.chance, "4,5 %")
+	eq(byId.ticket_3.short, "×3")
+	eq(byId.crew_1.label, "1 ticket compagnon")
+end)
+test(
+	"roue : la rotation finale amène la part tirée sous le pointeur, toujours dans le même sens",
+	function()
+		eq(RewardsModel.segmentAngle(1, 10), 0)
+		eq(RewardsModel.segmentAngle(4, 10), 108)
+		local r1 = RewardsModel.landingRotation(0, 4, 10, 5)
+		eq(r1, 252 + 1800, "part 4 : -108° ≡ 252°, plus 5 tours")
+		eq((r1 + RewardsModel.segmentAngle(4, 10)) % 360, 0, "la part est en haut")
+		local r2 = RewardsModel.landingRotation(r1, 1, 10, 5)
+		assert(r2 > r1 + 1800, "toujours vers l'avant")
+		eq(r2 % 360, 0)
+		eq(RewardsModel.landingRotation(r2, 1, 10, 5), r2 + 1800, "même part : cinq tours complets")
+	end
+)
+test(
+	"roue : bouton principal gratuit, puis jeton, puis pièces ; tour payant seulement s'il est proposé",
+	function()
+		local free = RewardsModel.wheel(rewardsSnapshot(), Balance, Format.number)
+		eq(free.primary.pay, "free")
+		eq(free.primary.enabled, true)
+		eq(free.coinsOption.pay, "coins")
+		eq(free.coinsOption.enabled, true)
+		eq(free.buyLabel, nil, "pas de produit : aucun bouton d'achat")
+		eq(free.balanceText, "250 pièces · 0 jeton")
+		local token = RewardsModel.wheel(
+			rewardsSnapshot({ wheel = { free = false, tokens = 2, cost = 100 } }),
+			Balance,
+			Format.number
+		)
+		eq(token.primary.pay, "token")
+		eq(token.primary.label, "UTILISER 1 JETON (2)")
+		eq(token.freeText, "Prochain tour gratuit dans 5 h 12.")
+		local poor =
+			rewardsSnapshot({ wheel = { free = false, tokens = 0, cost = 100, productId = 77, robux = 5 } })
+		poor.coins = 60
+		local paid = RewardsModel.wheel(poor, Balance, Format.number)
+		eq(paid.primary.pay, "coins")
+		eq(paid.primary.enabled, false, "pas assez de pièces")
+		eq(paid.coinsOption, nil)
+		eq(paid.buyLabel, "ACHETER 1 TOUR · 5 ROBUX")
+		eq(paid.productId, 77)
+		local none = RewardsModel.wheel(baseSnapshot(), Balance, Format.number)
+		eq(none.primary.enabled, false, "snapshot sans récompenses : rien d'actif")
+	end
+)
+test("roue : texte du gain", function()
+	eq(RewardsModel.prizeText({ prize = "coins", amount = 40 }, Catalog), "+40 pièces")
+	eq(RewardsModel.prizeText({ prize = "baddieTicket", amount = 1 }, Catalog), "+1 ticket baddie")
+	eq(RewardsModel.prizeText({ prize = "crewTicket", amount = 1 }, Catalog), "+1 ticket compagnon")
+	eq(
+		RewardsModel.prizeText({ prize = "baddie", baddieId = "cherry" }, Catalog),
+		"DROP : CHERRY (Legendary) — accepte-le dans SLOTS"
+	)
+	eq(RewardsModel.prizeText(nil, Catalog), "")
+end)
+test("connexion quotidienne : jours reçus, jour du jour, jours à venir", function()
+	local view = RewardsModel.daily(rewardsSnapshot(), Balance)
+	eq(#view.rows, 7)
+	eq(view.rows[2].state, "claimed")
+	eq(view.rows[3].state, "today")
+	eq(view.rows[3].reward, "100 pièces")
+	eq(view.rows[4].state, "upcoming")
+	eq(view.rows[7].reward, "300 pièces + 1 jeton de roue")
+	eq(view.canClaim, true)
+	eq(view.streakText, "Série en jeu : jour 3")
+	local done =
+		RewardsModel.daily(rewardsSnapshot({ daily = { claimed = true, streak = 3, dayIndex = 3 } }), Balance)
+	eq(done.rows[3].state, "claimed")
+	eq(done.canClaim, false)
+	eq(done.streakText, "Série : 3 jours")
+	eq(RewardsModel.daily(baseSnapshot(), Balance).canClaim, false, "sans récompenses dans le snapshot")
+end)
+test("temps de jeu : palier prêt, en cours avec compteur, reçu", function()
+	local rows = RewardsModel.playtime(rewardsSnapshot(), Balance)
+	eq(#rows, 5)
+	eq(rows[1].title, "5 MINUTES")
+	eq(rows[1].state, "ready")
+	eq(rows[2].state, "locked")
+	eq(rows[2].progress, "6:40 / 10:00")
+	near(rows[2].ratio, 400 / 600, 1e-9)
+	eq(rows[4].title, "1 HEURE")
+	eq(rows[5].title, "3 HEURES")
+	eq(rows[5].reward, "600 pièces + 1 jeton de roue")
+	local s = rewardsSnapshot()
+	s.rewards.playtime.milestones[1] = { minutes = 5, claimed = true, ready = false }
+	eq(RewardsModel.playtime(s, Balance)[1].state, "claimed")
+end)
+test("pastille du menu, pièces et toasts", function()
+	eq(RewardsModel.badge(rewardsSnapshot()), "3")
+	eq(RewardsModel.badge(rewardsSnapshot({ claimable = 0 })), "")
+	eq(RewardsModel.badge(baseSnapshot()), "")
+	eq(RewardsModel.badge(nil), "")
+	eq(RewardsModel.coinsText(rewardsSnapshot(), Format.number), "250")
+	eq(RewardsModel.coinsText(nil, Format.number), "0")
+	eq(
+		RewardsModel.toastFor({ kind = "dailyReward", dayIndex = 2, baddieTickets = 1 }),
+		"Jour 2 : 1 ticket baddie"
+	)
+	eq(RewardsModel.toastFor({ kind = "playtimeReward", coins = 30 }), "Temps de jeu : 30 pièces")
+	eq(
+		RewardsModel.toastFor({ kind = "purchase", product = "1 tour de roue" }),
+		"Achat reçu : 1 tour de roue"
+	)
+	eq(RewardsModel.toastFor({ kind = "ticket" }), nil)
 end)
 
 print(`\n{passed} réussi(s), {failed} échec(s)`)

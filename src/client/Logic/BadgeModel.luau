@@ -17,4 +17,10 @@ function BadgeModel.pip(text: string?): string
 	return if n >= 10 then "9+" else tostring(n)
 end
 
+-- Événement « crewJoined » : la pastille Crew ne s'allume que pour un compagnon nouveau (pas une copie).
+-- Champ `isNew` absent : on garde l'ancien comportement (pastille).
+function BadgeModel.crewJoinedIsNew(event: { [string]: any }): boolean
+	return event.isNew ~= false
+end
+
 return BadgeModel

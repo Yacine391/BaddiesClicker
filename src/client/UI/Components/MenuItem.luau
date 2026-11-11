@@ -6,6 +6,8 @@
 	Active (fenêtre ouverte) = contour blanc 4 px. Survol et pression passent par Motion (interruptibles).
 ]]
 
+local UserInputService = game:GetService("UserInputService")
+
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
 local Text = require(UI.Text)
@@ -94,6 +96,17 @@ return function(scope: any, props: Props): Instance
 		local kind = input.UserInputType
 		return kind == Enum.UserInputType.MouseButton1 or kind == Enum.UserInputType.Touch
 	end
+	-- relâchement suivi partout (le doigt peut sortir de la case avant de se lever) : la case revient à 1
+	local pressedHere = false
+	table.insert(
+		scope,
+		UserInputService.InputEnded:Connect(function(input)
+			if pressedHere and isPointer(input) then
+				pressedHere = false
+				Motion.press(scale, false)
+			end
+		end)
+	)
 
 	return scope:New("TextButton")({
 		Name = "Menu_" .. props.Icon,
@@ -107,19 +120,18 @@ return function(scope: any, props: Props): Instance
 		end),
 		[scope.OnEvent("Activated")] = props.OnClick,
 		[scope.OnEvent("MouseEnter")] = function()
-			Motion.hover(scale, true)
+			-- pas de grossissement au survol sur écran tactile (MouseLeave y arrive tard)
+			if UserInputService.MouseEnabled then
+				Motion.hover(scale, true)
+			end
 		end,
 		[scope.OnEvent("MouseLeave")] = function()
 			Motion.hover(scale, false)
 		end,
 		[scope.OnEvent("InputBegan")] = function(input: InputObject)
 			if isPointer(input) then
+				pressedHere = true
 				Motion.press(scale, true)
-			end
-		end,
-		[scope.OnEvent("InputEnded")] = function(input: InputObject)
-			if isPointer(input) then
-				Motion.press(scale, false)
 			end
 		end,
 		[scope.Children] = {

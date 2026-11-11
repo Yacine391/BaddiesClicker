@@ -15,6 +15,7 @@ local HudModel = require(Client.Logic.HudModel)
 local RewardsModel = require(Client.Logic.RewardsModel)
 local LayoutMode = require(Client.Logic.LayoutMode)
 local HudLayout = require(Client.Logic.HudLayout)
+local BadgeModel = require(Client.Logic.BadgeModel)
 local WindowModel = require(Client.Logic.WindowModel)
 local Theme = require(Client.UI.Theme)
 local Motion = require(Client.UI.Motion)
@@ -304,9 +305,6 @@ function HUD.start(scope: any, deps: any)
 							local side = use(giftSide)
 							return UDim2.fromOffset(side, side)
 						end),
-						Visible = scope:Computed(function(use)
-							return use(giftText) ~= ""
-						end),
 						[scope.OnEvent("Activated")] = function()
 							UiState.openWindow:set("Bonus")
 						end,
@@ -327,6 +325,9 @@ function HUD.start(scope: any, deps: any)
 							Text.label(scope, {
 								Name = "Timer",
 								Text = giftText,
+								Visible = scope:Computed(function(use)
+									return use(giftText) ~= ""
+								end),
 								Weight = "Heavy",
 								Stroke = true,
 								Size = UDim2.new(1.2, 0, 0, 18),
@@ -380,6 +381,7 @@ function HUD.start(scope: any, deps: any)
 						Model = scope:Computed(function(use)
 							return use(view).progress
 						end),
+						Compact = compact,
 						AnchorPoint = Vector2.new(0.5, 0),
 						Position = UDim2.new(0.5, 0, 0, 112),
 					}),
@@ -495,7 +497,11 @@ function HUD.start(scope: any, deps: any)
 	deps.StateController.onResult(function(event)
 		if event.kind == "discovery" and deps.peek(UiState.openWindow) ~= "Book" then
 			bookBadge:set("NEW")
-		elseif event.kind == "crewJoined" and deps.peek(UiState.openWindow) ~= "Crew" then
+		elseif
+			event.kind == "crewJoined"
+			and BadgeModel.crewJoinedIsNew(event)
+			and deps.peek(UiState.openWindow) ~= "Crew"
+		then
 			crewBadge:set("NEW")
 		end
 		local text = HudModel.toastFor(event, deps.Catalog)

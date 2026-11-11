@@ -1,7 +1,7 @@
 --!strict
 --[[
-	ListRow : ligne d'une fenêtre (compagnon du Crew, réglage, look…), style mix A.
-	Panneau à contour PanelLine (Accent si `Selected`), portrait carré arrondi 54, nom ExtraBold 20,
+	ListRow : ligne d'une fenêtre (compagnon du Crew, réglage, look…), style simulateur.
+	Fond PanelInner à contour Ink (vert action si `Selected`), portrait carré arrondi 54, nom ExtraBold 20,
 	puces, description facultative ; à droite soit un mini bouton Accent (`ActionLabel`), soit un
 	interrupteur (`Toggle`). `Dimmed` = ligne atténuée (fond à 45 % de transparence, texte TextDim).
 ]]
@@ -11,6 +11,7 @@ local Theme = require(UI.Theme)
 local Portrait = require(script.Parent.Portrait)
 local Text = require(UI.Text)
 local Metrics = require(UI.Metrics)
+local Tile = require(script.Parent.Tile)
 
 export type Props = {
 	Portrait: string, -- initiale (réglages, lignes sans personnage)
@@ -32,12 +33,9 @@ local OFF = Color3.fromHex("#4A4560")
 local function actionButton(scope: any, props: Props, height: any): Instance
 	return scope:New("TextButton")({
 		Name = "Action",
-		Text = props.ActionLabel,
-		FontFace = Theme.Fonts.Heavy,
-		TextSize = 18,
-		TextColor3 = Theme.Colors.Ink,
+		Text = "",
 		AutoButtonColor = false,
-		BackgroundColor3 = Color3.new(1, 1, 1),
+		BackgroundTransparency = 1,
 		AnchorPoint = Vector2.new(1, 0.5),
 		Position = UDim2.new(1, -14, 0.5, 0),
 		Size = scope:Computed(function(use)
@@ -49,10 +47,21 @@ local function actionButton(scope: any, props: Props, height: any): Instance
 			end
 		end,
 		[scope.Children] = {
-			scope:New("UICorner")({ CornerRadius = UDim.new(0, 10) }),
-			scope:New("UIGradient")({
-				Rotation = 90,
-				Color = ColorSequence.new(Theme.Colors.AccentLight, Theme.Colors.Accent),
+			Tile(scope, {
+				Gradient = Theme.Gradients.Action,
+				Size = UDim2.fromScale(1, 1),
+				Children = {
+					Text.label(scope, {
+						Text = props.ActionLabel,
+						Weight = "Heavy",
+						Stroke = true,
+						StrokeThickness = Theme.Stroke.List,
+						Size = UDim2.new(1, -16, 0, 22),
+						Position = UDim2.fromScale(0.5, 0.5),
+						AnchorPoint = Vector2.new(0.5, 0.5),
+						ZIndex = 3,
+					}),
+				},
 			}),
 		},
 	})
@@ -130,20 +139,16 @@ return function(scope: any, props: Props): Instance
 	local children: { any } = {
 		scope:New("UICorner")({ CornerRadius = UDim.new(0, Theme.Radius.Panel) }),
 		scope:New("UIStroke")({
-			Color = if props.Selected then Theme.Colors.Accent else Theme.Colors.PanelLine,
-			Transparency = if props.Selected then 0 else Theme.Transparency.PanelLine,
-			Thickness = 2,
+			Color = if props.Selected then Theme.Colors.Accent else Theme.Colors.Ink,
+			Thickness = if props.Selected then 3 else 2,
 			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-		}),
-		scope:New("UIGradient")({
-			Color = ColorSequence.new(Color3.fromHex("#262044"), Color3.fromHex("#16132A")),
 		}),
 		scope:New("TextLabel")({
 			Name = "Portrait",
 			AnchorPoint = Vector2.new(0, 0.5),
 			Position = UDim2.new(0, 12, 0.5, 0),
 			Size = UDim2.fromOffset(54, 54),
-			BackgroundColor3 = Color3.fromHex("#120F22"),
+			BackgroundColor3 = Theme.Colors.Panel,
 			Text = if props.PortraitSubject then "" else props.Portrait,
 			TextScaled = true,
 			FontFace = Theme.Fonts.Heavy,
@@ -151,8 +156,8 @@ return function(scope: any, props: Props): Instance
 			[scope.Children] = {
 				scope:New("UICorner")({ CornerRadius = UDim.new(0, 10) }),
 				scope:New("UIStroke")({
-					Color = props.PortraitColor or Theme.Colors.PanelLine,
-					Transparency = 0.4,
+					Color = props.PortraitColor or Theme.Colors.Ink,
+					Transparency = 0,
 					Thickness = 2,
 					ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 				}),
@@ -173,7 +178,9 @@ return function(scope: any, props: Props): Instance
 		Text.label(scope, {
 			Name = "Title",
 			Text = props.Name,
-			Weight = "ExtraBold",
+			Weight = "Heavy",
+			Stroke = true,
+			StrokeThickness = Theme.Stroke.List,
 			Color = if props.Dimmed then Theme.Colors.TextDim else nil,
 			Size = UDim2.new(1, textWidth, 0, 24),
 			Position = UDim2.fromOffset(80, 12),
@@ -214,7 +221,7 @@ return function(scope: any, props: Props): Instance
 			local needed = if hasControl then use(controlHeight) + 20 else 0
 			return UDim2.new(1, 0, 0, math.max(baseHeight, needed))
 		end),
-		BackgroundColor3 = Color3.new(1, 1, 1),
+		BackgroundColor3 = Theme.Colors.PanelInner,
 		BackgroundTransparency = if props.Dimmed then 0.45 else 0,
 		[scope.Children] = children,
 	})

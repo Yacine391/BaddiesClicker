@@ -1077,6 +1077,11 @@ test("cardLabel : ??? tant que non découverte", function()
 	eq(hidden > 0, true, "au moins une carte cachée")
 end)
 
+test("crewJoinedIsNew : pastille Crew seulement pour un nouveau compagnon", function()
+	eq(BadgeModel.crewJoinedIsNew({ kind = "crewJoined", isNew = true }), true, "nouveau")
+	eq(BadgeModel.crewJoinedIsNew({ kind = "crewJoined", isNew = false }), false, "copie")
+	eq(BadgeModel.crewJoinedIsNew({ kind = "crewJoined" }), true, "champ absent")
+end)
 test("HudLayout : grille centrée sur ordinateur, jamais sur les compteurs", function()
 	local gap = HudLayout.GRID_GAP
 	local l = HudLayout.compute(720, 64, 56, 56)

@@ -62,7 +62,7 @@ local function tabButton(scope: any, props: Props, gradient: Gradient, tab: Tab,
 		LayoutOrder = order,
 		Size = scope:Computed(function(use)
 			local h = math.max(if side then 56 else 42, use(hit) :: number)
-			return UDim2.fromOffset(if side then 170 else width, h)
+			return UDim2.fromOffset(if side then math.max(170, width) else width, h)
 		end),
 		[scope.OnEvent("Activated")] = function()
 			if props.OnTab then
@@ -304,7 +304,7 @@ return function(scope: any, props: Props): Instance
 				Position = scope:Computed(function(use)
 					return UDim2.new(1, 14, 0, use(headerHeight))
 				end),
-				Size = UDim2.new(0, 170, 1, 0),
+				Size = UDim2.new(0, 220, 1, 0),
 				[scope.Children] = tabsList(Enum.FillDirection.Vertical, 10),
 			})
 		)

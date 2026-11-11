@@ -19,20 +19,20 @@ Theme.Colors = table.freeze({
 	PanelInner = hex("#3A2C62"),
 	Badge = hex("#FF2E4D"),
 	Close = hex("#F2384A"),
-	-- mix A (écrans du lot 2)
-	PanelLine = hex("#A08CFF"),
-	Accent = hex("#3EE6C8"),
-	AccentLight = hex("#5FF3DA"),
-	AccentDeep = hex("#13A6B5"),
+	-- anciens noms « mix A », recalés sur la palette simulateur (lot 2) : contours Ink, actions en vert
+	PanelLine = hex("#1A1030"),
+	Accent = hex("#5BE36A"),
+	AccentLight = hex("#8CF07F"),
+	AccentDeep = hex("#22A93A"),
 	Accent2 = hex("#FF5FD2"),
 	Accent2Light = hex("#FF9BE3"),
 	Text = hex("#FFFFFF"),
 	TextDim = hex("#CFCAE6"),
-	Book = hex("#3EE6C8"),
-	Crew = hex("#B48CF0"),
-	Style = hex("#FF5FD2"),
-	Settings = hex("#CFCAE6"),
-	Slots = hex("#D7A746"),
+	Book = hex("#2FA8FF"),
+	Crew = hex("#A57CFF"),
+	Style = hex("#FF6FC8"),
+	Settings = hex("#8C95B8"),
+	Slots = hex("#FFC93C"),
 	Principal = hex("#33B84A"),
 	Danger = hex("#FF3B5C"), -- zones de danger, PV bas, coup reçu (combat)
 })
@@ -52,8 +52,8 @@ Theme.Gradients = table.freeze({
 	Attack = grad("#FF5A5A", "#D42A3A"),
 })
 
-Theme.Transparency = table.freeze({ Panel = 0.14, PanelLine = 0.72, Dim = 0.38 })
-Theme.Radius = table.freeze({ Panel = 10, Button = 12 })
+Theme.Transparency = table.freeze({ Panel = 0, PanelLine = 0, Dim = 0.38 })
+Theme.Radius = table.freeze({ Panel = 8, Button = 6 })
 
 -- Une seule police (FredokaOne) ; les anciens noms de graisse pointent dessus pour les écrans du lot 2
 local main = Font.fromEnum(Enum.Font.FredokaOne)

@@ -1,0 +1,10 @@
+{
+  "name": "baddie-clicker-character-preview",
+  "private": true,
+  "type": "module",
+  "description": "Rendu d'aperçu des personnages (planches face / 3-4 / dos) à partir des JSON de export-characters.",
+  "dependencies": {
+    "playwright": "^1.48.0",
+    "three": "0.160.0"
+  }
+}

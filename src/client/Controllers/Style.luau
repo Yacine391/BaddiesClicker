@@ -17,6 +17,7 @@ local WindowHost = require(Client.UI.WindowHost)
 local StyleModel = require(Client.Logic.StyleModel)
 local ListRow = require(Client.UI.Components.ListRow)
 local Chip = require(Client.UI.Components.Chip)
+local ActionButton = require(Client.UI.Components.ActionButton)
 local Icon = require(Client.UI.Components.Icon)
 local Portrait = require(Client.UI.Components.Portrait)
 local Wardrobe = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Wardrobe"))
@@ -149,32 +150,17 @@ local function lookRow(scope: any, deps: any, id: string, row: StyleModel.LookRo
 			},
 		})
 	elseif row.canWear then
-		right = scope:New("TextButton")({
+		right = ActionButton(scope, {
 			Name = "Wear",
+			Text = "PORTER",
 			AnchorPoint = Vector2.new(1, 0.5),
 			Position = UDim2.new(1, -14, 0.5, 0),
 			Size = scope:Computed(function(use)
 				return UDim2.fromOffset(120, use(height))
 			end),
-			BackgroundColor3 = Color3.new(1, 1, 1),
-			AutoButtonColor = false,
-			Text = "PORTER",
-			FontFace = Theme.Fonts.Heavy,
-			TextSize = 18,
-			TextColor3 = Theme.Colors.Ink,
-			[scope.OnEvent("Activated")] = function()
-				deps.StateController.send(
-					deps.Actions.SetLook or "SetLook",
-					{ baddieId = id, look = row.index }
-				)
+			OnClick = function()
+				deps.StateController.send(deps.Actions.SetLook or "SetLook", { baddieId = id, look = row.index })
 			end,
-			[scope.Children] = {
-				scope:New("UICorner")({ CornerRadius = UDim.new(0, 10) }),
-				scope:New("UIGradient")({
-					Rotation = 90,
-					Color = ColorSequence.new(Theme.Colors.AccentLight, Theme.Colors.Accent),
-				}),
-			},
 		})
 	else
 		-- débloqué mais action impossible (combat ou contrat v1) : pas de faux bouton
@@ -310,12 +296,7 @@ local function looksTab(scope: any, deps: any, snapshot: any): { Instance }
 	}
 end
 
-local function wardrobeTab(
-	scope: any,
-	deps: any,
-	snapshot: any,
-	slot: "aura" | "gear" | "title"
-): { Instance }
+local function wardrobeTab(scope: any, deps: any, snapshot: any, slot: "aura" | "gear" | "title"): { Instance }
 	local rows = if slot == "aura"
 		then StyleModel.auraRows(snapshot, Wardrobe)
 		elseif slot == "gear" then StyleModel.gearRows(snapshot, Wardrobe)
@@ -327,10 +308,7 @@ local function wardrobeTab(
 	for i, row in rows do
 		local chips = {}
 		if row.slotLabel then
-			table.insert(
-				chips,
-				Chip(scope, { Text = string.upper(row.slotLabel), Color = Theme.Colors.TextDim })
-			)
+			table.insert(chips, Chip(scope, { Text = string.upper(row.slotLabel), Color = Theme.Colors.TextDim }))
 		end
 		if row.equipped then
 			table.insert(chips, Chip(scope, { Text = onLabel, Color = Theme.Colors.Accent }))

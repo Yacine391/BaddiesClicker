@@ -20,6 +20,7 @@ local Text = require(Client.UI.Text)
 local Metrics = require(Client.UI.Metrics)
 local WindowHost = require(Client.UI.WindowHost)
 local Chip = require(Client.UI.Components.Chip)
+local ActionButton = require(Client.UI.Components.ActionButton)
 local ListRow = require(Client.UI.Components.ListRow)
 local Toast = require(Client.UI.Components.Toast)
 local RewardsModel = require(Client.Logic.RewardsModel)
@@ -63,27 +64,18 @@ end
 -- Bouton large (dégradé Accent, ou couleur donnée) ; grisé et inactif si `enabled` est faux
 local function wideButton(scope: any, props: any): Instance
 	local height = Metrics.touch(scope, props.Height or 44)
-	return scope:New("TextButton")({
+	return ActionButton(scope, {
 		Name = props.Name,
 		LayoutOrder = props.LayoutOrder,
 		Text = props.Text,
-		FontFace = Theme.Fonts.Heavy,
 		TextSize = props.TextSize or 18,
-		TextColor3 = Theme.Colors.Ink,
-		AutoButtonColor = props.Enabled,
-		Active = props.Enabled,
-		BackgroundColor3 = props.Color or Theme.Colors.Accent,
-		BackgroundTransparency = if props.Enabled then 0 else 0.65,
-		Visible = if props.Visible == nil then true else props.Visible,
+		Color = props.Color or Theme.Colors.Accent,
+		Enabled = props.Enabled,
+		Visible = props.Visible,
 		Size = scope:Computed(function(use)
 			return UDim2.new(1, 0, 0, use(height))
 		end),
-		[scope.OnEvent("Activated")] = function()
-			if props.Enabled then
-				props.OnClick()
-			end
-		end,
-		[scope.Children] = { scope:New("UICorner")({ CornerRadius = UDim.new(0, Theme.Radius.Button) }) },
+		OnClick = props.OnClick,
 	})
 end
 
@@ -280,8 +272,7 @@ function Bonus.start(scope: any, deps: any)
 	local rotation = scope:Value(0) -- cible ; l'affichage la rejoint par un tween
 	-- Créé une seule fois, hors du contenu de la fenêtre : le snapshot qui suit le tour reconstruit
 	-- l'onglet, et un tween recréé à ce moment-là sauterait directement à la position finale
-	local shown =
-		scope:Tween(rotation, TweenInfo.new(SPIN_SECONDS, Enum.EasingStyle.Quint, Enum.EasingDirection.Out))
+	local shown = scope:Tween(rotation, TweenInfo.new(SPIN_SECONDS, Enum.EasingStyle.Quint, Enum.EasingDirection.Out))
 	local spinning = scope:Value(false)
 	local prize = scope:Value("")
 
@@ -461,9 +452,7 @@ function Bonus.start(scope: any, deps: any)
 				end),
 				Weight = "ExtraBold",
 				Color = tabScope:Computed(function(use)
-					return if use(prize) ~= "" and not use(spinning)
-						then Theme.Colors.Accent
-						else Theme.Colors.TextDim
+					return if use(prize) ~= "" and not use(spinning) then Theme.Colors.Accent else Theme.Colors.TextDim
 				end),
 				Size = UDim2.fromOffset(WHEEL + 20, 20),
 				Position = UDim2.fromOffset(12, WHEEL + 26),
@@ -497,9 +486,7 @@ function Bonus.start(scope: any, deps: any)
 				rows,
 				ListRow(tabScope, {
 					Portrait = tostring(day.day),
-					PortraitColor = if day.state == "today"
-						then Theme.Colors.Accent
-						else Theme.Colors.TextDim,
+					PortraitColor = if day.state == "today" then Theme.Colors.Accent else Theme.Colors.TextDim,
 					Name = `JOUR {day.day}`,
 					Chips = {
 						Chip(tabScope, { Text = day.reward, Color = GOLD }),
@@ -531,9 +518,7 @@ function Bonus.start(scope: any, deps: any)
 				rows,
 				ListRow(tabScope, {
 					Portrait = tostring(row.index),
-					PortraitColor = if row.state == "ready"
-						then Theme.Colors.Accent
-						else Theme.Colors.TextDim,
+					PortraitColor = if row.state == "ready" then Theme.Colors.Accent else Theme.Colors.TextDim,
 					Name = row.title,
 					Chips = {
 						Chip(tabScope, { Text = row.reward, Color = GOLD }),
@@ -559,7 +544,7 @@ function Bonus.start(scope: any, deps: any)
 		name = "Bonus",
 		gradient = Theme.Gradients.Bonus,
 		title = "BONUS",
-		icon = "crown",
+		icon = "bonus",
 		layout = "free",
 		tabs = function(snapshot)
 			local rewards = (snapshot and snapshot.rewards) or {}

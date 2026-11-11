@@ -1,7 +1,7 @@
 --!strict
 --[[
 	MenuItem : tuile du menu de gauche (style simulateur, spec §3.3 et §4.1).
-	full : 96 × 96 ; compact (petits écrans) : 72 × 72 ; toujours ≥ 48 px réels (Metrics.touch, §21).
+	full : 64 × 64 ; compact (petits écrans) : 56 × 56 ; toujours ≥ 48 px réels (Metrics.touch, §21).
 	Icône pleine au centre, libellé contouré qui déborde en bas, pastille rouge (BadgeModel.pip) en haut à droite.
 	Active (fenêtre ouverte) = contour blanc 4 px. Survol et pression passent par Motion (interruptibles).
 ]]
@@ -29,7 +29,7 @@ export type Props = {
 return function(scope: any, props: Props): Instance
 	local touch = Metrics.touch(scope, Theme.MinTouch)
 	local side = scope:Computed(function(use)
-		local base = if use(props.Mode) == "compact" then 72 else 96
+		local base = if use(props.Mode) == "compact" then 56 else 64
 		return math.max(base, use(touch) :: number)
 	end)
 	local scale = scope:New("UIScale")({ Scale = 1 })
@@ -63,8 +63,8 @@ return function(scope: any, props: Props): Instance
 				Name = "Badge",
 				BackgroundColor3 = Theme.Colors.Badge,
 				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.new(1, -6, 0, 6),
-				Size = UDim2.fromOffset(26, 26),
+				Position = UDim2.new(1, -4, 0, 4),
+				Size = UDim2.fromOffset(22, 22),
 				ZIndex = 6,
 				Visible = scope:Computed(function(use)
 					return use(pip) ~= ""

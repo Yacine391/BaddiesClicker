@@ -1,6 +1,6 @@
 --!strict
 --[[
-	PrimaryButton : le gros bouton du bas (ENTRAÎNER vert / ATTAQUER rouge), tuile simulateur 260 × 84.
+	PrimaryButton : le gros bouton du bas (ENTRAÎNER vert / ATTAQUER rouge), tuile simulateur 200 × 56.
 	Icône éclair pleine, libellé FredokaOne contouré. S'écrase pendant l'appui (Motion.press, interruptible). Appui par InputBegan, relâchement suivi globalement par
 	UserInputService.InputEnded, jamais par le survol du bouton (§21).
 ]]
@@ -33,7 +33,7 @@ local GRADIENT = {
 }
 
 return function(scope: any, props: Props): Instance
-	local height = Metrics.touch(scope, 84)
+	local height = Metrics.touch(scope, 56)
 	local pressed = scope:Value(false)
 	local pressedInput: InputObject? = nil
 	table.insert(
@@ -88,16 +88,16 @@ return function(scope: any, props: Props): Instance
 							Padding = UDim.new(0, 12),
 							SortOrder = Enum.SortOrder.LayoutOrder,
 						}),
-						Icon(scope, { Name = "power", Size = UDim2.fromOffset(46, 46), ZIndex = 3 }),
+						Icon(scope, { Name = "power", Size = UDim2.fromOffset(34, 34), ZIndex = 3 }),
 						scope:New("TextLabel")({
 							Name = "Label",
 							LayoutOrder = 1,
 							BackgroundTransparency = 1,
 							AutomaticSize = Enum.AutomaticSize.X,
-							Size = UDim2.fromOffset(0, 44),
+							Size = UDim2.fromOffset(0, 34),
 							Text = props.Label,
 							FontFace = Theme.Fonts.Main,
-							TextSize = 36,
+							TextSize = 28,
 							TextColor3 = Theme.Colors.Text,
 							ZIndex = 3,
 							[scope.Children] = {
@@ -115,7 +115,7 @@ return function(scope: any, props: Props): Instance
 	}
 	-- hauteur ≥ 48 px réels même en très petite échelle (§21)
 	local size = scope:Computed(function(use)
-		return UDim2.fromOffset(260, use(height))
+		return UDim2.fromOffset(200, use(height))
 	end)
 
 	local button = scope:New("TextButton")({

@@ -52,45 +52,6 @@ local function viewportScale(scope: any, size: any)
 	return scale, canvas
 end
 
--- Logo uploadé (assets/ui/png/logo.png) ; repli : « BADDIE » blanc + « CLICKER » cyan, incliné
-local function logo(scope: any)
-	if Theme.Logo ~= "" then
-		return scope:New("ImageLabel")({
-			Name = "Logo",
-			BackgroundTransparency = 1,
-			Position = UDim2.fromOffset(12, 4),
-			Size = UDim2.fromOffset(300, 120),
-			Image = Theme.Logo,
-			ScaleType = Enum.ScaleType.Fit,
-		})
-	end
-	return scope:New("Frame")({
-		Name = "Logo",
-		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(16, 14),
-		Size = UDim2.fromOffset(240, 96),
-		Rotation = -6,
-		[scope.Children] = {
-			Text.label(scope, {
-				Text = "BADDIE",
-				Weight = "Heavy",
-				Stroke = true,
-				Size = UDim2.new(1, 0, 0, 54),
-				XAlignment = Enum.TextXAlignment.Left,
-			}),
-			Text.label(scope, {
-				Text = "CLICKER",
-				Weight = "Heavy",
-				Stroke = true,
-				Color = Theme.Colors.Accent,
-				Size = UDim2.new(0.8, 0, 0, 38),
-				Position = UDim2.fromOffset(40, 52),
-				XAlignment = Enum.TextXAlignment.Left,
-			}),
-		},
-	})
-end
-
 function HUD.start(scope: any, deps: any)
 	local Store, UiState, Input = deps.Store, deps.UiState, deps.Input
 	local view = scope:Computed(function(use)
@@ -216,10 +177,10 @@ function HUD.start(scope: any, deps: any)
 		table.insert(cards, card(i))
 	end
 
-	-- Tuiles du menu : 96 (compact 72), jamais sous 48 px réels (même calcul que MenuItem)
+	-- Tuiles du menu : 64 (compact 56), jamais sous 48 px réels (même calcul que MenuItem)
 	local touch = Metrics.touch(scope, Theme.MinTouch)
 	local tileSide = scope:Computed(function(use)
-		return math.max(if use(compact) then 72 else 96, use(touch) :: number)
+		return math.max(if use(compact) then 56 else 64, use(touch) :: number)
 	end)
 	-- Barre « prochain ticket » au-dessus du bouton (stats.trainActions, Balance.tickets)
 	local ticketProgress = scope:Computed(function(use)
@@ -257,9 +218,9 @@ function HUD.start(scope: any, deps: any)
 		end
 	end)
 	-- Positions calculées depuis les tailles réelles (téléphone : tuiles et bouton plus grands)
-	local buttonHeight = Metrics.touch(scope, 84)
+	local buttonHeight = Metrics.touch(scope, 56)
 	local giftSide = scope:Computed(function(use)
-		return math.max(76, use(touch) :: number)
+		return math.max(56, use(touch) :: number)
 	end)
 	local layout = scope:Computed(function(use)
 		local size: UDim2 = use(canvas)
@@ -283,18 +244,17 @@ function HUD.start(scope: any, deps: any)
 				Size = canvas,
 				[scope.Children] = {
 					scope:New("UIScale")({ Scale = scale }),
-					logo(scope),
 					-- Compteurs empilés en bas à gauche (spec §4.1)
 					scope:New("Frame")({
 						Name = "Counters",
 						BackgroundTransparency = 1,
 						AnchorPoint = Vector2.new(0, 1),
 						Position = UDim2.new(0, 16, 1, -14),
-						Size = UDim2.fromOffset(300, 200),
+						Size = UDim2.fromOffset(260, 150),
 						[scope.Children] = {
 							scope:New("UIListLayout")({
 								VerticalAlignment = Enum.VerticalAlignment.Bottom,
-								Padding = UDim.new(0, 6),
+								Padding = UDim.new(0, 2),
 								SortOrder = Enum.SortOrder.LayoutOrder,
 							}),
 							CounterPill(scope, {
@@ -369,8 +329,8 @@ function HUD.start(scope: any, deps: any)
 								Text = giftText,
 								Weight = "Heavy",
 								Stroke = true,
-								Size = UDim2.new(1.2, 0, 0, 24),
-								Position = UDim2.new(0.5, 0, 1, 8),
+								Size = UDim2.new(1.2, 0, 0, 18),
+								Position = UDim2.new(0.5, 0, 1, 6),
 								AnchorPoint = Vector2.new(0.5, 1),
 								ZIndex = 4,
 							}),
@@ -384,13 +344,14 @@ function HUD.start(scope: any, deps: any)
 						end),
 						Size = scope:Computed(function(use)
 							local side = use(tileSide) :: number
-							return UDim2.fromOffset(side * 2 + 12, side * 3 + 28)
+							local gap = HudLayout.GRID_GAP
+							return UDim2.fromOffset(side * 2 + gap, side * 3 + 2 * gap)
 						end),
 						[scope.Children] = {
-							-- grille 2 × 3 de tuiles carrées (spec §4.1) ; 14 px entre lignes pour les libellés
+							-- grille 2 × 3 de petites tuiles carrées (taille des simulateurs de référence)
 							scope:New("UIGridLayout")({
 								SortOrder = Enum.SortOrder.LayoutOrder,
-								CellPadding = UDim2.fromOffset(12, 14),
+								CellPadding = UDim2.fromOffset(HudLayout.GRID_GAP, HudLayout.GRID_GAP),
 								FillDirectionMaxCells = 2,
 								CellSize = scope:Computed(function(use)
 									local side = use(tileSide)
@@ -429,7 +390,7 @@ function HUD.start(scope: any, deps: any)
 						Position = scope:Computed(function(use)
 							return UDim2.new(0.5, 0, 1, use(layout).ticketBarOffset)
 						end),
-						Size = UDim2.fromOffset(260, 22),
+						Size = UDim2.fromOffset(200, 18),
 						BackgroundColor3 = Theme.Colors.Panel,
 						[scope.Children] = {
 							scope:New("UICorner")({ CornerRadius = UDim.new(1, 0) }),

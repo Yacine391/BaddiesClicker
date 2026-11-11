@@ -1,7 +1,7 @@
 --!strict
 --[[
 	CounterPill : compteur empilé en bas à gauche (puissance, tickets, pièces) — style simulateur :
-	icône pleine 40 + chiffre FredokaOne 34 contouré. « Pop » du chiffre quand `Pulse` change (coupé en effets réduits).
+	icône pleine 30 + chiffre FredokaOne 28 contouré. « Pop » du chiffre quand `Pulse` change (coupé en effets réduits).
 ]]
 
 local UI = script.Parent.Parent
@@ -37,26 +37,26 @@ return function(scope: any, props: Props): Frame
 	return scope:New("Frame")({
 		Name = props.Name or ("Counter_" .. props.Icon),
 		BackgroundTransparency = 1,
-		Size = UDim2.fromOffset(0, 44),
+		Size = UDim2.fromOffset(0, 34),
 		AutomaticSize = Enum.AutomaticSize.X,
 		LayoutOrder = props.LayoutOrder or 0,
 		[scope.Children] = {
 			scope:New("UIListLayout")({
 				FillDirection = Enum.FillDirection.Horizontal,
 				VerticalAlignment = Enum.VerticalAlignment.Center,
-				Padding = UDim.new(0, 8),
+				Padding = UDim.new(0, 6),
 				SortOrder = Enum.SortOrder.LayoutOrder,
 			}),
-			Icon(scope, { Name = props.Icon, Size = UDim2.fromOffset(40, 40) }),
+			Icon(scope, { Name = props.Icon, Size = UDim2.fromOffset(30, 30) }),
 			scope:New("TextLabel")({
 				Name = "Value",
 				LayoutOrder = 1,
 				BackgroundTransparency = 1,
 				AutomaticSize = Enum.AutomaticSize.X,
-				Size = UDim2.fromOffset(0, 40),
+				Size = UDim2.fromOffset(0, 32),
 				Text = props.Text,
 				FontFace = Theme.Fonts.Main,
-				TextSize = 34,
+				TextSize = 28,
 				TextColor3 = Theme.Colors.Text,
 				[scope.Children] = {
 					scale,

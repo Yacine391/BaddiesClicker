@@ -8,7 +8,9 @@
 
 local HudLayout = {}
 
-local COUNTERS_HEIGHT = 4 * 44 + 3 * 6 -- 4 compteurs de 44, 6 entre eux
+HudLayout.GRID_GAP = 8 -- entre tuiles du menu (lignes et colonnes)
+
+local COUNTERS_HEIGHT = 4 * 34 + 3 * 2 -- 4 compteurs de 34, 2 entre eux
 local MARGIN = 14
 local LABEL_OVERFLOW = 6 -- libellé des tuiles qui dépasse sous la dernière ligne
 local GAP = 8
@@ -27,7 +29,7 @@ function HudLayout.compute(
 	giftSide: number
 ): Layout
 	local countersTop = canvasHeight - MARGIN - COUNTERS_HEIGHT
-	local gridHeight = 3 * tileSide + 28
+	local gridHeight = 3 * tileSide + 2 * HudLayout.GRID_GAP
 	local centered = canvasHeight / 2 - MARGIN - gridHeight / 2
 	local highest = countersTop - GAP - LABEL_OVERFLOW - gridHeight
 	return {

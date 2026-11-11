@@ -52,6 +52,7 @@ function RewardService.onProfileLoaded(player: Player)
 		session.paidRandomAllowed = ok
 			and type(info) == "table"
 			and info.ArePaidRandomItemsRestricted == false
+		session.policyKnown = true
 		if not ok then
 			warn(`[RewardService] politique illisible pour {player.UserId} : tour payant masqué`)
 		end

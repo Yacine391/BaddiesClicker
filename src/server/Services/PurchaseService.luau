@@ -5,6 +5,7 @@
 	crédité ET écrit dans le profil avec l'identifiant du reçu. Tant que l'écriture n'est pas confirmée,
 	on répond NotProcessedYet : Roblox représentera le reçu, et l'identifiant gardé au profil empêche
 	tout double crédit. Produit inconnu ou profil absent : jamais d'accord, rien n'est donné.
+	Le seul produit est un tirage payant : il n'est pas crédité là où Roblox les restreint (PolicyService).
 ]]
 
 local MarketplaceService = game:GetService("MarketplaceService")
@@ -18,6 +19,7 @@ local PurchaseService = {}
 local ctx
 local deps
 local byProductId: { [number]: ProductsConfig.Product } = {}
+local POLICY_WAIT_SECONDS = 10
 
 function PurchaseService.init(context, dependencies)
 	ctx = context
@@ -40,6 +42,28 @@ local function processReceipt(info: { [string]: any }): Enum.ProductPurchaseDeci
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	local purchaseId = tostring(info.PurchaseId)
+	-- Tirage payant : jamais crédité à un joueur dont le pays restreint les objets aléatoires payants, même si
+	-- son client a forcé l'achat (le bouton ne lui est pas proposé). Non accordé = remboursé par Roblox.
+	-- Un reçu déjà crédité (écriture à confirmer) suit son cours ; au retour d'un joueur, on laisse le temps
+	-- à la politique d'être lue avant de décider.
+	if not Rewards.hasPurchase(data, purchaseId) then
+		local session = deps.Sessions.get(player)
+		local deadline = os.clock() + POLICY_WAIT_SECONDS
+		while session ~= nil and not session.policyKnown and os.clock() < deadline do
+			task.wait(0.25)
+			session = deps.Sessions.get(player)
+		end
+		if session == nil or session.paidRandomAllowed ~= true then
+			warn(
+				`[Purchase] {info.PlayerId} {purchaseId} : tirage payant non autorisé pour ce joueur, non crédité`
+			)
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
+		data = deps.Profiles.get(player)
+		if data == nil then
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
+	end
 	local applied = Rewards.applyPurchase(data, purchaseId, product.bundle, ctx)
 	if applied then
 		deps.State.markDirty(player)

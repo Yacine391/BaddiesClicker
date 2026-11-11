@@ -28,6 +28,7 @@ export type Session = {
 	lastSpinAt: number?, -- dernier tour de roue accepté (3 s entre deux)
 	lastPlaytimeAt: number?, -- dernier crédit du temps de jeu du jour
 	paidRandomAllowed: boolean, -- tirage payant autorisé dans le pays du joueur (PolicyService) ; faux tant qu'inconnu
+	policyKnown: boolean, -- la politique du pays a été lue (réussie ou non)
 }
 
 local Sessions = {}
@@ -57,6 +58,7 @@ function Sessions.create(player: Player): Session
 		lastSpinAt = nil,
 		lastPlaytimeAt = nil,
 		paidRandomAllowed = false,
+		policyKnown = false,
 	}
 	byPlayer[player] = session
 	return session

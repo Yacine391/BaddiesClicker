@@ -28,7 +28,7 @@ La référence des règles est le **dossier de production v4** (14 octobre 2026)
 | Portraits 3D, suiveurs, vrais boss et sbires, une aura par identité | `Controllers/Visuals`, `UI/Components/Portrait`, `Controllers/FX` |
 | Pièces, roue du jour, connexion quotidienne, temps de jeu, tour payant (produit à créer) | `Rules/Rewards`, `Services/RewardService`, `Services/PurchaseService`, `Controllers/Bonus` |
 | Réglages sauvegardés, sons (IDs par défaut à vérifier), accessoires de garde-robe visibles sur l'avatar, 14 succès | `Rules/Settings`, `Controllers/Sound`, `Controllers/Wearables`, `Shared/Wardrobe` |
-| 140 tests des règles, des pannes et des profils (cas §30 du dossier) ; 101 tests du client | `tests/run.luau`, `tests/client/run.luau` |
+| 140 tests des règles, des pannes et des profils (cas §30 du dossier) ; 99 tests du client | `tests/run.luau`, `tests/client/run.luau` |
 
 **Vocabulaire :** le **Baddies Book** est la collection des baddies découvertes.
 

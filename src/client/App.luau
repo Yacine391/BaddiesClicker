@@ -57,8 +57,15 @@ function App.start(stateController: any)
 	Store.init(scope, stateController)
 	Input.init(deps, scope)
 
+	-- Chaque contrôleur démarre à part : une erreur dans l'un (décor, son, accessoires…) est signalée dans la
+	-- Sortie mais n'empêche pas les suivants, et surtout pas le HUD, de démarrer
 	for _, name in VISUAL_CONTROLLERS do
-		require(Controllers:WaitForChild(name)).start(scope, deps)
+		local ok, err = pcall(function()
+			require(Controllers:WaitForChild(name)).start(scope, deps)
+		end)
+		if not ok then
+			warn(`[App] contrôleur {name} non démarré : {err}`)
+		end
 	end
 	-- Portes individuelles (§08) : présentation seulement, l'accès est vérifié par le serveur
 	require(Controllers:WaitForChild("DoorController")).start(stateController)

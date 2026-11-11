@@ -394,6 +394,23 @@ function ProfileGuard.repair(data: any, ctx: any): { string }
 		end
 	end
 
+	-- Réglages (§22) : interrupteurs en booléens ; une clé inconnue reste archivée
+	if type(data.settings) ~= "table" then
+		if data.settings ~= nil then
+			table.insert(issues, "settings illisible → valeurs par défaut")
+		end
+		data.settings = {}
+	end
+	for key, default in B.settings do
+		local stored = data.settings[key]
+		if stored == nil then
+			data.settings[key] = default
+		elseif type(stored) ~= "boolean" then
+			table.insert(issues, `settings.{key} invalide → valeur par défaut`)
+			data.settings[key] = default
+		end
+	end
+
 	-- Récompenses (Rules/Rewards) : champs ajoutés après le schéma 4, absents des profils plus anciens
 	-- (Reconcile les crée ; ici on ne signale que des valeurs réellement abîmées)
 	if data.coins == nil then

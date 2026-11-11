@@ -45,6 +45,7 @@ peut être découverte (dans le Baddies Book), possédée (dans un slot) ou expo
 | `UpgradeCrew` | `{ crewId }` | 4/s | compagnon possédé, pas au niveau 10 ; dépense `niveau + 1` copies (`crewOwned[i].upgradeCost`) |
 | `EquipCrew` | `{ ids: { string } }` | 4/s | ≤ 2 compagnons **possédés**, sans doublon ; remplace la liste (vide = aucun) |
 | `SetStyle` | `{ slot, id? }` | 4/s | hors combat ; `slot` ∈ `Wardrobe.slots` ou `"title"` ; `id` débloqué et du bon emplacement ; `id` absent = retirer |
+| `SetSetting` | `{ key, value: boolean }` | 4/s | à tout moment ; `key` ∈ `Balance.settings` (`reducedEffects`, `showOthersFollowers`, `holdToTrain`, `sound`, `music`). Affichage et confort uniquement ; sauvegardé avec l'autosave |
 | `SpinWheel` ⏳ | `{ requestId, pay = "free" \| "token" \| "coins" }` | 4/s + 3 s entre deux tours | `free` : tour gratuit du jour pas encore pris ; `token` : au moins 1 jeton en réserve ; `coins` : assez de pièces. Le client choisit comment il paie, le serveur tire le gain |
 | `ClaimDaily` ⏳ | `{ requestId }` | 4/s | récompense de connexion du jour pas encore prise (jour UTC du serveur) |
 | `ClaimPlaytime` ⏳ | `{ requestId, index }` | 4/s | palier `index` du temps de jeu du jour atteint et pas encore réclamé |
@@ -164,7 +165,9 @@ Envoyé au chargement, sur `Hello`, puis à chaque changement (regroupé, au plu
 		complete = false,
 	},
 	stats = { trainActions = 14, crewPowerEarned = 2.4 },
-	settings = { reducedEffects = false }, -- effets réduits (§21)
+	settings = {                  -- réglages sauvegardés (§22) ; le client les relit au premier snapshot
+		reducedEffects = false, showOthersFollowers = true, holdToTrain = false, sound = true, music = true,
+	},
 	combat = {                    -- { active = false, hp, maxHP } hors combat
 		active = true,
 		encounterId = "123-4",
@@ -208,7 +211,7 @@ Envoyé au chargement, sur `Hello`, puis à chaque changement (regroupé, au plu
 		equipped = { frame = "frame_simple" },          -- emplacement -> cosmétique porté
 		title = "boss_manager",                         -- titre affiché au-dessus de l'avatar, ou nil
 		achievements = { "first_training", "first_crew", "first_boss" },
-		achievementTotal = 10,
+		achievementTotal = 14,        -- 10 succès du dossier + 4 exploits du 11/11 (une source par cosmétique)
 	},
 	ranking = {                   -- classement du lobby : joueurs PRÉSENTS, calculé par le serveur (§15)
 		lot = "V1", total = 8, crewTotal = 6, -- afficher « 7/8 » et le lot classé

@@ -1,7 +1,8 @@
 --!strict
 --[[
-	Settings : réglages locaux (§21, §22) — effets réduits, suiveurs des autres, maintien du clic.
-	Lignes à interrupteur (Accent OUI / gris NON). Non sauvegardés en P0 (le contrat ne les transporte pas).
+	Settings : réglages (§21, §22) — effets réduits, suiveurs des autres, maintien du clic, sons, musique.
+	Lignes à interrupteur (Accent OUI / gris NON). Sauvegardés : relus dans `snapshot.settings` au premier
+	état reçu, puis chaque changement part au serveur (intention SetSetting). L'effet est immédiat et local.
 ]]
 
 local Client = script.Parent.Parent
@@ -27,10 +28,39 @@ local ENTRIES = {
 		label = "MAINTIEN DU CLIC",
 		hint = "Garder le bouton appuyé : 3 entraînements/s",
 	},
+	{
+		key = "sound",
+		label = "SONS",
+		hint = "Effets sonores du jeu",
+	},
+	{
+		key = "music",
+		label = "MUSIQUE",
+		hint = "Musique d'ambiance du lobby et des combats",
+	},
 }
 
 function Settings.start(scope: any, deps: any)
 	local settings = deps.UiState.settings
+
+	-- Premier snapshot : les choix sauvegardés remplacent les valeurs par défaut locales (une seule fois,
+	-- ensuite ce client est le seul à les changer)
+	local synced = false
+	local function sync()
+		local snapshot = deps.peek(deps.Store.snapshot)
+		local saved = snapshot and snapshot.settings
+		if synced or type(saved) ~= "table" then
+			return
+		end
+		synced = true
+		for _, entry in ENTRIES do
+			if type(saved[entry.key]) == "boolean" then
+				settings[entry.key]:set(saved[entry.key])
+			end
+		end
+	end
+	sync()
+	scope:Observer(deps.Store.snapshot):onChange(sync)
 	WindowHost.mount(scope, deps, deps.HudRoot, {
 		name = "Settings",
 		title = "RÉGLAGES",
@@ -50,7 +80,12 @@ function Settings.start(scope: any, deps: any)
 							Description = entry.hint,
 							Toggle = on,
 							OnAction = function()
-								settings[entry.key]:set(not deps.peek(settings[entry.key]))
+								local value = not deps.peek(settings[entry.key])
+								settings[entry.key]:set(value)
+								deps.StateController.send(
+									deps.Actions.SetSetting or "SetSetting",
+									{ key = entry.key, value = value }
+								)
 							end,
 							LayoutOrder = index,
 						})

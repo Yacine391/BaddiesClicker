@@ -52,7 +52,7 @@ function ProfileTemplate.new(ctx: any): { [string]: any }
 		tutorial = { crewUnlocked = false },
 		collectionAwards = {},
 		eventClaims = {},
-		settings = { reducedEffects = false },
+		settings = table.clone(B.settings), -- réglages (Rules/Settings) : affichage et confort uniquement
 		pendingBadges = {}, -- succès dont le badge Roblox reste à attribuer : achievementId -> true
 		stats = { trainActions = 0, crewPowerEarned = 0 },
 		lastMutation = {}, -- reçu durable de la dernière décision (Rules/Receipts), vide au départ

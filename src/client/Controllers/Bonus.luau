@@ -24,6 +24,7 @@ local ListRow = require(Client.UI.Components.ListRow)
 local Toast = require(Client.UI.Components.Toast)
 local RewardsModel = require(Client.Logic.RewardsModel)
 local Decisions = require(script.Parent.Decisions)
+local Sound = require(script.Parent.Sound)
 
 local Bonus = {}
 
@@ -620,6 +621,16 @@ function Bonus.start(scope: any, deps: any)
 			return
 		end
 		rotation:set(RewardsModel.landingRotation(peek(rotation), result.index, #segments, SPIN_TURNS))
+		-- crans de la roue : rapprochés au départ, espacés à l'arrivée
+		task.spawn(function()
+			local elapsed, gap = 0, 0.05
+			while elapsed < SPIN_SECONDS - 0.2 do
+				Sound.play("spin")
+				task.wait(gap)
+				elapsed += gap
+				gap *= 1.13
+			end
+		end)
 		task.delay(SPIN_SECONDS, function()
 			local text = RewardsModel.prizeText(result, deps.Catalog)
 			prize:set(text)

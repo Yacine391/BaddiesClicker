@@ -56,6 +56,7 @@ local Slots = require(Services.SlotService)
 local Book = require(Services.BookService)
 local Reward = require(Services.RewardService)
 local Purchase = require(Services.PurchaseService)
+local Settings = require(Services.SettingsService)
 local Dev = require(Services.DevService)
 
 local deps = table.freeze({
@@ -82,6 +83,7 @@ Slots.init(ctx, deps)
 Book.init(ctx, deps)
 Reward.init(ctx, deps)
 Purchase.init(ctx, deps)
+Settings.init(ctx, deps)
 Dev.init(ctx, deps)
 Ranking.init(ctx, deps)
 Wardrobe.init(ctx, deps)
@@ -125,6 +127,7 @@ local routes: { [string]: IntentRouter.Route } = {
 	UpgradeCrew = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Crew.onUpgrade },
 	EquipCrew = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Crew.onEquip },
 	SetStyle = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Wardrobe.onSetStyle },
+	SetSetting = { rate = CHOICE_RATE, burst = CHOICE_RATE * 2, handler = Settings.onSetSetting },
 	SpinWheel = { rate = MUTATION_RATE, burst = MUTATION_RATE, handler = Reward.onSpinWheel },
 	ClaimDaily = { rate = MUTATION_RATE, burst = MUTATION_RATE, handler = Reward.onClaimDaily },
 	ClaimPlaytime = { rate = MUTATION_RATE, burst = MUTATION_RATE, handler = Reward.onClaimPlaytime },

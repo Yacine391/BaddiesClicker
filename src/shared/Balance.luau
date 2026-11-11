@@ -58,6 +58,15 @@ local Balance = {
 		crewUnlockAfterTrainActions = 10,
 	},
 
+	-- §21, §22 : réglages du joueur et leur valeur par défaut (affichage et confort ; aucun effet sur les gains)
+	settings = {
+		reducedEffects = false, -- auras et particules atténuées, bloom coupé
+		showOthersFollowers = true, -- afficher les équipes des autres joueurs
+		holdToTrain = false, -- maintien du clic accessible (3 actions/s)
+		sound = true, -- effets sonores
+		music = true, -- musique d'ambiance
+	},
+
 	-- §27 : sauvegarde
 	save = {
 		schemaVersion = 4,
@@ -146,6 +155,10 @@ local Balance = {
 		checkSeconds = 2,
 		trainActions = 20, -- « Premier entraînement »
 		lookMastery = 1, -- « Premier look » : Maya maîtrise 1
+		dailyClaims = 7, -- « Une semaine fidèle »
+		wheelSpins = 10, -- « Tour de chance »
+		signatureMastery = 5, -- « Signature » : une baddie maîtrise 5
+		rebirths = 3, -- « Troisième renaissance »
 		badgeRetrySeconds = 60,
 	},
 

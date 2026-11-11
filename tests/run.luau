@@ -28,6 +28,7 @@ local Achievements = require("../src/server/Rules/Achievements")
 local Metrics = require("../src/server/Rules/Metrics")
 local Movement = require("../src/server/Rules/Movement")
 local Rewards = require("../src/server/Rules/Rewards")
+local Settings = require("../src/server/Rules/Settings")
 local profileV4P0 = require("./fixtures/profile_v4_p0")
 
 local Wardrobe = require("../src/shared/Wardrobe")
@@ -2178,6 +2179,79 @@ test("décision durable : même requestId de tour de roue répété → un seul 
 	eq(replies[3].ok, false)
 	eq(replies[3].reason, "no_free")
 end)
+
+print("Réglages sauvegardés et exploits du 11/11")
+
+test(
+	"réglages : valeurs par défaut, changement d'un booléen connu, entrées invalides ignorées",
+	function()
+		local p = newProfile()
+		local view = Settings.view(p, ctx)
+		eq(view.reducedEffects, false)
+		eq(view.showOthersFollowers, true)
+		eq(view.sound, true)
+		eq(Settings.set(p, "sound", false, ctx), true)
+		eq(Settings.view(p, ctx).sound, false)
+		eq(Settings.set(p, "sound", false, ctx), false, "déjà cette valeur")
+		eq(Settings.set(p, "sound", "non", ctx), false, "pas un booléen")
+		eq(Settings.set(p, "power", true, ctx), false, "clé inconnue")
+		eq(Settings.set(p, nil, true, ctx), false)
+		eq(p.settings.power, nil)
+		-- un réglage ne touche à aucun gain
+		eq(Formulas.manualGain(p.rebirths, Balance.training), 1)
+	end
+)
+
+test("réglages : profil ancien complété, valeur abîmée corrigée", function()
+	local p = newProfile()
+	p.settings = { reducedEffects = true }
+	eq(#ProfileGuard.repair(p, ctx), 0, "clés manquantes ajoutées sans alerte")
+	eq(p.settings.reducedEffects, true, "choix conservé")
+	eq(p.settings.music, true)
+	p.settings.holdToTrain = "oui"
+	eq(#ProfileGuard.repair(p, ctx), 1)
+	eq(p.settings.holdToTrain, false)
+end)
+
+test(
+	"exploits : montre (7 connexions), lunettes (10 tours), aura Neon (maîtrise 5), trail (3 renaissances)",
+	function()
+		local p = newProfile()
+		eq(#Achievements.check(p, ctx), 0, "rien au départ")
+		for i = 0, 6 do
+			Rewards.applyDaily(p, D1 + i, ctx)
+		end
+		local earned = Achievements.check(p, ctx)
+		eq(#earned, 1)
+		eq(earned[1].id, "daily_week")
+		eq(p.wardrobe.watch, true)
+		p.rewards.wheel.spins = 10
+		eq(Achievements.check(p, ctx)[1].id, "wheel_fan")
+		eq(p.wardrobe.glasses, true)
+		p.masteryXP.maya = Balance.mastery.xpThresholdFactor * 25 -- niveau 5
+		local ids = {}
+		for _, e in Achievements.check(p, ctx) do
+			ids[e.id] = true
+		end
+		eq(ids.mastery_five, true)
+		eq(p.wardrobe.aura_neon, true)
+		p.masteryXP.vega = 99999 -- maîtrise d'une identité non découverte : ne compte pas (aucun autre succès)
+		eq(#Achievements.check(p, ctx), 0)
+		p.rebirths = 3
+		local after = {}
+		for _, e in Achievements.check(p, ctx) do
+			after[e.id] = true
+		end
+		eq(after.rebirth_three, true)
+		eq(p.wardrobe.trail_stars, true)
+		eq(#Achievements.check(p, ctx), 0, "jamais deux fois")
+		-- chaque cosmétique a maintenant une source (§30 : tous les contenus annoncés obtenables)
+		for _, id in Wardrobe.itemOrder do
+			local source = Wardrobe.items[id].source
+			assert(source ~= nil and Wardrobe.achievements[source] ~= nil, `cosmétique sans source : {id}`)
+		end
+	end
+)
 
 print(`\n{passed} réussi(s), {failed} échec(s)`)
 process.exit(if failed > 0 then 1 else 0)

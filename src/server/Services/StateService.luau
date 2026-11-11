@@ -17,6 +17,7 @@ local CollectionRules = require(script.Parent.Parent.Rules.Collection)
 local CombatRules = require(script.Parent.Parent.Rules.Combat)
 local CrewRules = require(script.Parent.Parent.Rules.Crew)
 local RewardRules = require(script.Parent.Parent.Rules.Rewards)
+local SettingsRules = require(script.Parent.Parent.Rules.Settings)
 local SlotRules = require(script.Parent.Parent.Rules.Slots)
 
 local StateService = {}
@@ -138,7 +139,7 @@ function StateService.snapshot(player: Player, data): { [string]: any }
 			complete = #crewMissing == 0,
 		},
 		stats = { trainActions = data.stats.trainActions, crewPowerEarned = data.stats.crewPowerEarned },
-		settings = { reducedEffects = data.settings.reducedEffects == true },
+		settings = SettingsRules.view(data, ctx), -- réglages sauvegardés (§22)
 		combat = combat,
 		clearedLevels = CombatRules.clearedList(data),
 		nextLevel = nextLevel, -- { levelId, recommendedPower } ou nil quand le niveau 10 est terminé

@@ -52,6 +52,7 @@ local CrewModel = require("../../src/client/Logic/CrewModel")
 local RankingModel = require("../../src/client/Logic/RankingModel")
 local VisualsModel = require("../../src/client/Logic/VisualsModel")
 local RewardsModel = require("../../src/client/Logic/RewardsModel")
+local SoundModel = require("../../src/client/Logic/SoundModel")
 local Balance = require("../../src/shared/Balance")
 
 print("Runner")
@@ -331,16 +332,18 @@ test("cartes : sans principale ni crew", function()
 end)
 
 print("StyleModel")
-test("sans style : looks seuls", function()
+test("sans style : looks, et toujours la liste des succès", function()
 	local t = StyleModel.tabs(baseSnapshot(), Catalog, Wardrobe)
-	eq(#t, 1)
+	eq(#t, 2)
 	eq(t[1].id, "looks")
+	eq(t[2].id, "achievements")
+	eq(t[2].count, `0/{#Wardrobe.achievementOrder}`)
 end)
 test("aura et titre", function()
 	local s = with({
 		style = { items = { "aura_spark" }, titles = { "boss_manager" }, equipped = { aura = "aura_spark" } },
 	})
-	eq(#StyleModel.tabs(s, Catalog, Wardrobe), 3)
+	eq(#StyleModel.tabs(s, Catalog, Wardrobe), 4) -- looks, aura, titre, succès
 	eq(StyleModel.auraRows(s, Wardrobe)[1].equipped, true)
 	eq(StyleModel.titleRows(s, Wardrobe)[1].name, "Gérant de Baddies")
 	eq(StyleModel.titleRows(s, Wardrobe)[1].equipped, false)
@@ -1024,6 +1027,84 @@ test("pastille du menu, pièces et toasts", function()
 		"Achat reçu : 1 tour de roue"
 	)
 	eq(RewardsModel.toastFor({ kind = "ticket" }), nil)
+end)
+
+print("Sons, accessoires et succès")
+test("sons : un son par moment, rien pour les ticks passifs", function()
+	eq(SoundModel.forResult({ kind = "ticket" }), "ping")
+	eq(SoundModel.forResult({ kind = "levelCleared" }), "win")
+	eq(SoundModel.forResult({ kind = "death" }), "lose")
+	eq(SoundModel.forResult({ kind = "discovery" }), "fanfare")
+	eq(SoundModel.forResult({ kind = "crewJoined", isNew = false }), "ping")
+	eq(SoundModel.forResult({ kind = "crewJoined", isNew = true }), "fanfare")
+	eq(SoundModel.forResult({ kind = "dailyReward" }), "coin")
+	eq(SoundModel.forResult({ kind = "mutation", ok = false }), "deny")
+	eq(SoundModel.forResult({ kind = "mutation", ok = true, action = "Roll" }), "roll")
+	eq(
+		SoundModel.forResult({ kind = "mutation", ok = true, action = "SpinWheel" }),
+		nil,
+		"la roue a ses crans"
+	)
+	eq(SoundModel.forResult({ kind = "passiveTick" }), nil)
+	eq(SoundModel.forCombat({ t = "hit", killed = false }), "hit")
+	eq(SoundModel.forCombat({ t = "hit", killed = true }), "kill")
+	eq(SoundModel.forCombat({ t = "impact", hit = true }), "hurt")
+	eq(SoundModel.forCombat({ t = "impact", hit = false }), nil, "esquive : silence")
+	eq(SoundModel.forCombat({ t = "pos" }), nil)
+end)
+test("sons : musique selon le mode, coupée par le réglage ; pas de mitraillage", function()
+	eq(SoundModel.music(baseSnapshot(), true), "lobby")
+	eq(SoundModel.music(with({ mode = "combat" }), true), "combat")
+	eq(SoundModel.music(baseSnapshot(), false), nil)
+	eq(SoundModel.music(nil, true), nil)
+	eq(SoundModel.allowed("tap", 10, nil), true)
+	eq(SoundModel.allowed("tap", 10.03, 10), false)
+	eq(SoundModel.allowed("tap", 10.08, 10), true)
+	eq(SoundModel.allowed("win", 10.001, 10), true, "sans limite pour les sons rares")
+end)
+test("style : accessoires par emplacement, succès avec condition et récompense", function()
+	local s = with({
+		style = {
+			items = { "frame_simple", "headset_player", "aura_spark", "watch" },
+			titles = { "boss_manager" },
+			equipped = { head = "headset_player", aura = "aura_spark" },
+			achievements = { "first_training", "first_crew" },
+			achievementTotal = #Wardrobe.achievementOrder,
+		},
+	})
+	local gear = StyleModel.gearRows(s, Wardrobe)
+	eq(#gear, 3, "l'aura a son propre onglet")
+	eq(gear[2].id, "headset_player")
+	eq(gear[2].slot, "head")
+	eq(gear[2].slotLabel, "Tête")
+	eq(gear[2].equipped, true)
+	eq(gear[3].id, "watch")
+	eq(gear[3].equipped, false)
+	local rows = StyleModel.achievementRows(s, Wardrobe)
+	eq(#rows, #Wardrobe.achievementOrder)
+	eq(rows[1].earned, true)
+	eq(rows[1].reward, "Cadre simple")
+	eq(rows[3].earned, false)
+	eq(rows[3].reward, "titre « Gérant de Baddies »")
+	local tabs = StyleModel.tabs(s, Catalog, Wardrobe)
+	local ids = {}
+	for _, tab in tabs do
+		table.insert(ids, tab.id)
+	end
+	eq(table.concat(ids, ","), "looks,aura,gear,title,achievements")
+	eq(tabs[#tabs].count, `2/{#Wardrobe.achievementOrder}`)
+end)
+test("style public (BC_Style) : paires connues seulement, emplacement cohérent", function()
+	local parsed = StyleModel.parsePublic("neck=chain_gold,frame=frame_v1,head=headset_player", Wardrobe)
+	eq(parsed.neck, "chain_gold")
+	eq(parsed.frame, "frame_v1")
+	eq(parsed.head, "headset_player")
+	eq(next(StyleModel.parsePublic("", Wardrobe)), nil)
+	eq(next(StyleModel.parsePublic(nil, Wardrobe)), nil)
+	local odd = StyleModel.parsePublic("neck=frame_v1,face=inconnu,x,aura=aura_neon", Wardrobe)
+	eq(odd.neck, nil, "cosmétique d'un autre emplacement refusé")
+	eq(odd.face, nil)
+	eq(odd.aura, "aura_neon")
 end)
 
 print(`\n{passed} réussi(s), {failed} échec(s)`)

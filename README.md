@@ -27,7 +27,8 @@ La référence des règles est le **dossier de production v4** (14 octobre 2026)
 | Cherry (B09, Legendary ×3,5) d'après la planche « Baddie — Cherry Summer » | `Shared/Catalog`, `assets/visuals/previews/` |
 | Portraits 3D, suiveurs, vrais boss et sbires, une aura par identité | `Controllers/Visuals`, `UI/Components/Portrait`, `Controllers/FX` |
 | Pièces, roue du jour, connexion quotidienne, temps de jeu, tour payant (produit à créer) | `Rules/Rewards`, `Services/RewardService`, `Services/PurchaseService`, `Controllers/Bonus` |
-| 137 tests des règles, des pannes et des profils (cas §30 du dossier) ; 95 tests du client | `tests/run.luau`, `tests/client/run.luau` |
+| Réglages sauvegardés, sons (IDs par défaut à vérifier), accessoires de garde-robe visibles sur l'avatar, 14 succès | `Rules/Settings`, `Controllers/Sound`, `Controllers/Wearables`, `Shared/Wardrobe` |
+| 140 tests des règles, des pannes et des profils (cas §30 du dossier) ; 101 tests du client | `tests/run.luau`, `tests/client/run.luau` |
 
 **Vocabulaire :** le **Baddies Book** est la collection des baddies découvertes.
 
@@ -45,8 +46,24 @@ rendus d'aperçu. Le rendu et le comportement en jeu restent à vérifier en Pla
 4. La fenêtre BONUS : rotation de la roue, arrêt sur la bonne part, listes CONNEXION et TEMPS DE JEU.
 5. La roue du lobby : position près du spawn, ouverture en marchant sur la dalle.
 6. Sur téléphone : menu à 6 entrées en mode compact, 3 pastilles en haut à droite.
+7. Les sons : chaque effet de `Controllers/Sound` pointe vers un son livré avec Roblox (`rbxasset://sounds/…`) ;
+   un fichier absent n'écrit qu'un avertissement dans la Sortie. La musique reste à fournir (IDs vides).
+8. Les accessoires de la garde-robe sur l'avatar (STYLE → ACCESSOIRES) : chaîne, casque, lunettes, montre, traînée.
 
 Outils : F4 → +500 PIÈCES, +3 JETONS DE ROUE, +30 MIN DE JEU, NOUVEAU JOUR, DROP CHERRY.
+
+## Plusieurs projets Rojo sur la même machine
+
+Chaque projet Rojo écoute par défaut sur le port **34872**, et le plugin de Studio se connecte au serveur qui
+tourne, quel que soit le place ouvert. Si `rojo serve` tourne dans le dossier d'un autre jeu (par exemple
+`~/pas-ce-soir`, le projet Néon 93), connecter « Click For u Baddies » y injecte les scripts de cet autre jeu.
+
+- Un seul `rojo serve` à la fois, lancé **dans le dossier de ce dépôt** : `cd <dossier BaddiesClicker> && rojo serve`.
+- Avant d'accepter la synchronisation, le plugin affiche le nom du projet : ce doit être **BaddiesClicker**.
+- Mauvais projet synchronisé par erreur : fermer le place **sans enregistrer ni publier**, arrêter l'autre
+  serveur (Ctrl+C), relancer celui-ci, rouvrir le place. La source de vérité est ce dépôt : rien n'est perdu.
+- Protection durable : ajouter `"servePlaceIds": [<PlaceId>]` dans `default.project.json` (l'ID s'obtient dans la
+  barre de commande de Studio avec `print(game.PlaceId)`). Rojo refuse alors tout autre place.
 
 ## Installation sur Ubuntu (une seule fois)
 

@@ -32,7 +32,9 @@ local VISUAL_CONTROLLERS: { string } = {
 	"Podium",
 	"Leaderboard",
 	"Titles",
+	"Wearables",
 	"LobbyWheel",
+	"Sound",
 }
 
 function App.start(stateController: any)

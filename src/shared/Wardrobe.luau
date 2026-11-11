@@ -36,10 +36,11 @@ local Wardrobe = {
 		aura_spark = { slot = "aura", name = "Aura Spark", source = "mythic_found" },
 		chain_gold = { slot = "neck", name = "Chaîne dorée", source = "collection_v1" },
 		frame_v1 = { slot = "frame", name = "Cadre V1", source = "collection_v1" },
-		watch = { slot = "wrist", name = "Montre" }, -- source à définir (missions, événement)
-		glasses = { slot = "face", name = "Lunettes" },
-		aura_neon = { slot = "aura", name = "Aura Neon" },
-		trail_stars = { slot = "trail", name = "Trail d'étoiles" },
+		-- Sources ajoutées le 11/11 (exploits permanents, §32) : aucun cosmétique annoncé sans source
+		watch = { slot = "wrist", name = "Montre", source = "daily_week" },
+		glasses = { slot = "face", name = "Lunettes", source = "wheel_fan" },
+		aura_neon = { slot = "aura", name = "Aura Neon", source = "mastery_five" },
+		trail_stars = { slot = "trail", name = "Trail d'étoiles", source = "rebirth_three" },
 	},
 	itemOrder = {
 		"frame_simple",
@@ -116,6 +117,27 @@ local Wardrobe = {
 			condition = "Les deux Books V1 complets",
 			rewards = { items = { "chain_gold", "frame_v1" } },
 		},
+		-- Exploits permanents ajoutés le 11/11 (badges Roblox à créer : Config/BadgesConfig)
+		daily_week = {
+			name = "Une semaine fidèle",
+			condition = "7 récompenses de connexion réclamées",
+			rewards = { items = { "watch" } },
+		},
+		wheel_fan = {
+			name = "Tour de chance",
+			condition = "10 tours de roue",
+			rewards = { items = { "glasses" } },
+		},
+		mastery_five = {
+			name = "Signature",
+			condition = "Une baddie au niveau de maîtrise 5 (look 3 débloqué)",
+			rewards = { items = { "aura_neon" } },
+		},
+		rebirth_three = {
+			name = "Troisième renaissance",
+			condition = "Renaissance 3 enregistrée",
+			rewards = { items = { "trail_stars" } },
+		},
 	},
 	achievementOrder = {
 		"first_training",
@@ -128,6 +150,10 @@ local Wardrobe = {
 		"book_crew_v1",
 		"mythic_found",
 		"collection_v1",
+		"daily_week",
+		"wheel_fan",
+		"mastery_five",
+		"rebirth_three",
 	},
 
 	-- Listes FIGÉES du lot V1 (ne pas les relier au catalogue courant : une V2 ne doit rien retirer)

@@ -39,14 +39,19 @@ local function signature(snapshot: any): string
 	local c = snapshot.collection
 	local looks = c and c.looks and active.baddieId and c.looks[active.baddieId]
 	local style = snapshot.style or {}
+	local equippedKey = ""
+	for _, slot in Wardrobe.slots do
+		equippedKey ..= tostring(style.equipped and style.equipped[slot]) .. ";"
+	end
 	return table.concat({
 		tostring(active.baddieId),
 		tostring(snapshot.mode),
 		if looks then table.concat(looks.unlocked or {}, ",") .. ":" .. tostring(looks.selected) else "v1",
 		table.concat(style.items or {}, ","),
 		table.concat(style.titles or {}, ","),
-		tostring(style.equipped and style.equipped.aura),
 		tostring(style.title),
+		tostring(#(style.achievements or {})),
+		equippedKey,
 	}, "|")
 end
 
@@ -305,16 +310,28 @@ local function looksTab(scope: any, deps: any, snapshot: any): { Instance }
 	}
 end
 
-local function wardrobeTab(scope: any, deps: any, snapshot: any, slot: "aura" | "title"): { Instance }
+local function wardrobeTab(
+	scope: any,
+	deps: any,
+	snapshot: any,
+	slot: "aura" | "gear" | "title"
+): { Instance }
 	local rows = if slot == "aura"
 		then StyleModel.auraRows(snapshot, Wardrobe)
+		elseif slot == "gear" then StyleModel.gearRows(snapshot, Wardrobe)
 		else StyleModel.titleRows(snapshot, Wardrobe)
 	local canAct = StyleModel.canAct(snapshot)
-	local wearLabel = if slot == "aura" then "PORTER" else "AFFICHER"
-	local onLabel = if slot == "aura" then "PORTÉE" else "AFFICHÉ"
+	local wearLabel = if slot == "title" then "AFFICHER" else "PORTER"
+	local onLabel = if slot == "aura" then "PORTÉE" elseif slot == "gear" then "PORTÉ" else "AFFICHÉ"
 	local items: { any } = {}
 	for i, row in rows do
 		local chips = {}
+		if row.slotLabel then
+			table.insert(
+				chips,
+				Chip(scope, { Text = string.upper(row.slotLabel), Color = Theme.Colors.TextDim })
+			)
+		end
 		if row.equipped then
 			table.insert(chips, Chip(scope, { Text = onLabel, Color = Theme.Colors.Accent }))
 		end
@@ -325,18 +342,46 @@ local function wardrobeTab(scope: any, deps: any, snapshot: any, slot: "aura" | 
 				PortraitColor = if slot == "aura" then Theme.Colors.Style else Theme.Colors.Crew,
 				Name = deps.Format.upper(row.name),
 				Chips = chips,
-				Description = if slot == "aura"
-					then "Apparence uniquement · aucune puissance"
-					else "Affiché au-dessus de ton personnage",
+				Description = if slot == "title"
+					then "Affiché au-dessus de ton personnage"
+					else "Apparence uniquement · aucune puissance",
 				Selected = row.equipped,
 				ActionLabel = if canAct then (if row.equipped then "RETIRER" else wearLabel) else nil,
 				OnAction = function()
 					deps.StateController.send(
 						deps.Actions.SetStyle or "SetStyle",
-						{ slot = slot, id = if row.equipped then nil else row.id }
+						-- un accessoire vise son propre emplacement (cou, poignet…), aura et titre le leur
+						{ slot = row.slot or slot, id = if row.equipped then nil else row.id }
 					)
 				end,
 				LayoutOrder = i,
+			})
+		)
+	end
+	return { list(scope, items) }
+end
+
+-- Tous les succès : obtenus en tête, puis ce qu'il reste à faire et ce que ça débloque (§19)
+local function achievementsTab(scope: any, deps: any, snapshot: any): { Instance }
+	local items: { any } = {}
+	for i, row in StyleModel.achievementRows(snapshot, Wardrobe) do
+		table.insert(
+			items,
+			ListRow(scope, {
+				Portrait = if row.earned then "OK" else tostring(i),
+				PortraitColor = if row.earned then Theme.Colors.Principal else Theme.Colors.TextDim,
+				Name = deps.Format.upper(row.name),
+				Chips = {
+					Chip(scope, {
+						Text = if row.earned then "OBTENU" else "À FAIRE",
+						Color = if row.earned then Theme.Colors.Principal else Theme.Colors.TextDim,
+					}),
+					Chip(scope, { Text = row.reward, Color = Theme.Colors.Slots }),
+				},
+				Description = row.condition,
+				Selected = row.earned,
+				Dimmed = not row.earned,
+				LayoutOrder = if row.earned then i else 100 + i,
 			})
 		)
 	end
@@ -377,8 +422,10 @@ function Style.start(scope: any, deps: any)
 					if snapshot == nil then
 						return {}
 					end
-					if current == "aura" or current == "title" then
+					if current == "aura" or current == "title" or current == "gear" then
 						return wardrobeTab(tabScope, deps, snapshot, current)
+					elseif current == "achievements" then
+						return achievementsTab(tabScope, deps, snapshot)
 					end
 					return looksTab(tabScope, deps, snapshot)
 				end),

@@ -80,6 +80,10 @@ Détails : `docs/P1-COMBAT.md`.
 - [ ] **Yacine** : vérifier dans le Creator Hub les règles Roblox des objets aléatoires payants (chances affichées :
       fait dans la fenêtre ; pays restreints : `PolicyService`, fait) et le questionnaire de maturité
 - [ ] Studio : liste « À valider » du README (personnages, portraits, combat, BONUS, roue du lobby, téléphone)
-- [ ] Sons et musique : aucun son dans le jeu pour l'instant (IDs et droits à fournir, §36)
-- [ ] Réglages sauvegardés côté serveur (§22 « choix sauvegardés ») : encore locaux à la session
-- [ ] Sources des 4 cosmétiques sans source (montre, lunettes, aura Neon, trail d'étoiles)
+- [x] Sons : effets branchés sur des sons livrés avec Roblox (à vérifier dans Studio) ; réglages SONS et MUSIQUE
+- [ ] Musique : pistes à fournir avec leurs droits (`Controllers/Sound`, table `MUSIC`, §36)
+- [x] Réglages sauvegardés côté serveur (§22) : intention `SetSetting`, relus au premier snapshot
+- [x] Une source pour chaque cosmétique : 4 exploits (7 connexions, 10 tours de roue, maîtrise 5, 3 renaissances)
+- [x] Accessoires de la garde-robe visibles sur l'avatar (`Controllers/Wearables`) ; onglets ACCESSOIRES et SUCCÈS
+- [ ] **Yacine** : créer les 4 badges Roblox des nouveaux exploits et renseigner `Config/BadgesConfig` (facultatif)
+- [ ] Pose photo : cosmétique sans animation pour l'instant

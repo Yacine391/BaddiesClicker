@@ -38,6 +38,9 @@ local AURAS: { [string]: Preset } = {
 	dario = { kind = "sparks", from = "#C9B38A", to = "#D7A746", rate = 6 },
 	kenji = { kind = "rise", from = "#FF5FD2", to = "#B48CF0", rate = 11 },
 	amine = { kind = "drift", from = "#FFD86B", to = "#30D5C8", rate = 8, size = 0.36 },
+	-- auras de la garde-robe du joueur (§19 : troisième couche, Controllers/Wearables)
+	aura_spark = { kind = "sparks", from = "#FFFFFF", to = "#3EE6C8", rate = 12, size = 0.26 },
+	aura_neon = { kind = "rise", from = "#FF5FD2", to = "#3EE6C8", rate = 12, size = 0.18 },
 }
 
 local function fade(from: number, to: number): NumberSequence

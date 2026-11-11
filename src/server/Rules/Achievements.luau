@@ -63,6 +63,34 @@ Achievements.conditions = {
 	collection_v1 = function(data: any, ctx: any): boolean
 		return bookV1(data, ctx) and crewV1(data, ctx)
 	end,
+	-- Exploits permanents du 11/11 (récompenses et progression)
+	daily_week = function(data: any, ctx: any): boolean
+		local rewards = data.rewards
+		return type(rewards) == "table"
+			and type(rewards.daily) == "table"
+			and (rewards.daily.claims or 0) >= ctx.Balance.achievements.dailyClaims
+	end,
+	wheel_fan = function(data: any, ctx: any): boolean
+		local rewards = data.rewards
+		return type(rewards) == "table"
+			and type(rewards.wheel) == "table"
+			and (rewards.wheel.spins or 0) >= ctx.Balance.achievements.wheelSpins
+	end,
+	mastery_five = function(data: any, ctx: any): boolean
+		for id, xp in data.masteryXP do
+			if
+				data.discoveredBaddies[id] == true
+				and ctx.Formulas.masteryLevel(xp, ctx.Balance.mastery)
+					>= ctx.Balance.achievements.signatureMastery
+			then
+				return true
+			end
+		end
+		return false
+	end,
+	rebirth_three = function(data: any, ctx: any): boolean
+		return data.rebirths >= ctx.Balance.achievements.rebirths
+	end,
 } :: { [string]: (any, any) -> boolean }
 
 -- Accorde un succès et ses récompenses (une seule fois)

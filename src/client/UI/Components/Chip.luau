@@ -1,7 +1,7 @@
 --!strict
 --[[
-	Chip : petite étiquette de statut (Common, PRINCIPALE · SLOT 1, ÉQUIPÉ…), style mix A :
-	fond plein de la couleur, texte Ink ExtraBold 11, coins 5. Largeur automatique selon le texte.
+	Chip : petite étiquette de statut (Common, PRINCIPALE · SLOT 1, ÉQUIPÉ…), style simulateur :
+	fond plein de la couleur, texte Ink FredokaOne 12, coins 4. Largeur automatique selon le texte.
 ]]
 
 local Theme = require(script.Parent.Parent.Theme)
@@ -21,11 +21,11 @@ return function(scope: any, props: Props): Instance
 		LayoutOrder = props.LayoutOrder or 0,
 		BackgroundColor3 = props.Color,
 		Text = props.Text,
-		FontFace = Theme.Fonts.ExtraBold,
-		TextSize = 11,
+		FontFace = Theme.Fonts.Main,
+		TextSize = 12,
 		TextColor3 = props.TextColor or Theme.Colors.Ink,
 		[scope.Children] = {
-			scope:New("UICorner")({ CornerRadius = UDim.new(0, 5) }),
+			scope:New("UICorner")({ CornerRadius = UDim.new(0, 4) }),
 			scope:New("UIPadding")({ PaddingLeft = UDim.new(0, 7), PaddingRight = UDim.new(0, 7) }),
 		},
 	})

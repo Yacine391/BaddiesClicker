@@ -60,7 +60,7 @@ return function(scope: any, props: Props): Frame
 			scope:New("UICorner")({ CornerRadius = UDim.new(0, Theme.Radius.Panel) }),
 			scope:New("UIGradient")({
 				Rotation = 90,
-				Color = ColorSequence.new(Color3.fromHex("#2A2147"), Color3.fromHex("#151226")),
+				Color = ColorSequence.new(Theme.Colors.PanelInner, Theme.Colors.Panel),
 			}),
 			-- portrait 3D du personnage ; silhouette teintée si aucun sujet n'est fourni
 			if props.Subject ~= nil
@@ -151,8 +151,8 @@ return function(scope: any, props: Props): Frame
 		Size = scope:Computed(function(use)
 			return if use(compact) then UDim2.fromOffset(150, 46) else UDim2.fromOffset(150, 158)
 		end),
-		Line = props.Accent,
-		LineTransparency = 0.35,
+		Line = rarityColor,
+		LineTransparency = 0,
 		LayoutOrder = props.LayoutOrder,
 		Visible = props.Visible,
 		Children = { portrait, body },

@@ -1,53 +1,53 @@
 --!strict
 --[[
-	CounterPill : compteur du haut à droite (puissance, tickets) — panneau 46 px de haut,
-	largeur ajustée au texte, icône 32 + chiffre ExtraBold 25. « Pop » du chiffre quand `Pulse` change.
+	CounterPill : compteur empilé en bas à gauche (puissance, tickets, pièces) — style simulateur :
+	icône pleine 30 + chiffre FredokaOne 28 contouré. « Pop » du chiffre quand `Pulse` change (coupé en effets réduits).
 ]]
 
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
-local Panel = require(script.Parent.Panel)
+local Motion = require(UI.Motion)
 local Icon = require(script.Parent.Icon)
 
 export type Props = {
 	Icon: string,
 	Text: any, -- état de string
-	Glow: boolean,
+	Glow: boolean?, -- ignoré (style mix A)
 	Pulse: any?, -- état de number : chaque changement déclenche le pop
 	LayoutOrder: number?,
 	Name: string?,
 }
 
 return function(scope: any, props: Props): Frame
-	local target = scope:Value(1)
+	local scale = scope:New("UIScale")({ Scale = 1 })
 	if props.Pulse ~= nil then
 		table.insert(
 			scope,
 			scope:Observer(props.Pulse):onChange(function()
-				target:set(1.12)
-				task.delay(0.08, function()
-					target:set(1)
-				end)
+				if Motion.reduced() then
+					return
+				end
+				scale.Scale = 1.12
+				Motion.tween(scale, Motion.Release, { Scale = 1 })
 			end)
 		)
 	end
-	local pop = scope:Spring(target, 40, 0.5)
 
-	return Panel(scope, {
+	-- Style simulateur : pas de pastille, icône pleine + gros chiffre contouré (spec §4.1)
+	return scope:New("Frame")({
 		Name = props.Name or ("Counter_" .. props.Icon),
-		Size = UDim2.fromOffset(0, 46),
+		BackgroundTransparency = 1,
+		Size = UDim2.fromOffset(0, 34),
 		AutomaticSize = Enum.AutomaticSize.X,
-		Glow = if props.Glow then Theme.Colors.Accent else nil,
-		LayoutOrder = props.LayoutOrder,
-		Children = {
+		LayoutOrder = props.LayoutOrder or 0,
+		[scope.Children] = {
 			scope:New("UIListLayout")({
 				FillDirection = Enum.FillDirection.Horizontal,
 				VerticalAlignment = Enum.VerticalAlignment.Center,
-				Padding = UDim.new(0, 10),
+				Padding = UDim.new(0, 6),
 				SortOrder = Enum.SortOrder.LayoutOrder,
 			}),
-			scope:New("UIPadding")({ PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 16) }),
-			Icon(scope, { Name = props.Icon, Size = UDim2.fromOffset(32, 32) }),
+			Icon(scope, { Name = props.Icon, Size = UDim2.fromOffset(30, 30) }),
 			scope:New("TextLabel")({
 				Name = "Value",
 				LayoutOrder = 1,
@@ -55,11 +55,18 @@ return function(scope: any, props: Props): Frame
 				AutomaticSize = Enum.AutomaticSize.X,
 				Size = UDim2.fromOffset(0, 32),
 				Text = props.Text,
-				FontFace = Theme.Fonts.ExtraBold,
-				TextSize = 25,
+				FontFace = Theme.Fonts.Main,
+				TextSize = 28,
 				TextColor3 = Theme.Colors.Text,
-				[scope.Children] = { scope:New("UIScale")({ Scale = pop }) },
+				[scope.Children] = {
+					scale,
+					scope:New("UIStroke")({
+						Color = Theme.Colors.Ink,
+						Thickness = Theme.Stroke.Text,
+						ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual,
+					}),
+				},
 			}),
 		},
-	})
+	}) :: Frame
 end

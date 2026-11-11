@@ -155,6 +155,7 @@ end
 function Crew.start(scope: any, deps: any)
 	WindowHost.mount(scope, deps, deps.HudRoot, {
 		name = "Crew",
+		gradient = Theme.Gradients.Crew,
 		title = "CREW",
 		icon = "crew",
 		content = function(inner)

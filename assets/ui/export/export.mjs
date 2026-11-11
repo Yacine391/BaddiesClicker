@@ -1,4 +1,4 @@
-// Convertit assets/ui/*.svg et assets/ui/icons/*.svg en PNG dans assets/ui/png/.
+// Convertit assets/ui/*.svg et assets/ui/icons/*.svg en PNG dans assets/ui/png/ (ou un seul dossier passé en argument).
 // Icônes : 256 px ; logo : 1024 px de large ; halo : 128 px. Polices du logo : export/fonts (OFL).
 import { Resvg } from "@resvg/resvg-js";
 import { readFileSync, readdirSync, writeFileSync, mkdirSync } from "node:fs";
@@ -7,11 +7,15 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const ui = join(here, "..");
-const out = join(ui, "png");
+// `node export.mjs icons-sim` : seulement assets/ui/icons-sim/*.svg → assets/ui/icons-sim/png/
+const only = process.argv[2];
+const out = only ? join(ui, only, "png") : join(ui, "png");
 mkdirSync(out, { recursive: true });
 const fontFiles = readdirSync(join(here, "fonts")).filter((f) => f.endsWith(".ttf")).map((f) => join(here, "fonts", f));
 
-const jobs = [
+const jobs = only
+  ? readdirSync(join(ui, only)).filter((f) => f.endsWith(".svg")).map((f) => ({ src: join(ui, only, f), width: 256 }))
+  : [
   ...readdirSync(join(ui, "icons")).filter((f) => f.endsWith(".svg")).map((f) => ({ src: join(ui, "icons", f), width: 256 })),
   { src: join(ui, "logo.svg"), width: 1024 },
   { src: join(ui, "glow.svg"), width: 128 },

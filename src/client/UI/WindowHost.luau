@@ -19,6 +19,9 @@ export type Spec = {
 	activeTab: any?, -- état de string
 	onTab: ((id: string) -> ())?,
 	layout: ("list" | "free")?,
+	gradient: { top: Color3, bottom: Color3 }?, -- couleur du menu (Theme.Gradients) ; défaut Book
+	tabsPlacement: ("header" | "side")?,
+	size: UDim2?,
 	-- Construit le contenu ; peut renvoyer des états Fusion d'instances (rebuild réactif)
 	content: (inner: any) -> { any },
 }
@@ -46,6 +49,9 @@ function WindowHost.mount(scope: any, deps: any, parent: Instance, spec: Spec)
 			ActiveTab = spec.activeTab,
 			OnTab = spec.onTab,
 			Layout = spec.layout,
+			Gradient = spec.gradient,
+			TabsPlacement = spec.tabsPlacement,
+			Size = spec.size,
 			Content = spec.content(inner),
 			OnClose = function()
 				deps.UiState.openWindow:set(nil)

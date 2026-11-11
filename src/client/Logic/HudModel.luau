@@ -33,6 +33,7 @@ export type HudView = {
 	powerText: string,
 	productionText: string?,
 	ticketText: string,
+	crewTicketText: string,
 	principal: Principal?,
 	tutorial: { visible: boolean, text: string, ratio: number },
 	button: { label: string, colorKey: "Accent" | "Accent2" },
@@ -176,6 +177,13 @@ function HudModel.toastFor(event: { [string]: any }, catalog: any): string?
 	return nil
 end
 
+-- Entraînements faits depuis le dernier ticket baddie (barre au-dessus du bouton) ; `every` vient de Balance
+function HudModel.ticketProgress(snapshot: { [string]: any }?, every: number): { value: number, max: number }
+	local stats = if snapshot and type(snapshot.stats) == "table" then snapshot.stats else {}
+	local done = math.max(0, math.floor(tonumber(stats.trainActions) or 0))
+	return { value = if every > 0 then done % every else 0, max = every }
+end
+
 function HudModel.build(snapshot: { [string]: any }?, catalog: any, format: (number) -> string): HudView
 	local total = #catalog.baddieOrder
 	if snapshot == nil then
@@ -184,6 +192,7 @@ function HudModel.build(snapshot: { [string]: any }?, catalog: any, format: (num
 			powerText = "—",
 			productionText = nil,
 			ticketText = "—",
+			crewTicketText = "—",
 			principal = nil,
 			tutorial = { visible = false, text = "", ratio = 0 },
 			button = { label = "ENTRAÎNER", colorKey = "Accent" },
@@ -204,6 +213,7 @@ function HudModel.build(snapshot: { [string]: any }?, catalog: any, format: (num
 		powerText = format(tonumber(snapshot.power) or 0),
 		productionText = productionOf(snapshot, catalog, format),
 		ticketText = format(tonumber(tickets.baddie) or 0),
+		crewTicketText = format(tonumber(tickets.crew) or 0),
 		principal = principalOf(snapshot.active, catalog, format),
 		tutorial = {
 			visible = tutorial.crewUnlocked == false,

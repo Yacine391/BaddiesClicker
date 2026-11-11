@@ -16,6 +16,7 @@ local Metrics = require(Client.UI.Metrics)
 local WindowHost = require(Client.UI.WindowHost)
 local Panel = require(Client.UI.Components.Panel)
 local Chip = require(Client.UI.Components.Chip)
+local ActionButton = require(Client.UI.Components.ActionButton)
 local Toast = require(Client.UI.Components.Toast)
 local SlotsModel = require(Client.Logic.SlotsModel)
 local Decisions = require(script.Parent.Decisions)
@@ -63,28 +64,17 @@ local function row(
 	for index, b in buttons do
 		table.insert(
 			buttonViews,
-			scope:New("TextButton")({
+			ActionButton(scope, {
 				Name = "Button" .. index,
 				LayoutOrder = index,
-				AutoButtonColor = b.enabled,
-				Active = b.enabled,
-				BackgroundColor3 = b.color,
-				BackgroundTransparency = if b.enabled then 0 else 0.65,
+				Text = b.label,
+				Color = b.color,
+				Enabled = b.enabled,
+				TextSize = 15,
 				Size = scope:Computed(function(use)
 					return UDim2.fromOffset(118, use(height))
 				end),
-				Text = b.label,
-				FontFace = Theme.Fonts.Heavy,
-				TextSize = 15,
-				TextColor3 = Theme.Colors.Ink,
-				[scope.OnEvent("Activated")] = function()
-					if b.enabled then
-						b.onClick()
-					end
-				end,
-				[scope.Children] = {
-					scope:New("UICorner")({ CornerRadius = UDim.new(0, Theme.Radius.Button) }),
-				},
+				OnClick = b.onClick,
 			})
 		)
 	end
@@ -208,10 +198,7 @@ function Slots.start(scope: any, deps: any)
 			if r.rarityLabel then
 				table.insert(
 					chips,
-					Chip(
-						rowsScope,
-						{ Text = r.rarityLabel, Color = Color3.fromHex(r.rarityColor or "#FFFFFF") }
-					)
+					Chip(rowsScope, { Text = r.rarityLabel, Color = Color3.fromHex(r.rarityColor or "#FFFFFF") })
 				)
 			end
 			if r.active then
@@ -226,10 +213,7 @@ function Slots.start(scope: any, deps: any)
 						color = Theme.Colors.Principal,
 						enabled = not r.active and r.baddieId ~= nil and snapshot.mode ~= "combat",
 						onClick = function()
-							deps.StateController.send(
-								deps.Actions.SetActive or "SetActive",
-								{ slotId = r.id }
-							)
+							deps.StateController.send(deps.Actions.SetActive or "SetActive", { slotId = r.id })
 						end,
 					},
 					{
@@ -245,9 +229,7 @@ function Slots.start(scope: any, deps: any)
 					},
 					{
 						label = label(rollKey, "RELANCER", "CONFIRMER ?"),
-						color = if deps.peek(confirming) == rollKey
-							then Theme.Colors.Accent2
-							else Theme.Colors.Accent,
+						color = if deps.peek(confirming) == rollKey then Theme.Colors.Accent2 else Theme.Colors.Accent,
 						enabled = r.canRoll,
 						onClick = function()
 							confirmThen(rollKey, function()
@@ -291,10 +273,7 @@ function Slots.start(scope: any, deps: any)
 			if r.rarityLabel then
 				table.insert(
 					chips,
-					Chip(
-						rowsScope,
-						{ Text = r.rarityLabel, Color = Color3.fromHex(r.rarityColor or "#FFFFFF") }
-					)
+					Chip(rowsScope, { Text = r.rarityLabel, Color = Color3.fromHex(r.rarityColor or "#FFFFFF") })
 				)
 			end
 			if r.isNew then
@@ -306,9 +285,7 @@ function Slots.start(scope: any, deps: any)
 				row(rowsScope, index, r.name, chips, r.replaceText, {
 					{
 						label = label(refuseKey, "REFUSER 1", "SUPPRIMER ?"),
-						color = if deps.peek(confirming) == refuseKey
-							then Theme.Colors.Close
-							else Theme.Colors.TextDim,
+						color = if deps.peek(confirming) == refuseKey then Theme.Colors.Close else Theme.Colors.TextDim,
 						enabled = SlotsModel.blocked(snapshot, "RefuseDrop") == nil,
 						onClick = function()
 							confirmThen(refuseKey, function()
@@ -340,11 +317,7 @@ function Slots.start(scope: any, deps: any)
 		end
 		table.insert(
 			views,
-			message(
-				rowsScope,
-				100,
-				"Un drop n'expire jamais. Accepter remplace uniquement le slot temporaire."
-			)
+			message(rowsScope, 100, "Un drop n'expire jamais. Accepter remplace uniquement le slot temporaire.")
 		)
 		return views
 	end
@@ -367,9 +340,7 @@ function Slots.start(scope: any, deps: any)
 				{
 					{
 						label = label(key, "RENAÎTRE", "CONFIRMER ?"),
-						color = if deps.peek(confirming) == key
-							then Theme.Colors.Accent2
-							else Theme.Colors.Accent,
+						color = if deps.peek(confirming) == key then Theme.Colors.Accent2 else Theme.Colors.Accent,
 						enabled = view.available,
 						onClick = function()
 							confirmThen(key, function()
@@ -386,8 +357,9 @@ function Slots.start(scope: any, deps: any)
 
 	WindowHost.mount(scope, deps, deps.HudRoot, {
 		name = "Slots",
-		title = "SLOTS",
-		icon = "ticket",
+		gradient = Theme.Gradients.Slots,
+		title = "ÉQUIPE",
+		icon = "slots",
 		tabs = function(snapshot)
 			local drops = SlotsModel.dropCount(snapshot)
 			return {

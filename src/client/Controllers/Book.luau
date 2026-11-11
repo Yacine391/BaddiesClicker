@@ -1,7 +1,7 @@
 --!strict
 --[[
-	Book : Baddies Book (§15), style mix A (maquette windows-mixA.html).
-	Onglet BADDIES : grille 4 colonnes + fiche de 250 px + barre COLLECTION n / 8.
+	Book : Baddies Book (§15), style simulateur (spec 2026-11-11 §5.1) : onglets sur le côté,
+	grille de cartes 4 colonnes (silhouette + « ??? » tant que non découverte), fiche de 250 px, barre « N/M découvertes ».
 	Onglet CREW : compagnons possédés (lignes du Crew).
 	Distingue PRINCIPALE (seule source de multiplicateur) et EXPOSÉE (apparence uniquement).
 	EXPOSER / RETIRER seulement si le serveur envoie `collection` ; sinon lecture seule, sans faux bouton.
@@ -21,10 +21,8 @@ local Crew = require(script.Parent.Crew)
 local Book = {}
 
 local DETAIL_WIDTH = 250
-local CARD_HEIGHT = 150
+local CARD_HEIGHT = 180
 local COLUMNS = 4
-local CARD_TOP = Color3.fromHex("#262044")
-local CARD_BOTTOM = Color3.fromHex("#16132A")
 
 local function chipColor(key: string): Color3
 	return (Theme.Colors :: any)[key] or Theme.Colors.TextDim
@@ -60,17 +58,16 @@ local function card(scope: any, data: BookModel.Card, selected: any, order: numb
 		return use(selected) == data.id
 	end)
 	local children: { any } = {
-		scope:New("UICorner")({ CornerRadius = UDim.new(0, Theme.Radius.Panel) }),
-		scope:New("UIGradient")({ Rotation = 90, Color = ColorSequence.new(CARD_TOP, CARD_BOTTOM) }),
+		scope:New("UICorner")({ CornerRadius = UDim.new(0, 12) }),
 		scope:New("UIStroke")({
 			Color = scope:Computed(function(use)
-				return if use(isSelected) then Theme.Colors.Accent else Theme.Colors.PanelLine
-			end),
-			Transparency = scope:Computed(function(use)
-				return if use(isSelected) then 0 else Theme.Transparency.PanelLine
+				if use(isSelected) then
+					return Color3.new(1, 1, 1)
+				end
+				return if data.discovered then Color3.fromHex(data.rarityColor) else Theme.Colors.Ink
 			end),
 			Thickness = scope:Computed(function(use)
-				return if use(isSelected) and Theme.Glow == "" then 3 else 2
+				return if use(isSelected) then 4 else 3
 			end),
 			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 		}),
@@ -79,7 +76,7 @@ local function card(scope: any, data: BookModel.Card, selected: any, order: numb
 			Subject = { id = data.id, look = data.look },
 			Mode = "bust",
 			Locked = not data.discovered,
-			Size = UDim2.new(1, -8, 0, 92),
+			Size = UDim2.new(1, -8, 0, 112),
 			Position = UDim2.fromOffset(4, 6),
 		}),
 		scope:New("Frame")({
@@ -96,19 +93,20 @@ local function card(scope: any, data: BookModel.Card, selected: any, order: numb
 					AutomaticSize = Enum.AutomaticSize.X,
 					Size = UDim2.fromOffset(0, 15),
 					Text = string.upper(data.rarityLabel),
-					FontFace = Theme.Fonts.ExtraBold,
-					TextSize = 10,
+					FontFace = Theme.Fonts.Main,
+					TextSize = 11,
 					TextColor3 = Theme.Colors.Ink,
 				}),
 			},
 		}),
 		Text.label(scope, {
 			Name = "Name",
-			Text = data.name,
-			Weight = "ExtraBold",
+			Text = BookModel.cardLabel(data),
+			Weight = "Heavy",
+			Stroke = true,
 			Color = if data.discovered then Theme.Colors.Text else Theme.Colors.TextDim,
-			Size = UDim2.new(1, -12, 0, 18),
-			Position = UDim2.new(0.5, 0, 1, -26),
+			Size = UDim2.new(1, -12, 0, if data.discovered then 22 else 28),
+			Position = UDim2.new(0.5, 0, 1, -28),
 			AnchorPoint = Vector2.new(0.5, 1),
 		}),
 	}
@@ -123,8 +121,8 @@ local function card(scope: any, data: BookModel.Card, selected: any, order: numb
 				BackgroundColor3 = chipColor(data.chip.colorKey),
 				BackgroundTransparency = if data.chip.colorKey == "TextDim" then 0.85 else 0,
 				Text = data.chip.text,
-				FontFace = Theme.Fonts.ExtraBold,
-				TextSize = 10,
+				FontFace = Theme.Fonts.Main,
+				TextSize = 11,
 				TextColor3 = if data.chip.colorKey == "TextDim"
 					then Theme.Colors.TextDim
 					else Theme.Colors.Ink,
@@ -137,7 +135,7 @@ local function card(scope: any, data: BookModel.Card, selected: any, order: numb
 		Text = "",
 		AutoButtonColor = false,
 		LayoutOrder = order,
-		BackgroundColor3 = Color3.new(1, 1, 1),
+		BackgroundColor3 = Theme.Colors.PanelInner,
 		[scope.OnEvent("Activated")] = function()
 			selected:set(data.id)
 		end,
@@ -247,7 +245,10 @@ local function detailPanel(scope: any, deps: any, snapshot: any, id: string): { 
 			ClipsDescendants = true,
 			[scope.Children] = {
 				scope:New("UICorner")({ CornerRadius = UDim.new(0, Theme.Radius.Panel) }),
-				scope:New("UIGradient")({ Rotation = 90, Color = ColorSequence.new(CARD_TOP, CARD_BOTTOM) }),
+				scope:New("UIGradient")({
+					Rotation = 90,
+					Color = ColorSequence.new(Theme.Colors.PanelInner, Theme.Colors.Panel),
+				}),
 				scope:New("UIStroke")({
 					Color = Theme.Colors.PanelLine,
 					Transparency = Theme.Transparency.PanelLine,
@@ -379,8 +380,8 @@ local function baddiesTab(inner: any, deps: any, selected: any): Instance
 				Size = UDim2.new(1, -DETAIL_WIDTH, 1, -40),
 				CanvasSize = UDim2.new(),
 				AutomaticCanvasSize = Enum.AutomaticSize.Y,
-				ScrollBarThickness = 6,
-				ScrollBarImageColor3 = Theme.Colors.PanelLine,
+				ScrollBarThickness = 8,
+				ScrollBarImageColor3 = Theme.Colors.PanelInner,
 				[inner.Children] = {
 					inner:New("UIPadding")({
 						PaddingTop = UDim.new(0, 14),
@@ -389,8 +390,8 @@ local function baddiesTab(inner: any, deps: any, selected: any): Instance
 						PaddingBottom = UDim.new(0, 8),
 					}),
 					inner:New("UIGridLayout")({
-						CellPadding = UDim2.fromOffset(10, 10),
-						CellSize = UDim2.new(1 / COLUMNS, -8, 0, CARD_HEIGHT),
+						CellPadding = UDim2.fromOffset(12, 12),
+						CellSize = UDim2.new(1 / COLUMNS, -12, 0, CARD_HEIGHT),
 						SortOrder = Enum.SortOrder.LayoutOrder,
 					}),
 					grid,
@@ -399,34 +400,37 @@ local function baddiesTab(inner: any, deps: any, selected: any): Instance
 			inner:New("Frame")({
 				Name = "Footer",
 				BackgroundTransparency = 1,
-				Position = UDim2.new(0, 16, 1, -34),
-				Size = UDim2.new(1, -DETAIL_WIDTH - 32, 0, 24),
+				Position = UDim2.new(0, 16, 1, -36),
+				Size = UDim2.new(1, -DETAIL_WIDTH - 32, 0, 26),
 				[inner.Children] = {
-					Text.label(inner, {
-						Text = inner:Computed(function(use)
-							local c = use(collection)
-							return if c
-								then `COLLECTION <font color="#FFFFFF">{c.baddies} / {c.baddiesTotal}</font>`
-								else ""
-						end),
-						Weight = "ExtraBold",
-						Color = Theme.Colors.TextDim,
-						Size = UDim2.new(0, 150, 1, -6),
-						RichText = true,
-						Position = UDim2.fromOffset(0, 3),
-						XAlignment = Enum.TextXAlignment.Left,
-					}),
 					inner:New("Frame")({
 						Name = "Bar",
-						AnchorPoint = Vector2.new(0, 0.5),
-						Position = UDim2.new(0, 160, 0.5, 0),
-						Size = UDim2.new(1, -160, 0, 8),
-						BackgroundColor3 = Color3.new(1, 1, 1),
-						BackgroundTransparency = 0.9,
+						Size = UDim2.fromScale(1, 1),
+						BackgroundColor3 = Theme.Colors.PanelInner,
 						[inner.Children] = {
-							inner:New("UICorner")({ CornerRadius = UDim.new(0, 4) }),
+							inner:New("UICorner")({ CornerRadius = UDim.new(1, 0) }),
+							inner:New("UIStroke")({
+								Color = Theme.Colors.Ink,
+								Thickness = Theme.Stroke.Frame,
+								ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+							}),
+							Text.label(inner, {
+								Name = "Label",
+								Text = inner:Computed(function(use)
+									local c = use(collection)
+									return if c then `{c.baddies}/{c.baddiesTotal} découvertes` else ""
+								end),
+								Weight = "Heavy",
+								Stroke = true,
+								StrokeThickness = Theme.Stroke.List,
+								Size = UDim2.new(1, -16, 1, -6),
+								Position = UDim2.fromScale(0.5, 0.5),
+								AnchorPoint = Vector2.new(0.5, 0.5),
+								ZIndex = 3,
+							}),
 							inner:New("Frame")({
-								BackgroundColor3 = Theme.Colors.Accent,
+								Name = "Fill",
+								BackgroundColor3 = Color3.new(1, 1, 1),
 								BorderSizePixel = 0,
 								Size = inner:Computed(function(use)
 									local c = use(collection)
@@ -436,7 +440,14 @@ local function baddiesTab(inner: any, deps: any, selected: any): Instance
 									return UDim2.fromScale(ratio, 1)
 								end),
 								[inner.Children] = {
-									inner:New("UICorner")({ CornerRadius = UDim.new(0, 4) }),
+									inner:New("UICorner")({ CornerRadius = UDim.new(1, 0) }),
+									inner:New("UIGradient")({
+										Rotation = 90,
+										Color = ColorSequence.new(
+											Theme.Gradients.Book.top,
+											Theme.Gradients.Book.bottom
+										),
+									}),
 								},
 							}),
 						},
@@ -447,8 +458,7 @@ local function baddiesTab(inner: any, deps: any, selected: any): Instance
 				Name = "DetailLine",
 				Position = UDim2.new(1, -DETAIL_WIDTH, 0, 0),
 				Size = UDim2.new(0, 2, 1, 0),
-				BackgroundColor3 = Theme.Colors.PanelLine,
-				BackgroundTransparency = 0.82,
+				BackgroundColor3 = Theme.Colors.Ink,
 				BorderSizePixel = 0,
 				ZIndex = 2,
 			}),
@@ -457,8 +467,8 @@ local function baddiesTab(inner: any, deps: any, selected: any): Instance
 				AnchorPoint = Vector2.new(1, 0),
 				Position = UDim2.fromScale(1, 0),
 				Size = UDim2.new(0, DETAIL_WIDTH, 1, 0),
-				BackgroundColor3 = Theme.Colors.Accent,
-				BackgroundTransparency = 0.96,
+				BackgroundColor3 = Theme.Colors.PanelInner,
+				BackgroundTransparency = 0.4,
 				BorderSizePixel = 0,
 				CanvasSize = UDim2.new(),
 				AutomaticCanvasSize = Enum.AutomaticSize.Y,
@@ -518,9 +528,12 @@ function Book.start(scope: any, deps: any)
 
 	WindowHost.mount(scope, deps, deps.HudRoot, {
 		name = "Book",
+		gradient = Theme.Gradients.Book,
 		title = "BOOK",
 		icon = "book",
 		layout = "free",
+		tabsPlacement = "side",
+		size = UDim2.fromOffset(860, 520),
 		tabs = function(snapshot)
 			local c = if snapshot
 				then BookModel.counts(snapshot, deps.Catalog)
@@ -532,7 +545,7 @@ function Book.start(scope: any, deps: any)
 				}
 			return {
 				{ id = "baddies", label = "BADDIES", count = `{c.baddies}/{c.baddiesTotal}` },
-				{ id = "crew", label = "CREW", count = `{c.crew}/{c.crewTotal}` },
+				{ id = "crew", label = "COMPAGNONS", count = `{c.crew}/{c.crewTotal}` },
 			}
 		end,
 		activeTab = tab,

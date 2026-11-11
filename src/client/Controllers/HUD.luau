@@ -14,8 +14,11 @@ local Client = script.Parent.Parent
 local HudModel = require(Client.Logic.HudModel)
 local RewardsModel = require(Client.Logic.RewardsModel)
 local LayoutMode = require(Client.Logic.LayoutMode)
+local HudLayout = require(Client.Logic.HudLayout)
+local BadgeModel = require(Client.Logic.BadgeModel)
 local WindowModel = require(Client.Logic.WindowModel)
 local Theme = require(Client.UI.Theme)
+local Motion = require(Client.UI.Motion)
 local Text = require(Client.UI.Text)
 local Metrics = require(Client.UI.Metrics)
 local Components = Client.UI.Components
@@ -24,6 +27,8 @@ local MenuItem = require(Components.MenuItem)
 local CharacterCard = require(Components.CharacterCard)
 local ProgressCard = require(Components.ProgressCard)
 local PrimaryButton = require(Components.PrimaryButton)
+local Tile = require(Components.Tile)
+local Icon = require(Components.Icon)
 local FloatingNumber = require(Components.FloatingNumber)
 local Toast = require(Components.Toast)
 
@@ -48,45 +53,6 @@ local function viewportScale(scope: any, size: any)
 	return scale, canvas
 end
 
--- Logo uploadé (assets/ui/png/logo.png) ; repli : « BADDIE » blanc + « CLICKER » cyan, incliné
-local function logo(scope: any)
-	if Theme.Logo ~= "" then
-		return scope:New("ImageLabel")({
-			Name = "Logo",
-			BackgroundTransparency = 1,
-			Position = UDim2.fromOffset(12, 4),
-			Size = UDim2.fromOffset(300, 120),
-			Image = Theme.Logo,
-			ScaleType = Enum.ScaleType.Fit,
-		})
-	end
-	return scope:New("Frame")({
-		Name = "Logo",
-		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(16, 14),
-		Size = UDim2.fromOffset(240, 96),
-		Rotation = -6,
-		[scope.Children] = {
-			Text.label(scope, {
-				Text = "BADDIE",
-				Weight = "Heavy",
-				Stroke = true,
-				Size = UDim2.new(1, 0, 0, 54),
-				XAlignment = Enum.TextXAlignment.Left,
-			}),
-			Text.label(scope, {
-				Text = "CLICKER",
-				Weight = "Heavy",
-				Stroke = true,
-				Color = Theme.Colors.Accent,
-				Size = UDim2.new(0.8, 0, 0, 38),
-				Position = UDim2.fromOffset(40, 52),
-				XAlignment = Enum.TextXAlignment.Left,
-			}),
-		},
-	})
-end
-
 function HUD.start(scope: any, deps: any)
 	local Store, UiState, Input = deps.Store, deps.UiState, deps.Input
 	local view = scope:Computed(function(use)
@@ -107,6 +73,8 @@ function HUD.start(scope: any, deps: any)
 	local lastOpened = scope:Value(nil)
 	-- Badge NEW du Book : une découverte arrivée depuis la dernière ouverture du Book
 	local bookBadge = scope:Value("")
+	-- Badge NEW du Crew : un compagnon arrivé depuis la dernière ouverture du Crew
+	local crewBadge = scope:Value("")
 	-- Badge du menu SLOTS : nombre de drops en attente (une décision attend le joueur)
 	local slotsBadge = scope:Computed(function(use)
 		local snapshot = use(deps.Store.snapshot)
@@ -127,6 +95,8 @@ function HUD.start(scope: any, deps: any)
 		end
 		if name == "Book" then
 			bookBadge:set("")
+		elseif name == "Crew" then
+			crewBadge:set("")
 		end
 	end)
 	-- Un combat qui commence ferme la fenêtre ouverte (elle cacherait l'arène)
@@ -145,13 +115,13 @@ function HUD.start(scope: any, deps: any)
 		name: string,
 		icon: string,
 		label: string,
-		color: Color3,
+		gradient: { top: Color3, bottom: Color3 },
 		badge: any?
 	)
 		return MenuItem(scope, {
 			Icon = icon,
 			Label = label,
-			Color = color,
+			Gradient = gradient,
 			Mode = mode,
 			Active = scope:Computed(function(use)
 				return (use(UiState.openWindow) or use(lastOpened)) == name
@@ -208,7 +178,58 @@ function HUD.start(scope: any, deps: any)
 		table.insert(cards, card(i))
 	end
 
-	local menuHeight = Metrics.touch(scope, 54)
+	-- Tuiles du menu : 64 (compact 56), jamais sous 48 px réels (même calcul que MenuItem)
+	local touch = Metrics.touch(scope, Theme.MinTouch)
+	local tileSide = scope:Computed(function(use)
+		return math.max(if use(compact) then 56 else 64, use(touch) :: number)
+	end)
+	-- Barre « prochain ticket » au-dessus du bouton (stats.trainActions, Balance.tickets)
+	local ticketProgress = scope:Computed(function(use)
+		return HudModel.ticketProgress(use(Store.snapshot), deps.Balance.tickets.baddieEveryTrainActions)
+	end)
+	local ticketRatio = scope:Tween(
+		scope:Computed(function(use)
+			local p = use(ticketProgress)
+			return if p.max > 0 then p.value / p.max else 0
+		end),
+		Motion.Fill
+	)
+	-- Tuile cadeau : secondes écoulées depuis le dernier snapshot (un seul compteur, 1 s)
+	-- remis à zéro seulement quand le serveur envoie de nouvelles secondes de jeu (tick de 5 s),
+	-- pas à chaque snapshot d'entraînement : sinon le minuteur se fige pendant les clics
+	local since = scope:Value(0)
+	local lastPlaytime: number? = nil
+	scope:Observer(Store.snapshot):onChange(function()
+		local seconds = RewardsModel.playtimeSeconds(deps.peek(Store.snapshot))
+		if seconds ~= lastPlaytime then
+			lastPlaytime = seconds
+			since:set(0)
+		end
+	end)
+	local alive = true
+	table.insert(scope, function()
+		alive = false
+	end)
+	task.spawn(function()
+		while alive do
+			task.wait(1)
+			if alive then
+				since:set(deps.peek(since) + 1)
+			end
+		end
+	end)
+	-- Positions calculées depuis les tailles réelles (téléphone : tuiles et bouton plus grands)
+	local buttonHeight = Metrics.touch(scope, 56)
+	local giftSide = scope:Computed(function(use)
+		return math.max(56, use(touch) :: number)
+	end)
+	local layout = scope:Computed(function(use)
+		local size: UDim2 = use(canvas)
+		return HudLayout.compute(size.Y.Offset, use(tileSide), use(buttonHeight), use(giftSide))
+	end)
+	local giftText = scope:Computed(function(use)
+		return RewardsModel.giftText(use(Store.snapshot), deps.Balance, use(since))
+	end)
 	local root
 	local gui = scope:New("ScreenGui")({
 		Name = "HUD",
@@ -224,24 +245,22 @@ function HUD.start(scope: any, deps: any)
 				Size = canvas,
 				[scope.Children] = {
 					scope:New("UIScale")({ Scale = scale }),
-					logo(scope),
+					-- Compteurs empilés en bas à gauche (spec §4.1)
 					scope:New("Frame")({
 						Name = "Counters",
 						BackgroundTransparency = 1,
-						AnchorPoint = Vector2.new(1, 0),
-						Position = UDim2.new(1, -16, 0, 14),
-						Size = UDim2.fromOffset(640, 46),
+						AnchorPoint = Vector2.new(0, 1),
+						Position = UDim2.new(0, 16, 1, -14),
+						Size = UDim2.fromOffset(260, 150),
 						[scope.Children] = {
 							scope:New("UIListLayout")({
-								FillDirection = Enum.FillDirection.Horizontal,
-								HorizontalAlignment = Enum.HorizontalAlignment.Right,
-								Padding = UDim.new(0, 10),
+								VerticalAlignment = Enum.VerticalAlignment.Bottom,
+								Padding = UDim.new(0, 2),
 								SortOrder = Enum.SortOrder.LayoutOrder,
 							}),
 							CounterPill(scope, {
 								Name = "Power",
-								Icon = "arm",
-								Glow = true,
+								Icon = "power",
 								Pulse = UiState.trainPulse,
 								LayoutOrder = 1,
 								Text = scope:Computed(function(use)
@@ -249,68 +268,174 @@ function HUD.start(scope: any, deps: any)
 								end),
 							}),
 							CounterPill(scope, {
+								Name = "Tickets",
+								Icon = "ticket",
+								LayoutOrder = 2,
+								Text = scope:Computed(function(use)
+									return use(view).ticketText
+								end),
+							}),
+							CounterPill(scope, {
+								Name = "CrewTickets",
+								Icon = "companionTicket",
+								LayoutOrder = 3,
+								Text = scope:Computed(function(use)
+									return use(view).crewTicketText
+								end),
+							}),
+							CounterPill(scope, {
 								Name = "Coins",
 								Icon = "coin",
-								Glow = false,
-								LayoutOrder = 2,
+								LayoutOrder = 4,
 								Text = scope:Computed(function(use)
 									return RewardsModel.coinsText(use(Store.snapshot), deps.Format.number)
 								end),
 							}),
-							CounterPill(scope, {
-								Name = "Tickets",
-								Icon = "ticket",
-								Glow = false,
-								LayoutOrder = 3,
-								Text = scope:Computed(function(use)
-									return use(view).ticketText
+						},
+					}),
+					-- Tuile cadeau (haut droite) : minuteur du prochain palier de temps de jeu, ouvre BONUS
+					scope:New("TextButton")({
+						Name = "Gift",
+						Text = "",
+						AutoButtonColor = false,
+						BackgroundTransparency = 1,
+						AnchorPoint = Vector2.new(1, 0),
+						Position = UDim2.new(1, -16, 0, 14),
+						Size = scope:Computed(function(use)
+							local side = use(giftSide)
+							return UDim2.fromOffset(side, side)
+						end),
+						[scope.OnEvent("Activated")] = function()
+							UiState.openWindow:set("Bonus")
+						end,
+						[scope.Children] = {
+							Tile(scope, {
+								Gradient = Theme.Gradients.Bonus,
+								Size = UDim2.fromScale(1, 1),
+								Children = {
+									Icon(scope, {
+										Name = "gift",
+										Size = UDim2.fromScale(0.66, 0.66),
+										Position = UDim2.fromScale(0.5, 0.4),
+										AnchorPoint = Vector2.new(0.5, 0.5),
+										ZIndex = 3,
+									}),
+								},
+							}),
+							Text.label(scope, {
+								Name = "Timer",
+								Text = giftText,
+								Visible = scope:Computed(function(use)
+									return use(giftText) ~= ""
 								end),
+								Weight = "Heavy",
+								Stroke = true,
+								Size = UDim2.new(1.2, 0, 0, 18),
+								Position = UDim2.new(0.5, 0, 1, 6),
+								AnchorPoint = Vector2.new(0.5, 1),
+								ZIndex = 4,
 							}),
 						},
 					}),
 					scope:New("Frame")({
 						Name = "Menu",
 						BackgroundTransparency = 1,
-						Position = UDim2.fromOffset(16, 138),
-						Size = UDim2.fromOffset(240, 440),
+						Position = scope:Computed(function(use)
+							return UDim2.fromOffset(16, use(layout).menuTop)
+						end),
+						Size = scope:Computed(function(use)
+							local side = use(tileSide) :: number
+							local gap = HudLayout.GRID_GAP
+							return UDim2.fromOffset(side * 2 + gap, side * 3 + 2 * gap)
+						end),
 						[scope.Children] = {
-							-- full : une colonne de lignes 236 × h ; compact : grille 2 × 2 de tuiles h × h
+							-- grille 2 × 3 de petites tuiles carrées (taille des simulateurs de référence)
 							scope:New("UIGridLayout")({
 								SortOrder = Enum.SortOrder.LayoutOrder,
-								CellPadding = UDim2.fromOffset(10, 10),
-								FillDirectionMaxCells = scope:Computed(function(use)
-									return if use(compact) then 2 else 1
-								end),
+								CellPadding = UDim2.fromOffset(HudLayout.GRID_GAP, HudLayout.GRID_GAP),
+								FillDirectionMaxCells = 2,
 								CellSize = scope:Computed(function(use)
-									local h = use(menuHeight)
-									return if use(compact)
-										then UDim2.fromOffset(h, h)
-										else UDim2.fromOffset(236, h)
+									local side = use(tileSide)
+									return UDim2.fromOffset(side, side)
 								end),
 							}),
-							menuItem(1, "Bonus", "crown", "BONUS", Theme.Colors.Accent2, bonusBadge),
-							menuItem(2, "Book", "book", "BOOK", Theme.Colors.Book, bookBadge),
-							menuItem(3, "Slots", "ticket", "SLOTS", Theme.Colors.Slots, slotsBadge),
-							menuItem(4, "Crew", "crew", "CREW", Theme.Colors.Crew),
-							menuItem(5, "Style", "style", "STYLE", Theme.Colors.Style),
-							menuItem(6, "Settings", "settings", "RÉGLAGES", Theme.Colors.Settings),
+							menuItem(1, "Book", "book", "BOOK", Theme.Gradients.Book, bookBadge),
+							menuItem(2, "Style", "style", "STYLE", Theme.Gradients.Style),
+							menuItem(3, "Crew", "crew", "CREW", Theme.Gradients.Crew, crewBadge),
+							menuItem(4, "Slots", "slots", "ÉQUIPE", Theme.Gradients.Slots, slotsBadge),
+							menuItem(5, "Bonus", "bonus", "BONUS", Theme.Gradients.Bonus, bonusBadge),
+							menuItem(6, "Settings", "settings", "RÉGLAGES", Theme.Gradients.Settings),
 						},
 					}),
 					scope:New("Frame")({
 						Name = "Cards",
 						BackgroundTransparency = 1,
 						AnchorPoint = Vector2.new(1, 0),
-						Position = UDim2.new(1, -16, 0, 74),
-						Size = UDim2.fromOffset(150, 520),
+						Position = scope:Computed(function(use)
+							return UDim2.new(1, -16, 0, use(layout).cardsTop)
+						end),
+						Size = UDim2.fromOffset(150, 470),
 						[scope.Children] = cards,
 					}),
 					ProgressCard(scope, {
 						Model = scope:Computed(function(use)
 							return use(view).progress
 						end),
-						AnchorPoint = Vector2.new(0, 1),
-						Position = UDim2.new(0, 16, 1, -16),
+						Compact = compact,
+						AnchorPoint = Vector2.new(0.5, 0),
+						Position = UDim2.new(0.5, 0, 0, 112),
 					}),
+					-- Barre « prochain ticket » au-dessus du bouton ENTRAÎNER
+					scope:New("Frame")({
+						Name = "TicketBar",
+						AnchorPoint = Vector2.new(0.5, 1),
+						Position = scope:Computed(function(use)
+							return UDim2.new(0.5, 0, 1, use(layout).ticketBarOffset)
+						end),
+						Size = UDim2.fromOffset(200, 18),
+						BackgroundColor3 = Theme.Colors.Panel,
+						[scope.Children] = {
+							scope:New("UICorner")({ CornerRadius = UDim.new(1, 0) }),
+							scope:New("UIStroke")({
+								Color = Theme.Colors.Ink,
+								Thickness = Theme.Stroke.Frame,
+								ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+							}),
+							scope:New("Frame")({
+								Name = "Fill",
+								BackgroundColor3 = Color3.new(1, 1, 1),
+								BorderSizePixel = 0,
+								Size = scope:Computed(function(use)
+									return UDim2.fromScale(math.clamp(use(ticketRatio), 0, 1), 1)
+								end),
+								[scope.Children] = {
+									scope:New("UICorner")({ CornerRadius = UDim.new(1, 0) }),
+									scope:New("UIGradient")({
+										Rotation = 90,
+										Color = ColorSequence.new(
+											Theme.Gradients.Style.top,
+											Theme.Gradients.Style.bottom
+										),
+									}),
+								},
+							}),
+							Text.label(scope, {
+								Name = "Label",
+								Text = scope:Computed(function(use)
+									local p = use(ticketProgress)
+									return `Prochain ticket {p.value}/{p.max}`
+								end),
+								Weight = "Heavy",
+								Stroke = true,
+								StrokeThickness = Theme.Stroke.List,
+								Size = UDim2.new(1, -12, 1, -4),
+								Position = UDim2.fromScale(0.5, 0.5),
+								AnchorPoint = Vector2.new(0.5, 0.5),
+								ZIndex = 2,
+							}),
+						},
+					}),
+
 					PrimaryButton(scope, {
 						Label = scope:Computed(function(use)
 							return use(view).button.label
@@ -355,6 +480,9 @@ function HUD.start(scope: any, deps: any)
 
 	-- « +gain puissance » qui monte au-dessus du bouton à chaque entraînement envoyé
 	scope:Observer(UiState.trainPulse):onChange(function()
+		if Motion.reduced() then
+			return
+		end
 		local s = deps.peek(Store.snapshot)
 		local gain = if s then s.gainPerTrain or 1 else 1
 		FloatingNumber.spawn(
@@ -369,6 +497,12 @@ function HUD.start(scope: any, deps: any)
 	deps.StateController.onResult(function(event)
 		if event.kind == "discovery" and deps.peek(UiState.openWindow) ~= "Book" then
 			bookBadge:set("NEW")
+		elseif
+			event.kind == "crewJoined"
+			and BadgeModel.crewJoinedIsNew(event)
+			and deps.peek(UiState.openWindow) ~= "Crew"
+		then
+			crewBadge:set("NEW")
 		end
 		local text = HudModel.toastFor(event, deps.Catalog)
 		if text then

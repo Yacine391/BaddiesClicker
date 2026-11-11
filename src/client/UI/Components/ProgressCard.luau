@@ -13,6 +13,7 @@ local Icon = require(script.Parent.Icon)
 
 export type Props = {
 	Model: any, -- état de HudModel.Progress
+	Compact: any?, -- état de boolean : masquée sous l'échelle 0,6 (spec §4.2)
 	Position: any?,
 	AnchorPoint: Vector2?,
 }
@@ -74,7 +75,7 @@ return function(scope: any, props: Props): Frame
 		Position = props.Position,
 		AnchorPoint = props.AnchorPoint,
 		Visible = scope:Computed(function(use)
-			return use(props.Model).visible == true
+			return use(props.Model).visible == true and not (props.Compact ~= nil and use(props.Compact))
 		end),
 		Children = {
 			iconFor("door", "run"),

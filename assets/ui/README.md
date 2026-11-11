@@ -36,3 +36,26 @@ Icônes de trait (blanches) : teintées en jeu par `ImageColor3`. `arm` et `tick
 | `png/crown.png` | réservé (classement, titres) | `rbxassetid://76335979670718` |
 | `png/logo.png` | logo du HUD | `rbxassetid://104433435199565` |
 | `png/glow.png` | halo des panneaux | `rbxassetid://105925253038271` |
+
+## Icônes simulateur (refonte du 11/11)
+
+Vectorielles ombrées (dégradé par forme, reflet, ombre interne, contour sombre), générées par
+`export/icons_sim.py` dans `icons-sim/*.svg`, PNG par `node export.mjs icons-sim` (`icons-sim/png/`).
+En couleur : jamais teintées en jeu. Uploadées au nom de l'utilisateur. Pas de Blender pour les icônes (choix de l'utilisateur).
+
+| Fichier | ID |
+|---|---|
+| `icons-sim/png/book.png` | `rbxassetid://115287645348474` |
+| `icons-sim/png/style.png` | `rbxassetid://97789432741218` |
+| `icons-sim/png/crew.png` | `rbxassetid://123418976146795` |
+| `icons-sim/png/slots.png` | `rbxassetid://98396816807789` |
+| `icons-sim/png/bonus.png` | `rbxassetid://97930375524846` |
+| `icons-sim/png/settings.png` | `rbxassetid://124354903973041` |
+| `icons-sim/png/gift.png` | `rbxassetid://117002826576254` |
+| `icons-sim/png/power.png` | `rbxassetid://85705886922860` |
+| `icons-sim/png/ticket.png` | `rbxassetid://89116907720761` |
+| `icons-sim/png/companionTicket.png` | `rbxassetid://93541429184199` |
+| `icons-sim/png/coin.png` | `rbxassetid://75842863094002` |
+| `icons-sim/png/crown.png` | `rbxassetid://136212647644515` |
+| `icons-sim/png/lock.png` | `rbxassetid://81383788793970` |
+| `icons-sim/png/door.png` | `rbxassetid://70666264534865` |

@@ -1,21 +1,25 @@
 --!strict
 --[[
-	Window : fenêtre du style mix A (Book, Style, Crew, Réglages ; maquette windows-mixA.html).
-	820 × 500, contour Accent + halo, en-tête 62 (icône, titre, onglets en pastilles), croix carrée.
-	Le fond plein écran assombrit le jeu et capte les clics (rien ne traverse vers le jeu, §21) ;
-	Échap ferme.
+	Window : fenêtre du style simulateur (spec docs/superpowers/specs/2026-11-11-ui-lobby-simulateur-design.md §3.3, §5).
+	Fond Panel, coins 14, contour Ink 4 px ; bandeau titre de 64 au dégradé du menu (icône + titre contouré),
+	croix carrée rouge de 52 collée au bandeau. Onglets dans le bandeau ("header") ou en colonne à droite ("side").
+	Le fond plein écran assombrit le jeu et capte les clics (rien ne traverse vers le jeu, §21) ; Échap ferme.
+	Ouverture : Motion.open (0,9 → 1) ; la fermeture est immédiate pour rester interruptible.
 	Layout "list" (défaut) : contenu en liste défilante. "free" : le contenu reçoit tout le corps.
 ]]
 
 local UserInputService = game:GetService("UserInputService")
+local TextService = game:GetService("TextService")
 
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
-local Halo = require(script.Parent.Halo)
 local Metrics = require(UI.Metrics)
+local Motion = require(UI.Motion)
 local Icon = require(script.Parent.Icon)
+local Tile = require(script.Parent.Tile)
 
 export type Tab = { id: string, label: string, count: string? }
+export type Gradient = { top: Color3, bottom: Color3 }
 
 export type Props = {
 	Title: string,
@@ -27,44 +31,38 @@ export type Props = {
 	Layout: ("list" | "free")?,
 	OnClose: () -> (),
 	Size: UDim2?,
+	Gradient: Gradient?, -- défaut Theme.Gradients.Book
+	TabsPlacement: ("header" | "side")?,
 }
 
-local HEADER = 62
+local HEADER = 64
+local INACTIVE: Gradient = { top = Theme.Colors.PanelInner, bottom = Theme.Colors.PanelInner }
 
-local function hex(c: Color3): string
-	return "#" .. c:ToHex()
+local function stroke(scope: any, thickness: number)
+	return scope:New("UIStroke")({
+		Color = Theme.Colors.Ink,
+		Thickness = thickness,
+		ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual,
+	})
 end
 
-local function tabButton(scope: any, props: Props, tab: Tab, order: number): Instance
+local function tabButton(scope: any, props: Props, gradient: Gradient, tab: Tab, order: number, side: boolean)
 	local active = scope:Computed(function(use)
 		return props.ActiveTab ~= nil and use(props.ActiveTab) == tab.id
 	end)
 	local hit = Metrics.touch(scope, Theme.MinTouch)
-	local label = scope:New("TextLabel")({
-		Name = "Label",
-		BackgroundTransparency = 1,
-		AutomaticSize = Enum.AutomaticSize.X,
-		Size = UDim2.fromOffset(0, 34),
-		RichText = true,
-		Text = if tab.count
-			then `{tab.label} <font color="{hex(Theme.Colors.Accent)}">{tab.count}</font>`
-			else tab.label,
-		FontFace = Theme.Fonts.ExtraBold,
-		TextSize = 15,
-		TextColor3 = scope:Computed(function(use)
-			return if use(active) then Theme.Colors.Text else Theme.Colors.TextDim
-		end),
-	})
+	local text = if tab.count then `{tab.label}  {tab.count}` else tab.label
+	-- largeur fixe calculée sur le texte : pas d'AutomaticSize (le fond à l'échelle le ferait gonfler)
+	local width = TextService:GetTextSize(text, 18, Enum.Font.FredokaOne, Vector2.new(1000, 40)).X + 32
 	return scope:New("TextButton")({
 		Name = "Tab_" .. tab.id,
 		Text = "",
 		AutoButtonColor = false,
 		BackgroundTransparency = 1,
 		LayoutOrder = order,
-		AutomaticSize = Enum.AutomaticSize.X,
-		-- zone de clic ≥ 48 px réels, pastille visible de 34 px centrée dedans
 		Size = scope:Computed(function(use)
-			return UDim2.fromOffset(0, use(hit))
+			local h = math.max(if side then 56 else 42, use(hit) :: number)
+			return UDim2.fromOffset(if side then 170 else width, h)
 		end),
 		[scope.OnEvent("Activated")] = function()
 			if props.OnTab then
@@ -72,51 +70,44 @@ local function tabButton(scope: any, props: Props, tab: Tab, order: number): Ins
 			end
 		end,
 		[scope.Children] = {
-			scope:New("Frame")({
+			Tile(scope, {
 				Name = "Pill",
-				AutomaticSize = Enum.AutomaticSize.X,
-				AnchorPoint = Vector2.new(0, 0.5),
-				Position = UDim2.fromScale(0, 0.5),
-				Size = UDim2.fromOffset(0, 34),
-				BackgroundColor3 = scope:Computed(function(use)
-					return if use(active) then Theme.Colors.Accent else Color3.new(1, 1, 1)
+				Gradient = scope:Computed(function(use)
+					return if use(active) then gradient else INACTIVE
 				end),
-				BackgroundTransparency = scope:Computed(function(use)
-					return if use(active) then 0.88 else 0.94
+				Size = UDim2.new(1, 0, 1, -6),
+				Radius = 10,
+			}),
+			scope:New("TextLabel")({
+				Name = "Label",
+				BackgroundTransparency = 1,
+				Size = UDim2.new(1, 0, 1, -6),
+				Text = text,
+				FontFace = Theme.Fonts.Main,
+				TextSize = 18,
+				TextColor3 = scope:Computed(function(use)
+					return if use(active) then Theme.Colors.Text else Theme.Colors.TextDim
 				end),
-				[scope.Children] = {
-					scope:New("UICorner")({ CornerRadius = UDim.new(0, 8) }),
-					scope:New("UIStroke")({
-						Color = Theme.Colors.Accent,
-						Thickness = 2,
-						Transparency = scope:Computed(function(use)
-							return if use(active) then 0 else 1
-						end),
-						ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-					}),
-					scope:New("UIPadding")({ PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 14) }),
-					label,
-				},
+				ZIndex = 4,
+				[scope.Children] = { stroke(scope, Theme.Stroke.List) },
 			}),
 		},
 	})
 end
 
 return function(scope: any, props: Props): Instance
-	local closeSide = Metrics.touch(scope, 42)
-	-- Sous l'échelle ~0,77, les cibles tactiles (≥ 48 px réels) dépassent 62 px de référence :
-	-- l'en-tête grandit avec elles au lieu de les laisser déborder
-	local tabHit = Metrics.touch(scope, Theme.MinTouch)
+	local gradient = props.Gradient or Theme.Gradients.Book
+	local side = props.TabsPlacement == "side"
+	local closeSide = Metrics.touch(scope, 52)
+	-- Sous une petite échelle, la croix (≥ 48 px réels) peut dépasser 64 px de référence : le bandeau grandit avec elle
 	local headerHeight = scope:Computed(function(use)
-		return math.max(HEADER, (use(closeSide) :: number) + 14, (use(tabHit) :: number) + 8)
+		return math.max(HEADER, (use(closeSide) :: number) + 12)
 	end)
-	local function belowHeader(extra: number)
-		return scope:Computed(function(use)
-			return UDim2.fromOffset(0, (use(headerHeight) :: number) + extra)
-		end)
-	end
 	local bodySize = scope:Computed(function(use)
-		return UDim2.new(1, 0, 1, -((use(headerHeight) :: number) + 2))
+		return UDim2.new(1, 0, 1, -(use(headerHeight) :: number))
+	end)
+	local bodyPosition = scope:Computed(function(use)
+		return UDim2.fromOffset(0, use(headerHeight))
 	end)
 	table.insert(
 		scope,
@@ -127,44 +118,50 @@ return function(scope: any, props: Props): Instance
 		end)
 	)
 
+	local function tabsList(fill: Enum.FillDirection, padding: number): { any }
+		return {
+			scope:New("UIListLayout")({
+				FillDirection = fill,
+				VerticalAlignment = Enum.VerticalAlignment.Center,
+				Padding = UDim.new(0, padding),
+				SortOrder = Enum.SortOrder.LayoutOrder,
+			}),
+			scope:Computed(function(use, inner)
+				local buttons = {}
+				for i, tab in use(props.Tabs) or {} do
+					table.insert(buttons, tabButton(inner, props, gradient, tab, i, side))
+				end
+				return buttons
+			end),
+		}
+	end
+
 	local headerChildren: { any } = {
 		scope:New("UIListLayout")({
 			FillDirection = Enum.FillDirection.Horizontal,
 			VerticalAlignment = Enum.VerticalAlignment.Center,
-			Padding = UDim.new(0, 14),
+			Padding = UDim.new(0, 12),
 			SortOrder = Enum.SortOrder.LayoutOrder,
 		}),
 		scope:New("UIPadding")({ PaddingLeft = UDim.new(0, 16) }),
-		Icon(scope, { Name = props.Icon, Size = UDim2.fromOffset(30, 30), Color = Theme.Colors.Accent }),
+		Icon(scope, { Name = props.Icon, Size = UDim2.fromOffset(44, 44), ZIndex = 4 }),
 		scope:New("TextLabel")({
 			Name = "Title",
 			LayoutOrder = 1,
 			BackgroundTransparency = 1,
 			AutomaticSize = Enum.AutomaticSize.X,
-			Size = UDim2.fromOffset(0, 34),
-			Text = props.Title,
-			FontFace = Theme.Fonts.Heavy,
-			TextSize = 28,
+			Size = UDim2.fromOffset(0, 40),
+			Text = string.upper(props.Title),
+			FontFace = Theme.Fonts.Main,
+			TextSize = 32,
 			TextColor3 = Theme.Colors.Text,
+			ZIndex = 4,
+			[scope.Children] = { stroke(scope, Theme.Stroke.Text) },
 		}),
 	}
-	if props.Tabs ~= nil then
-		local tabs: { any } = {
-			scope:New("UIListLayout")({
-				FillDirection = Enum.FillDirection.Horizontal,
-				VerticalAlignment = Enum.VerticalAlignment.Center,
-				Padding = UDim.new(0, 6),
-				SortOrder = Enum.SortOrder.LayoutOrder,
-			}),
-			scope:New("UIPadding")({ PaddingLeft = UDim.new(0, 4) }),
-			scope:Computed(function(use, inner)
-				local buttons = {}
-				for i, tab in use(props.Tabs) or {} do
-					table.insert(buttons, tabButton(inner, props, tab, i))
-				end
-				return buttons
-			end),
-		}
+	if props.Tabs ~= nil and not side then
+		local tabs = tabsList(Enum.FillDirection.Horizontal, 8)
+		table.insert(tabs, scope:New("UIPadding")({ PaddingLeft = UDim.new(0, 8) }))
 		table.insert(
 			headerChildren,
 			scope:New("Frame")({
@@ -175,6 +172,7 @@ return function(scope: any, props: Props): Instance
 				Size = scope:Computed(function(use)
 					return UDim2.fromOffset(0, use(headerHeight))
 				end),
+				ZIndex = 4,
 				[scope.Children] = tabs,
 			})
 		)
@@ -185,7 +183,7 @@ return function(scope: any, props: Props): Instance
 		body = scope:New("Frame")({
 			Name = "Content",
 			BackgroundTransparency = 1,
-			Position = belowHeader(2),
+			Position = bodyPosition,
 			Size = bodySize,
 			[scope.Children] = props.Content,
 		})
@@ -193,12 +191,12 @@ return function(scope: any, props: Props): Instance
 		body = scope:New("ScrollingFrame")({
 			Name = "Content",
 			BackgroundTransparency = 1,
-			Position = belowHeader(2),
+			Position = bodyPosition,
 			Size = bodySize,
 			CanvasSize = UDim2.new(),
 			AutomaticCanvasSize = Enum.AutomaticSize.Y,
-			ScrollBarThickness = 6,
-			ScrollBarImageColor3 = Theme.Colors.PanelLine,
+			ScrollBarThickness = 8,
+			ScrollBarImageColor3 = Theme.Colors.PanelInner,
 			BorderSizePixel = 0,
 			[scope.Children] = {
 				scope:New("UIListLayout")({
@@ -219,97 +217,112 @@ return function(scope: any, props: Props): Instance
 	local frameChildren: { any } = {
 		scope:New("UICorner")({ CornerRadius = UDim.new(0, 14) }),
 		scope:New("UIStroke")({
-			Color = Theme.Colors.Accent,
-			Thickness = if Theme.Glow ~= "" then 2 else 3,
+			Color = Theme.Colors.Ink,
+			Thickness = 4,
 			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 		}),
 		scope:New("Frame")({
 			Name = "Header",
-			BackgroundColor3 = Theme.Colors.Accent,
-			BackgroundTransparency = 0.88,
+			BackgroundColor3 = Color3.new(1, 1, 1),
 			BorderSizePixel = 0,
 			Size = scope:Computed(function(use)
 				return UDim2.new(1, 0, 0, use(headerHeight))
 			end),
+			ZIndex = 2,
 			[scope.Children] = {
 				scope:New("UICorner")({ CornerRadius = UDim.new(0, 14) }),
 				scope:New("UIGradient")({
-					Transparency = NumberSequence.new({
-						NumberSequenceKeypoint.new(0, 0),
-						NumberSequenceKeypoint.new(0.6, 1),
-						NumberSequenceKeypoint.new(1, 1),
-					}),
+					Rotation = 90,
+					Color = ColorSequence.new(gradient.top, gradient.bottom),
+				}),
+				-- bas du bandeau carré (les coins arrondis ne restent qu'en haut)
+				scope:New("Frame")({
+					Name = "Square",
+					BackgroundColor3 = gradient.bottom,
+					BorderSizePixel = 0,
+					AnchorPoint = Vector2.new(0, 1),
+					Position = UDim2.fromScale(0, 1),
+					Size = UDim2.new(1, 0, 0, 14),
+					ZIndex = 2,
+				}),
+				scope:New("Frame")({
+					Name = "Line",
+					BackgroundColor3 = Theme.Colors.Ink,
+					BorderSizePixel = 0,
+					AnchorPoint = Vector2.new(0, 1),
+					Position = UDim2.fromScale(0, 1),
+					Size = UDim2.new(1, 0, 0, 4),
+					ZIndex = 3,
 				}),
 				scope:New("Frame")({
 					Name = "Row",
 					BackgroundTransparency = 1,
 					Size = scope:Computed(function(use)
-						return UDim2.new(1, -((use(closeSide) :: number) + 30), 1, 0)
+						return UDim2.new(1, -((use(closeSide) :: number) + 24), 1, -4)
 					end),
+					ZIndex = 4,
 					[scope.Children] = headerChildren,
 				}),
 			},
-		}),
-		scope:New("Frame")({
-			Name = "HeaderLine",
-			BackgroundColor3 = Theme.Colors.PanelLine,
-			BackgroundTransparency = 0.82,
-			BorderSizePixel = 0,
-			Position = belowHeader(0),
-			Size = UDim2.new(1, 0, 0, 2),
 		}),
 		body,
 		scope:New("TextButton")({
 			Name = "Close",
 			Text = "X",
-			FontFace = Theme.Fonts.Heavy,
-			TextSize = 22,
+			FontFace = Theme.Fonts.Main,
+			TextSize = 30,
 			TextColor3 = Theme.Colors.Text,
 			AutoButtonColor = false,
 			AnchorPoint = Vector2.new(1, 0.5),
 			Position = scope:Computed(function(use)
-				return UDim2.new(1, -12, 0, (use(headerHeight) :: number) / 2)
+				return UDim2.new(1, -8, 0, ((use(headerHeight) :: number) - 4) / 2)
 			end),
 			Size = scope:Computed(function(use)
-				local side = use(closeSide)
-				return UDim2.fromOffset(side, side)
+				local s = use(closeSide)
+				return UDim2.fromOffset(s, s)
 			end),
 			BackgroundColor3 = Theme.Colors.Close,
-			ZIndex = 3,
+			ZIndex = 5,
 			[scope.OnEvent("Activated")] = props.OnClose,
 			[scope.Children] = {
 				scope:New("UICorner")({ CornerRadius = UDim.new(0, 10) }),
 				scope:New("UIStroke")({
 					Color = Theme.Colors.Ink,
-					Thickness = 2,
+					Thickness = 3,
 					ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 				}),
 			},
 		}),
 	}
-	local size = props.Size or UDim2.fromOffset(820, 500)
-	local withHalo = Halo.enabled()
-	local fill = Halo.FILL
-	local border = scope:New("Frame")({
+	if props.Tabs ~= nil and side then
+		-- colonne d'onglets à droite de la fenêtre (spec §5.1)
+		table.insert(
+			frameChildren,
+			scope:New("Frame")({
+				Name = "SideTabs",
+				BackgroundTransparency = 1,
+				Position = scope:Computed(function(use)
+					return UDim2.new(1, 14, 0, use(headerHeight))
+				end),
+				Size = UDim2.new(0, 170, 1, 0),
+				[scope.Children] = tabsList(Enum.FillDirection.Vertical, 10),
+			})
+		)
+	end
+
+	local scale = scope:New("UIScale")({ Scale = 1 })
+	table.insert(frameChildren, scale)
+	local window = scope:New("Frame")({
 		Name = "Border",
-		AnchorPoint = if withHalo then fill.AnchorPoint else Vector2.new(0.5, 0.5),
-		Position = if withHalo then fill.Position else UDim2.fromScale(0.5, 0.5),
-		Size = if withHalo then fill.Size else size,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		-- avec onglets latéraux, la fenêtre se décale à gauche pour que l'ensemble reste centré
+		Position = if side then UDim2.new(0.5, -92, 0.5, 0) else UDim2.fromScale(0.5, 0.5),
+		Size = props.Size or UDim2.fromOffset(820, 500),
 		BackgroundColor3 = Theme.Colors.Panel,
-		BackgroundTransparency = 0.03,
-		ZIndex = if withHalo then fill.ZIndex else 11,
+		ZIndex = 11,
 		[scope.Children] = frameChildren,
 	})
-	-- halo cyan DERRIÈRE la fenêtre (frère de Border, jamais enfant : il la recouvrirait)
-	local window = if withHalo
-		then Halo.host(scope, {
-			Name = "BorderHost",
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(0.5, 0.5),
-			Size = size,
-			ZIndex = 11,
-		}, { Color = Theme.Colors.Accent, Transparency = 0.5, Margin = 40 }, border)
-		else border
+	Motion.open(scale)
 
 	return scope:New("TextButton")({
 		Name = "WindowBackdrop",

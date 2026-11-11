@@ -399,6 +399,7 @@ function Style.start(scope: any, deps: any)
 
 	WindowHost.mount(scope, deps, deps.HudRoot, {
 		name = "Style",
+		gradient = Theme.Gradients.Style,
 		title = "STYLE",
 		icon = "style",
 		layout = "free",

@@ -557,6 +557,7 @@ function Bonus.start(scope: any, deps: any)
 
 	WindowHost.mount(scope, deps, deps.HudRoot, {
 		name = "Bonus",
+		gradient = Theme.Gradients.Bonus,
 		title = "BONUS",
 		icon = "crown",
 		layout = "free",

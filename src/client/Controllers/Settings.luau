@@ -63,6 +63,7 @@ function Settings.start(scope: any, deps: any)
 	scope:Observer(deps.Store.snapshot):onChange(sync)
 	WindowHost.mount(scope, deps, deps.HudRoot, {
 		name = "Settings",
+		gradient = Theme.Gradients.Settings,
 		title = "RÉGLAGES",
 		icon = "settings",
 		content = function(inner)

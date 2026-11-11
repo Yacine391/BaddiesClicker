@@ -518,6 +518,7 @@ function Book.start(scope: any, deps: any)
 
 	WindowHost.mount(scope, deps, deps.HudRoot, {
 		name = "Book",
+		gradient = Theme.Gradients.Book,
 		title = "BOOK",
 		icon = "book",
 		layout = "free",

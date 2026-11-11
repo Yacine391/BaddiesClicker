@@ -386,6 +386,7 @@ function Slots.start(scope: any, deps: any)
 
 	WindowHost.mount(scope, deps, deps.HudRoot, {
 		name = "Slots",
+		gradient = Theme.Gradients.Slots,
 		title = "SLOTS",
 		icon = "ticket",
 		tabs = function(snapshot)

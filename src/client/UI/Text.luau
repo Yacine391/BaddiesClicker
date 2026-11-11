@@ -18,6 +18,7 @@ export type LabelProps = {
 	XAlignment: Enum.TextXAlignment?,
 	YAlignment: Enum.TextYAlignment?,
 	Stroke: boolean?,
+	StrokeThickness: number?, -- défaut Theme.Stroke.Text
 	ZIndex: number?,
 	Name: string?,
 	Visible: any?,
@@ -32,7 +33,7 @@ function Text.label(scope: any, props: LabelProps): TextLabel
 			children,
 			scope:New("UIStroke")({
 				Color = Theme.Colors.Ink,
-				Thickness = Theme.Stroke.Text,
+				Thickness = props.StrokeThickness or Theme.Stroke.Text,
 				ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual,
 			})
 		)

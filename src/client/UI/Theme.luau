@@ -1,7 +1,8 @@
 --!strict
 --[[
-	Theme : identité visuelle « mix A » (dominante cyan), validée sur prototypes
-	(spec docs/superpowers/specs/2026-10-15-ui-lobby-refonte-design.md §3).
+	Theme : identité « simulateur vif » (spec docs/superpowers/specs/2026-11-11-ui-lobby-simulateur-design.md §3) :
+	une couleur par fonction (même couleur dans le HUD et le lobby), FredokaOne, contours Ink épais.
+	Les jetons « mix A » restent pour les écrans pas encore refaits (lot 2).
 
 	Images : les PNG de assets/ui/png sont uploadés dans Roblox par l'utilisateur ; leurs IDs vont
 	dans `Icons`, `Logo` et `Glow`. Tant qu'un ID est vide, les composants affichent un repli simple.
@@ -12,15 +13,19 @@ local Theme = {}
 local hex = Color3.fromHex
 
 Theme.Colors = table.freeze({
-	-- mix A
-	Panel = hex("#100E1E"),
+	-- simulateur
+	Ink = hex("#1A1030"),
+	Panel = hex("#2B1F4A"),
+	PanelInner = hex("#3A2C62"),
+	Badge = hex("#FF2E4D"),
+	Close = hex("#F2384A"),
+	-- mix A (écrans du lot 2)
 	PanelLine = hex("#A08CFF"),
 	Accent = hex("#3EE6C8"),
 	AccentLight = hex("#5FF3DA"),
 	AccentDeep = hex("#13A6B5"),
 	Accent2 = hex("#FF5FD2"),
 	Accent2Light = hex("#FF9BE3"),
-	Ink = hex("#0D0B16"),
 	Text = hex("#FFFFFF"),
 	TextDim = hex("#CFCAE6"),
 	Book = hex("#3EE6C8"),
@@ -28,25 +33,39 @@ Theme.Colors = table.freeze({
 	Style = hex("#FF5FD2"),
 	Settings = hex("#CFCAE6"),
 	Slots = hex("#D7A746"),
-	Close = hex("#E0233F"),
 	Principal = hex("#33B84A"),
 	Danger = hex("#FF3B5C"), -- zones de danger, PV bas, coup reçu (combat)
+})
+
+-- Dégradés verticaux (haut → bas) des tuiles, bandeaux et boutons, par fonction
+local function grad(top: string, bottom: string)
+	return table.freeze({ top = hex(top), bottom = hex(bottom) })
+end
+Theme.Gradients = table.freeze({
+	Book = grad("#2FA8FF", "#1B6FE0"),
+	Style = grad("#FF6FC8", "#E0369E"),
+	Crew = grad("#A57CFF", "#6E44D9"),
+	Slots = grad("#FFC93C", "#E39A12"),
+	Bonus = grad("#FF9A3C", "#F2552C"),
+	Settings = grad("#8C95B8", "#5A6386"),
+	Action = grad("#5BE36A", "#22A93A"),
+	Attack = grad("#FF5A5A", "#D42A3A"),
 })
 
 Theme.Transparency = table.freeze({ Panel = 0.14, PanelLine = 0.72, Dim = 0.38 })
 Theme.Radius = table.freeze({ Panel = 10, Button = 12 })
 
-local function condensed(weight: Enum.FontWeight): Font
-	return Font.fromName("RobotoCondensed", weight)
-end
-
+-- Une seule police (FredokaOne) ; les anciens noms de graisse pointent dessus pour les écrans du lot 2
+local main = Font.fromEnum(Enum.Font.FredokaOne)
 Theme.Fonts = table.freeze({
-	Bold = condensed(Enum.FontWeight.Bold),
-	ExtraBold = condensed(Enum.FontWeight.ExtraBold),
-	Heavy = condensed(Enum.FontWeight.Heavy),
+	Main = main,
+	Bold = main,
+	ExtraBold = main,
+	Heavy = main,
 })
 
-Theme.Stroke = table.freeze({ Text = 2, Frame = 2 })
+-- Contours Ink : 3 px titres, chiffres et tuiles ; 2 px listes
+Theme.Stroke = table.freeze({ Text = 3, List = 2, Frame = 3 })
 Theme.BaseResolution = Vector2.new(1280, 720)
 Theme.MinTouch = 48
 
@@ -55,7 +74,26 @@ Theme.Logo = "rbxassetid://104433435199565"
 Theme.Glow = "rbxassetid://105925253038271" -- halo porté par Components/Halo, derrière les panneaux
 Theme.GlowSlice = Rect.new(48, 48, 80, 80)
 
+-- Icônes pleines en couleur (assets/ui/icons-sim/png), jamais teintées. "" = pas encore uploadée → LegacyIcons.
 Theme.Icons = table.freeze({
+	book = "rbxassetid://88512135926373",
+	style = "rbxassetid://70535176425536",
+	crew = "rbxassetid://118890991313443",
+	slots = "rbxassetid://98333344524522",
+	bonus = "rbxassetid://113075847922595",
+	settings = "rbxassetid://123042582402960",
+	power = "rbxassetid://104575341948505",
+	ticket = "rbxassetid://110263683634513",
+	companionTicket = "rbxassetid://104613250518186",
+	coin = "rbxassetid://81074390464856",
+	gift = "rbxassetid://83421099312203",
+	lock = "rbxassetid://104027571520849",
+	door = "rbxassetid://72003425824728",
+	crown = "rbxassetid://82780129259484",
+})
+
+-- Icônes de trait blanches « mix A » (assets/ui/png), teintées par ImageColor3 : repli et anciens noms
+Theme.LegacyIcons = table.freeze({
 	book = "rbxassetid://94716205629835",
 	crew = "rbxassetid://113913955556099",
 	style = "rbxassetid://71735145745689",

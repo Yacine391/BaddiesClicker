@@ -61,8 +61,25 @@ Détails : `docs/P1-COMBAT.md`.
 - [x] Restauration répétée avec succès sur un compte de test (21/10, store Studio ; voir `OPERATIONS.md` §3)
 - [x] Badges Roblox : les 10 créés et renseignés dans `Config/BadgesConfig` (16/10) ; attribués après publication
 - [x] Codeur B : tableau du lobby (`Controllers/Leaderboard`), écran Style, titres au-dessus des avatars (`Controllers/Titles`), vraies arènes et rendu du combat
-- [ ] Catalogue validé (modèles et looks des 8 baddies et 6 compagnons)
+- [ ] Catalogue validé (modèles et looks des 8 baddies et 6 compagnons) *(11/11 : tous les modèles existent,
+      générés par `assets/visuals/CharactersBuilder.luau` ; à valider en Play, puis à remplacer par Blender au besoin)*
 - [x] PR #8 à #11 fusionnées (21/10) ; retours du test Studio d'Alejandro corrigés (relance de combat après une mort, accents, bannière, toasts, petit écran)
 - [x] Matrice de tests §30 (`docs/TEST-MATRIX.md`) et fiche du bêta-testeur (`docs/beta-checklist-p0.md`)
 - [ ] Studio : annulation à 3 téléportations (F4 → TÉLÉPORT ×3), maintenance `Roll`, 2 joueurs, émulateur téléphone, équipe pleine
 - [ ] Mobile réel, présentation (vidéo 15 s après Maya et Malik)
+
+## Lot du 11/11 : personnages, Cherry, récompenses (écrit sans Studio, à valider en Play)
+
+- [x] Générateur de personnages sur rig commun aux noms R15 : 9 baddies × 3 looks, 6 compagnons, 3 sbires
+- [x] Cherry (B09, Legendary ×3,5, 1 %) d'après la planche « Baddie — Cherry Summer » ; total des relances 100 %
+- [x] Suiveurs, podium (Maya puis Cherry), boss = la baddie du niveau, sbires par archétype, portraits 3D, auras
+- [x] Pièces, roue du jour (gratuit / jeton / pièces), connexion quotidienne (7 jours), temps de jeu (5 min → 3 h)
+- [x] Achats : `PurchaseService` (reçu crédité une fois, accordé après écriture) ; tour payant masqué sans produit
+- [x] Fenêtre BONUS, pastille de pièces, roue 3D près du spawn
+- [ ] **Yacine** : créer le produit développeur « 1 tour de roue » (5 Robux) et renseigner `Config/ProductsConfig`
+- [ ] **Yacine** : vérifier dans le Creator Hub les règles Roblox des objets aléatoires payants (chances affichées :
+      fait dans la fenêtre ; pays restreints : `PolicyService`, fait) et le questionnaire de maturité
+- [ ] Studio : liste « À valider » du README (personnages, portraits, combat, BONUS, roue du lobby, téléphone)
+- [ ] Sons et musique : aucun son dans le jeu pour l'instant (IDs et droits à fournir, §36)
+- [ ] Réglages sauvegardés côté serveur (§22 « choix sauvegardés ») : encore locaux à la session
+- [ ] Sources des 4 cosmétiques sans source (montre, lunettes, aura Neon, trail d'étoiles)

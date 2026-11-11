@@ -768,7 +768,7 @@ local MILESTONES = {
 	{ "rebirth6", "6e renaissance (4 slots)" },
 	{ "firstDrop", "Premier drop de boss" },
 	{ "book4", "4 baddies au Baddies Book" },
-	{ "book8", "Baddies Book complet (8)" },
+	{ `book{PUBLIC}`, `Baddies Book complet ({PUBLIC})` }, -- suit le catalogue (9 depuis Cherry)
 	{ "vega", "Vega (Mythic) découverte" },
 	{ "crew6", "Les 6 compagnons" },
 }

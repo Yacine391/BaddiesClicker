@@ -8,7 +8,7 @@ Contrat réseau : `docs/CONTRACT.md` (v3, snapshot `v = 2`).
 
 - [x] `Rules/Slots` : slots à identité fixe (aucun transfert), un seul temporaire, slot vide = `""`
 - [x] Relance : 1 ticket, remplace le contenu du slot choisi (conservé ou non), `slotRevision` +1, découverte au Baddies Book
-- [x] Garantie : toutes les 50 relances, une identité **manquante** tirée uniformément si le Book public est incomplet (lot V1 complet en 350 relances au plus) ; compteur global conservé après mort et rebirth
+- [x] Garantie : toutes les 50 relances, une identité **manquante** tirée uniformément si le Book public est incomplet (Book complet en 400 relances au plus : 350 pour le lot V1, 50 de plus depuis Cherry) ; compteur global conservé après mort et rebirth
 - [x] Verrou manuel de relance par slot ; confirmation par révision du slot (`stale` si le contenu a changé)
 - [x] Drops en attente : accepter 1 (remplace **le temporaire uniquement**, découvre), refuser 1 (rien d'autre)
 - [x] Principale : seulement un slot rempli, hors combat ; seule `activeSlotId` change

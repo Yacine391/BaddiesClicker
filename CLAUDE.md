@@ -14,7 +14,9 @@ exposition sans puissance) ne changent pas sans décision écrite.
 - **Lot P0 (maintenant)** : Maya 3 looks, Malik DJ, un morceau de lobby compact, auras Maya/Malik, 1 capture verticale.
 - **Lot P1** : arène grise, un sbire, Maya en boss de test, une porte, la mort. IDs de test isolés, jamais dans le catalogue public.
 - Ne pas produire les 8 baddies en parallèle. Pas de faux boutons dans le lobby.
-- Hors V1 : monétisation, échanges, logement, chat perso, IA en direct, offline, classement mondial, votes.
+- Hors V1 : échanges, logement, chat perso, IA en direct, offline, classement mondial, votes.
+- Monétisation : **une seule exception décidée le 11/11** — le tour de roue payant (5 Robux, produit dans
+  `Config/ProductsConfig`). Chances affichées, masqué où Roblox restreint les tirages payants. Rien d'autre à vendre.
 
 ## Boucle et combat
 - Hors combat le clic **entraîne** (+puissance) ; en combat il **attaque**. Jamais les deux pour une même entrée.
@@ -43,10 +45,21 @@ rebirth +5 baddie +1 compagnon.
 - Book = découvertes permanentes. Exposition (3 places) = **apparence uniquement, aucune puissance**. Classement lobby = nb d'identités découvertes.
 
 ## Catalogue V1
-Baddies : Maya Common ×1 (32 %), Lina Common ×1,2 (25 %), Jade Silver ×1,5 (17 %), Iris Silver ×1,8 (12 %),
-Sienna Gold ×2,2 (7 %), Nova Gold ×2,5 (5 %), Zuri Legendary ×3,2 (1,5 %), Vega Mythic ×4 (0,5 %).
+Baddies : Maya Common ×1 (31 %), Lina Common ×1,2 (25 %), Jade Silver ×1,5 (17 %), Iris Silver ×1,8 (12 %),
+Sienna Gold ×2,2 (7 %), Nova Gold ×2,5 (5 %), Zuri Legendary ×3,2 (1,5 %), Vega Mythic ×4 (0,5 %),
+**Cherry Legendary ×3,5 (1 %)** — ajoutée le 11/11 (§32), hors du lot V1 figé des succès ; total 100 %.
 Compagnons (pas d'attaque en V1, 2 actifs max) : Enzo 0,4/s, Malik 0,6/s, Rafael 0,8/s, Dario 1,2/s, Kenji 1,6/s, Amine 2,0/s.
 Niveau compagnon : L→L+1 coûte L+1 copies, max 10, taux = base × (1 + 0.10 × (L-1)).
+
+## Récompenses (décision du 11/11, hors dossier — `docs/CONTRACT.md` « Récompenses »)
+- Pièces (boss, connexion, temps de jeu, roue) → tours de roue. Jour = jour UTC **du serveur**.
+- Roue : 1 tour gratuit/jour, puis jeton, puis 100 pièces. Baddie gagnée = **drop en attente** (jamais dans un slot ni au Book directement).
+- Connexion : cycle de 7 jours, un jour manqué ramène au jour 1. Temps de jeu : paliers 5/10/30/60/180 min par jour.
+- Achat : reçu crédité une fois, accordé à Roblox seulement après écriture du profil (`PurchaseService`).
+
+## Personnages
+- Générés par `lune run assets/visuals/export-characters` (fiches dans `CharactersBuilder.luau`), jamais retouchés à la main
+  dans le `.rbxm`. Aperçus : `assets/visuals/preview/render.mjs`. Chemin côté client : `Logic/VisualsModel`.
 
 ## Architecture et sécurité (rubriques 23–27)
 - Arbo réelle (voir README) : `src/shared/` (Balance, Catalog, Formulas, Net, Format, Flags), `src/server/` (Bootstrap,

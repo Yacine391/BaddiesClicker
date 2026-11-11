@@ -48,6 +48,21 @@ Chaque test du dossier, avec ce qui le couvre aujourd'hui :
 | Erreur DataStore | Auto + Studio | tests Receipts (`saving`, `error`) ; place sans accès API : décisions refusées proprement |
 | 30 minutes de mémoire | Bêta | Developer Console → Memory : pas de croissance continue après 30 min de combats |
 
+## Récompenses et personnages (lot du 11/11)
+
+| Contrôle | Couverture | Comment vérifier |
+|---|---|---|
+| Tour gratuit une fois par jour, horloge qui recule | Auto | tests « roue : un tour gratuit par jour… » |
+| Baddie gagnée à la roue = drop en attente (ni Book, ni dégâts) | Auto + Studio | test dédié ; F4 +3 JETONS, tourner jusqu'à une baddie : badge SLOTS, onglet DROPS |
+| Même `requestId` de tour répété | Auto | test « décision durable : même requestId de tour de roue » |
+| Fréquences des parts conformes aux chances affichées | Auto | test sur 100 000 tours |
+| Connexion quotidienne : série, jour manqué, 7e jour | Auto + Studio | tests ; F4 NOUVEAU JOUR puis BONUS → CONNEXION |
+| Temps de jeu : paliers, remise à zéro à minuit UTC | Auto + Studio | tests ; F4 +30 MIN DE JEU puis BONUS → TEMPS DE JEU |
+| Reçu d'achat crédité une seule fois | Auto + Studio publié | test « achats » ; achat réel avec un compte de test après création du produit |
+| Tour payant masqué sans produit ou en pays restreint | Auto | test « tour payant : proposé seulement… » |
+| Chaque identité du catalogue a ses modèles | Auto | `lune run assets/visuals/export-characters` (assertions) ; tests `VisualsModel` |
+| Personnages, portraits, boss, roue du lobby en jeu | Studio | liste « À valider » du README |
+
 ## Critères de sortie de bêta (§30)
 
 - [ ] Aucun bug ouvert de perte ou de duplication.

@@ -1,4 +1,4 @@
-# Contrat réseau client ↔ serveur (v3, lots P0 + P1 + P2 — snapshot `v = 2`)
+# Contrat réseau client ↔ serveur (v4, lots P0 + P1 + P2 + récompenses — snapshot `v = 2`)
 
 Ce fichier est la frontière entre le **codeur A** (serveur) et le **codeur B** (HUD, suiveurs, carte).
 Tout changement passe par une PR relue par les deux.
@@ -45,8 +45,11 @@ peut être découverte (dans le Baddies Book), possédée (dans un slot) ou expo
 | `UpgradeCrew` | `{ crewId }` | 4/s | compagnon possédé, pas au niveau 10 ; dépense `niveau + 1` copies (`crewOwned[i].upgradeCost`) |
 | `EquipCrew` | `{ ids: { string } }` | 4/s | ≤ 2 compagnons **possédés**, sans doublon ; remplace la liste (vide = aucun) |
 | `SetStyle` | `{ slot, id? }` | 4/s | hors combat ; `slot` ∈ `Wardrobe.slots` ou `"title"` ; `id` débloqué et du bon emplacement ; `id` absent = retirer |
+| `SpinWheel` ⏳ | `{ requestId, pay = "free" \| "token" \| "coins" }` | 4/s + 3 s entre deux tours | `free` : tour gratuit du jour pas encore pris ; `token` : au moins 1 jeton en réserve ; `coins` : assez de pièces. Le client choisit comment il paie, le serveur tire le gain |
+| `ClaimDaily` ⏳ | `{ requestId }` | 4/s | récompense de connexion du jour pas encore prise (jour UTC du serveur) |
+| `ClaimPlaytime` ⏳ | `{ requestId, index }` | 4/s | palier `index` du temps de jeu du jour atteint et pas encore réclamé |
 | `DevSetMastery` 🧪 | `{ baddieId, xp }` | 4/s | **Studio uniquement** : fixe l'XP de maîtrise (tester les looks) |
-| `DevGrant` 🧪 | `{ what = "tickets" \| "crewTickets" \| "power" \| "drop" \| "finishRun" \| "teleport", baddieId? }` | 4/s | **Studio uniquement** : +10 tickets baddie, +5 tickets compagnon, +5 000 puissance, un drop en attente, les 10 niveaux terminés, ou (en combat) un saut au coin opposé de l'arène pour tester le contrôle des déplacements |
+| `DevGrant` 🧪 | `{ what = "tickets" \| "crewTickets" \| "power" \| "drop" \| "finishRun" \| "teleport" \| "coins" \| "wheelToken" \| "playtime" \| "newDay", baddieId? }` | 4/s | **Studio uniquement** : +10 tickets baddie, +5 tickets compagnon, +5 000 puissance, un drop en attente, les 10 niveaux terminés, (en combat) un saut au coin opposé de l'arène ; +500 pièces, +3 jetons de roue, +30 min de temps de jeu, ou « nouveau jour » (tour gratuit et connexion à reprendre) |
 
 ⏳ = **décision durable** (ci-dessous) : réponse `Result { kind = "mutation" }` après l'écriture.
 Les autres intentions invalides sont ignorées sans réponse : le client se fie au snapshot suivant.
@@ -73,6 +76,7 @@ Réponse `Result` :
 {
 	kind = "mutation",
 	action = "Roll",              -- "Roll" | "AcceptDrop" | "RefuseDrop" | "Rebirth" | "OpenChest"
+	                              -- | "SpinWheel" | "ClaimDaily" | "ClaimPlaytime"
 	requestId = "…",              -- celui de la demande
 	ok = true,
 	reason = nil,                 -- si ok = false (voir ci-dessous)
@@ -85,6 +89,11 @@ Réponse `Result` :
 		-- Rebirth    : count, runId, promotedSlotId?, newSlotId?, clearedSlotId?, lostBaddieId?,
 		--              activeSlotId, fallback? ("conserved" | "maya"), baddieTickets, crewTickets
 		-- OpenChest  : crewId, isNew, equipped, level, copies, guaranteed, openNumber
+		-- SpinWheel  : pay, index (part tirée, ordre de Balance.wheel.segments), segmentId,
+		--              prize ("coins" | "baddieTicket" | "crewTicket" | "baddie"), amount?,
+		--              baddieId?, rarity?, coins (solde), tokens (jetons restants), spinNumber
+		-- ClaimDaily    : streak, dayIndex, coins?, baddieTickets?, crewTickets?, wheelTokens?
+		-- ClaimPlaytime : index, minutes, coins?, baddieTickets?, crewTickets?, wheelTokens?
 	},
 }
 ```
@@ -95,6 +104,8 @@ resynchroniser et redemander confirmation), `locked`, `no_ticket` (ticket baddie
 `OpenChest`), `no_drop`, `no_temporary`,
 `not_finished` (niveau 10 non terminé), `unknown_slot`, `invalid`, `duplicate`, `error`,
 `maintenance` (décision coupée temporairement par l'équipe, voir `snapshot.maintenance` ; rien n'est modifié).
+Récompenses : `no_free` (tour gratuit déjà pris aujourd'hui), `no_token`, `no_coins`, `already` (déjà réclamé),
+`not_ready` (palier pas encore atteint).
 Après une renaissance confirmée, le serveur renvoie le joueur au lobby (1,5 s).
 
 ## Snapshot `State` (v = 2)
@@ -111,6 +122,25 @@ Envoyé au chargement, sur `Hello`, puis à chaque changement (regroupé, au plu
 	trainingBonus = 1,            -- ×bonus de rebirth
 	rebirths = 0,
 	tickets = { baddie = 10, crew = 0 },
+	coins = 250,                  -- pièces : tours de roue (gagnées en jouant, voir « Récompenses »)
+	rewards = {                   -- roue, connexion quotidienne, temps de jeu ; le jour est celui du serveur (UTC)
+		day = 20403,              -- numéro de jour UTC
+		resetIn = 18720,          -- secondes avant minuit UTC (prochain tour gratuit, prochaine connexion)
+		claimable = 3,            -- pastille du menu BONUS : tour gratuit + connexion du jour + paliers prêts
+		wheel = {
+			free = true,          -- tour gratuit du jour disponible
+			tokens = 0,           -- jetons en réserve (achetés ou offerts par une récompense)
+			cost = 100,           -- pièces par tour
+			spins = 4,            -- tours déjà faits (compteur de vie)
+			productId = nil,      -- ID du produit « 1 tour » à passer à PromptProductPurchase ; nil = tour payant
+			robux = nil,          --   NON proposé (produit pas configuré, ou pays où les tirages payants sont restreints)
+		},
+		daily = { claimed = false, streak = 3, dayIndex = 3 }, -- case du cycle de 7 jours (Balance.daily.cycle)
+		playtime = {
+			seconds = 400,        -- temps joué aujourd'hui
+			milestones = { { minutes = 5, claimed = false, ready = true }, … }, -- ordre de Balance.playtime.milestones
+		},
+	},
 	active = {                    -- la principale (une seule baddie compte)
 		slotId = "s1",
 		baddieId = "maya",
@@ -211,7 +241,7 @@ Noms, raretés, couleurs et looks : lire `Shared/Catalog` avec l'ID (`Catalog.ba
 | `ticket` | `ticket` = `"baddie"`/`"crew"`, `amount` | toast +1 ticket (HUD seulement) |
 | `passiveTick` | `amount` (puissance réellement gagnée) | petit « +0,6 » au-dessus du compagnon, chaque seconde |
 
-| `levelCleared` | `level`, `boss`, `drop` (baddieId ou nil), `firstClear`, `baddieTickets`, `power` | boss vaincu : la porte s'ouvre ; texte « 10 % à chaque victoire, aucun drop garanti » |
+| `levelCleared` | `level`, `boss`, `drop` (baddieId ou nil), `firstClear`, `baddieTickets`, `power`, `coins` | boss vaincu : la porte s'ouvre ; texte « 10 % à chaque victoire, aucun drop garanti » |
 | `masteryUp` | `baddieId`, `level` | la principale monte en maîtrise |
 | `death` | — | « Retour au lobby. Ta puissance et tes baddies restent ; les portes se referment. » |
 | `combatLeft` | — | sorti de l'arène plus de 3 s : combat abandonné, aucune récompense |
@@ -221,6 +251,31 @@ Noms, raretés, couleurs et looks : lire `Shared/Catalog` avec l'ID (`Catalog.ba
 | `rebirth` | `count` | renaissance confirmée |
 | `crewLevelUp` | `crewId`, `level` | compagnon amélioré (`UpgradeCrew`) |
 | `achievement` | `id`, `items`, `titles` | succès obtenu et ce qu'il débloque (noms : `Shared/Wardrobe`) |
+| `dailyReward` | `streak`, `dayIndex`, `coins?`, `baddieTickets?`, `crewTickets?`, `wheelTokens?` | récompense de connexion écrite : toast « Jour 3 : 100 pièces » |
+| `playtimeReward` | `index`, `minutes`, lot comme ci-dessus | palier de temps de jeu écrit : toast |
+| `playtimeReady` | — | un palier de temps de jeu vient d'être atteint : toast « récompense prête » |
+| `purchase` | `product` (libellé) | achat Robux crédité (jeton de roue) : toast ; le solde arrive dans le snapshot |
+
+## Récompenses : pièces, roue, connexion quotidienne, temps de jeu (décision du 11/11)
+
+Règles : `Rules/Rewards` ; chiffres : `Shared/Balance` (`coins`, `wheel`, `daily`, `playtime`) ; écran :
+`Controllers/Bonus` (menu BONUS, ou la roue du lobby), textes dans `Logic/RewardsModel`.
+
+- **Jour** : numéro de jour UTC calculé par le serveur. Le client n'envoie jamais de date ; il affiche `resetIn`.
+- **Pièces** : gagnées à chaque victoire de boss (5 × niveau), par la connexion quotidienne, le temps de jeu
+  et la roue. Dépensées en tours de roue (100).
+- **Roue** : `Balance.wheel.segments` donne les parts dans l'ordre d'affichage et leur poids (total 100) :
+  **afficher la chance de chaque part avant le tour**. Le résultat `index` désigne la part ; l'animation
+  s'arrête dessus après la réponse, jamais avant. Une part « baddie » donne une identité de cette rareté
+  (chance égale), créditée comme **drop en attente** (`pendingDrops`, §14) : ni Book, ni classement, ni
+  dégâts tant qu'elle n'est pas acceptée dans le slot temporaire.
+- **Tour payant** : seulement si `rewards.wheel.productId` est présent →
+  `MarketplaceService:PromptProductPurchase(player, productId)`. Le serveur (`PurchaseService`) crédite un
+  jeton à la réception du reçu, une seule fois par reçu, et ne confirme l'achat à Roblox qu'après
+  l'écriture du profil ; le client dépense ensuite le jeton avec `SpinWheel { pay = "token" }`.
+  `productId` est absent tant que `Config/ProductsConfig.wheelSpin.id` vaut 0, ou si
+  `PolicyService` indique que les objets aléatoires payants sont restreints pour ce joueur.
+- **Maintenance** : `SpinWheel`, `ClaimDaily` et `ClaimPlaytime` se coupent comme les autres décisions.
 
 ## Flux `Combat` (rencontre individuelle, §08)
 
@@ -255,6 +310,9 @@ Les arènes doivent garder ces noms :
 | `Workspace.Levels.LevelN.Arena` | zone de combat du niveau N : Part **invisible, sans collision, alignée sur les axes** ; entrée au sud (+Z), ennemis au nord (-Z) |
 | `Workspace.Levels.LevelN.Door` | porte vers le niveau N+1 ; `Controllers/DoorController` l'ouvre **localement** pour le joueur qui a vaincu le boss N |
 
+| `Workspace.Lobby.Wheel.Rotor` | roue du jour : Model (PrimaryPart = `Disc`) que le client fait tourner autour de X (décor) |
+| `Workspace.Lobby.Wheel.Pad` | dalle au sol : y marcher ouvre la fenêtre BONUS à l'onglet ROUE (`Controllers/LobbyWheel`) |
+
 Ouvrir une porte n'est qu'une présentation : le serveur vérifie lui-même que le joueur a le droit
 d'être dans une arène. Traverser un mur côté client ne donne ni combat ni gain.
 
@@ -268,6 +326,22 @@ réserve de 2 s pour la latence). Conséquences pour le client :
   `CombatService.forgiveMovement(player)` juste après ;
 - une anomalie isolée (pic de latence, chute) n'a aucun effet visible ; 3 en 20 s annulent le combat
   (`end` avec `reason = "invalid"`, puis `Result` `combatInvalid`). Jamais de bannissement automatique.
+
+## Personnages (`ReplicatedStorage.Visuals.Characters`)
+
+Générés sans Studio par `lune run assets/visuals/export-characters` (fiches : `CharactersBuilder.luau`) :
+
+| Dossier | Modèles | Lu par |
+|---|---|---|
+| `<code>_<Nom>` d'une baddie (`B09_Cherry`…) | `Look01`, `Look02`, `Look03` | suiveurs, podium, boss (look 3), portraits |
+| `<code>_<Nom>` d'un compagnon (`C02_Malik`…) | `Base` | suiveurs, portraits |
+| `Minions` | `Street`, `Runner`, `Heavy` | sbires (archétype selon le niveau) |
+| `TEST` | `TEST_B99` | Studio |
+
+Chaque modèle : `HumanoidRootPart` ancrée (PrimaryPart, 3 studs au-dessus des pieds), os aux noms R15
+reliés par des Motor6D (animations R15 de Roblox), `AnimationController`, `AuraAttachment`,
+`NameTagAttachment`, `GroundAttachment`. Le chemin vient de `Logic/VisualsModel.path(Catalog, id, look)` ;
+`Controllers/Visuals` clone et anime. Un modèle Blender remplace un personnage en gardant ces noms.
 
 ## Effets RGB (`Controllers/CelebrationController`)
 

@@ -3,7 +3,7 @@
 Jeu Roblox : on s'entraîne, on affronte sbires et baddies boss, on collectionne et on renaît.
 La référence des règles est le **dossier de production v4** (14 octobre 2026).
 
-## État actuel : P0, P1 et P2 validés ; V1 en cours (classement, garde-robe, succès, statistiques)
+## État actuel : P0, P1 et P2 validés ; V1 complète côté code, à valider dans Studio (voir « À valider »)
 
 | Fait | Où |
 |---|---|
@@ -23,11 +23,30 @@ La référence des règles est le **dossier de production v4** (14 octobre 2026)
 | Garde-robe, titres et 10 succès (badges Roblox prêts à brancher) | `Shared/Wardrobe.luau`, `Rules/Achievements.luau`, `Services/WardrobeService.luau` |
 | Garde-fous du profil au chargement (migrations, invariants), maintenance, restauration | `Rules/ProfileGuard.luau`, `Services/MaintenanceService.luau`, `Admin/`, `docs/OPERATIONS.md` |
 | HUD, vue et panneaux de test (temporaires, Studio) | `src/client/Dev/`, `DevToolsBootstrap.client.luau` |
-| 105 tests des règles, des pannes et des profils (cas §30 du dossier) | `tests/run.luau`, `tests/fixtures/` |
+| Personnages de tout le catalogue (9 baddies × 3 looks, 6 compagnons, 3 sbires) générés sans Studio | `assets/visuals/CharactersBuilder.luau` → `Characters.rbxm` |
+| Cherry (B09, Legendary ×3,5) d'après la planche « Baddie — Cherry Summer » | `Shared/Catalog`, `assets/visuals/previews/` |
+| Portraits 3D, suiveurs, vrais boss et sbires, une aura par identité | `Controllers/Visuals`, `UI/Components/Portrait`, `Controllers/FX` |
+| Pièces, roue du jour, connexion quotidienne, temps de jeu, tour payant (produit à créer) | `Rules/Rewards`, `Services/RewardService`, `Services/PurchaseService`, `Controllers/Bonus` |
+| 137 tests des règles, des pannes et des profils (cas §30 du dossier) ; 95 tests du client | `tests/run.luau`, `tests/client/run.luau` |
 
 **Vocabulaire :** le **Baddies Book** est la collection des baddies découvertes.
 
 Suite du travail : `docs/ROADMAP.md`.
+
+## À valider dans Studio (rien de ceci n'a pu être lancé hors Studio)
+
+Le travail du 11/11 (personnages, portraits, récompenses, roue) a été écrit et testé **sans Studio** : règles
+et modèles d'affichage couverts par Lune, projet construit par `rojo build`, personnages contrôlés sur des
+rendus d'aperçu. Le rendu et le comportement en jeu restent à vérifier en Play :
+
+1. Les personnages : proportions, animations idle et marche (rig aux noms R15), pieds au sol, auras.
+2. Les portraits 3D du Book, du HUD, du Style et du Crew (cadrage, silhouette noire des non découvertes).
+3. Les boss et sbires en combat (taille ×1,5, plaque de PV au-dessus de la tête).
+4. La fenêtre BONUS : rotation de la roue, arrêt sur la bonne part, listes CONNEXION et TEMPS DE JEU.
+5. La roue du lobby : position près du spawn, ouverture en marchant sur la dalle.
+6. Sur téléphone : menu à 6 entrées en mode compact, 3 pastilles en haut à droite.
+
+Outils : F4 → +500 PIÈCES, +3 JETONS DE ROUE, +30 MIN DE JEU, NOUVEAU JOUR, DROP CHERRY.
 
 ## Installation sur Ubuntu (une seule fois)
 
@@ -94,12 +113,19 @@ src/shared/   → ReplicatedStorage.Shared   (lu par le serveur et le client)
   Format, Flags affichage des nombres, interrupteurs de dev
   TestCatalog   identités de test, chargées dans Studio uniquement
   Wardrobe      cosmétiques, titres et succès (noms, emplacements, récompenses)
+assets/visuals/ → ReplicatedStorage.Visuals.Characters (Characters.rbxm généré)
+  CharacterKit, CharacterParts, CharacterStyles   rig commun, corps, visage, coiffures, vêtements
+  CharactersBuilder                               fiche de chaque personnage (3 looks par baddie)
+  export-characters                               `lune run assets/visuals/export-characters`
+  preview/                                        planches d'aperçu (node + three.js), previews/ = rendus
+assets/world/  → Workspace.Lobby et Workspace.Levels (LobbyBuilder, LevelsBuilder, export-*)
 src/server/   → ServerScriptService.Server
   Bootstrap     ordre d'initialisation, intentions acceptées
   Services/     Profiles, Sessions, StateService, TrainingService, CrewService, CombatService,
                 MutationService, SlotService, BookService, MaintenanceService, RankingService,
-                WardrobeService, MetricsService, DevService (Studio), IntentRouter
-  Config/       BadgesConfig : IDs des badges Roblox (à renseigner)
+                WardrobeService, MetricsService, RewardService, PurchaseService, DevService (Studio),
+                IntentRouter
+  Config/       BadgesConfig : IDs des badges Roblox ; ProductsConfig : produit « tour de roue » (à créer)
   Admin/        ProfileAdmin : versions et restauration de profils (responsables, docs/OPERATIONS.md)
   Rules/        règles pures, testées sans Studio
   Util/         RateLimiter

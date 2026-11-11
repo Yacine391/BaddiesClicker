@@ -111,3 +111,15 @@ réessayé toutes les 60 s, sans jamais redonner les récompenses internes. Rien
 `tests/fixtures/profile_v4_*.luau` et son test, puis augmenter `schemaVersion`. Un serveur plus ancien refuse
 un profil plus récent (le joueur est renvoyé vers un autre serveur) : jamais d'écriture d'un ancien schéma
 sur des données récentes.
+
+## Tour de roue payant (produit développeur)
+
+1. Creator Hub → l'expérience → **Monetization → Developer Products** → créer « 1 tour de roue », 5 Robux.
+2. Coller son ID dans `src/server/Config/ProductsConfig.luau` (`wheelSpin.id`), publier. Tant que l'ID vaut 0,
+   le bouton d'achat n'existe pas dans le jeu.
+3. Vérifier avec un compte de test : le bouton « ACHETER 1 TOUR » apparaît, l'achat ajoute 1 jeton, la sortie
+   serveur écrit `[Purchase] … crédité`. Un reçu n'est accordé à Roblox qu'après l'écriture du profil.
+4. Roblox demande d'afficher les chances des objets aléatoires payants (fait dans la fenêtre BONUS) et de ne
+   pas les proposer dans certains pays : le serveur lit `PolicyService` et masque le bouton pour ces joueurs.
+5. Incident : couper la roue avec l'interrupteur `SpinWheel` (attribut `BC_Maintenance` ou store d'opérations).
+   Les jetons déjà achetés restent au profil ; ne jamais les supprimer pour résoudre un incident.

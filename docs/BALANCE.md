@@ -98,3 +98,29 @@ deux façons de jouer viables, aucune dominante.
 2. `lune run tools/simulate --runs 50 --variant current` pour un premier regard, puis le rapport complet.
 3. `lune run tests/run` : les garde-fous d'équilibrage (aucun coup mortel d'un coup, PV croissants) doivent passer.
 4. Régénérer `docs/BALANCE-SIM.md` et noter le changement ici.
+
+## Balance v4-p2 (11/11) : Cherry et récompenses
+
+**Cherry** (B09, Legendary, ×3,5, 1 %) : le point de chance vient de Maya (32 → 31 %), le total reste 100 %
+(§32). La garantie des 50 relances couvre 8 identités manquantes au lieu de 7 : Book complet en 400 relances
+au plus (350 avant). Les boss des niveaux ne changent pas. Simulateur relancé (`BALANCE-SIM.md` régénéré) :
+premier parcours inchangé (28 min 17 pour l'occasionnel) ; Baddies Book complet plus long d'une identité :
+48 → 54 min (occasionnel), 22 → 25 min (investi), 1 h 05 → 1 h 13 (farmeur).
+
+**Récompenses** (`Balance.coins`, `wheel`, `daily`, `playtime`) : première proposition, **non simulée**
+(le simulateur ne joue ni la roue ni les récompenses). Ordres de grandeur pour un joueur d'une heure par jour :
+
+| Source | Pièces | Tickets baddie | Tickets compagnon | Jetons de roue |
+|---|---|---|---|---|
+| Temps de jeu (paliers 5, 10, 30, 60 min) | 460 | 3 | 1 | 0 (le palier de 3 h en donne 1) |
+| Connexion (moyenne sur le cycle de 7 jours) | 93 | 0,6 | 0,14 | 0,14 |
+| Un parcours des 10 niveaux | 275 | — | — | — |
+
+Soit environ 9 tours de roue par jour (1 gratuit + ~8 payés en pièces) pour un joueur qui termine aussi un parcours. Un tour rapporte en moyenne
+26 pièces, 0,44 ticket baddie, 0,1 ticket compagnon et un drop de baddie dans 24 % des cas
+(Legendary 2 %, Mythic 0,5 %). À surveiller après publication (Economy → `Pieces`, Custom → `TourDeRoue`) :
+si les tickets de la roue et du temps de jeu raccourcissent trop le Book (54 min pour un joueur
+occasionnel sans ces récompenses), augmenter d'abord `spinCostCoins` ou réduire les tickets des paliers, sans toucher aux règles.
+
+Règles fixes de ce lot : une baddie gagnée à la roue est un drop en attente (§14) ; le boss reste à 10 %
+sans garantie ; les chances de la roue sont affichées avant chaque tour.

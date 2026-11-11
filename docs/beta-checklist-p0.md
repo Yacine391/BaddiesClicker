@@ -50,6 +50,20 @@
 | 24 | Titre (après le boss 1 : STYLE → titre) | Le titre s'affiche au-dessus de ta tête, aussi chez l'autre joueur | |
 | 25 | Annonces de succès | Accents corrects (« PREMIÈRE RENAISSANCE ») et texte entièrement visible à l'écran | |
 
+## 3 bis. Personnages et récompenses (lot du 11/11)
+
+| # | Contrôle | Attendu | Obtenu |
+|---|---|---|---|
+| 26 | Regarde ta principale et Malik marcher | Ils suivent, marchent et s'arrêtent sans pièce qui flotte ni pied dans le sol | |
+| 27 | BOOK | Chaque carte montre le visage du personnage ; une baddie non découverte est une silhouette noire | |
+| 28 | Boss des niveaux 1 à 3 | Le boss ressemble à la baddie annoncée (Jade, Iris), pas à Maya | |
+| 29 | Roue près du spawn | Tu la vois en arrivant ; marcher sur l'anneau rose ouvre BONUS → ROUE | |
+| 30 | TOUR GRATUIT DU JOUR | La roue tourne ~3 s et s'arrête sur la part annoncée ; le bouton devient « TOURNER · 100 PIÈCES » | |
+| 31 | Chances | La liste à droite de la roue donne un pourcentage par part | |
+| 32 | BONUS → CONNEXION | Le jour du cycle est surligné ; RÉCLAMER donne la récompense, puis « REÇU » | |
+| 33 | BONUS → TEMPS DE JEU | Le compteur avance ; à 5 min, RÉCLAMER apparaît et un message te prévient | |
+| 34 | Gagner une baddie à la roue | Message « DROP : … », badge sur SLOTS ; elle n'est pas dans le Book avant d'être acceptée | |
+
 ## 4. Compréhension (questions ouvertes, à poser après la session)
 
 - Qu'est-ce qui fait monter ta puissance ?
@@ -60,6 +74,6 @@
 
 ## 5. Notes
 
-Les personnages sont des **placeholders** (rigs simples, sans visage ; tous les boss utilisent Maya) : juger la
-lisibilité et la silhouette, pas la finition. Matrice complète des tests et de ce qui est automatisé :
+Les personnages sont construits en pièces Roblox (pas encore les modèles Blender) : juger la lisibilité, la
+silhouette et les animations, pas la finition. Matrice complète des tests et de ce qui est automatisé :
 [`TEST-MATRIX.md`](TEST-MATRIX.md).

@@ -3,7 +3,8 @@
 	critique apparaît (§36), sans republier le jeu. Une décision coupée est refusée avec la raison
 	"maintenance" ; rien n'est supprimé (jamais de drop en attente effacé pour résoudre un incident).
 
-	Décisions qu'on peut couper : Roll, AcceptDrop, RefuseDrop, Rebirth, OpenChest.
+	Décisions qu'on peut couper : Roll, AcceptDrop, RefuseDrop, Rebirth, OpenChest, SpinWheel, ClaimDaily,
+	ClaimPlaytime.
 	Une décision est coupée si l'une de ces deux sources le dit :
 	- DataStore « BC_Ops_v1 » (Studio : « BC_Ops_STUDIO_v1 »), clé « maintenance », valeur
 	  { Roll = true, Rebirth = true, ... } : relue toutes les 60 s par chaque serveur. Se modifie depuis le
@@ -18,7 +19,16 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local MaintenanceService = {}
 
-MaintenanceService.ACTIONS = table.freeze({ "Roll", "AcceptDrop", "RefuseDrop", "Rebirth", "OpenChest" })
+MaintenanceService.ACTIONS = table.freeze({
+	"Roll",
+	"AcceptDrop",
+	"RefuseDrop",
+	"Rebirth",
+	"OpenChest",
+	"SpinWheel",
+	"ClaimDaily",
+	"ClaimPlaytime",
+})
 local KEY = "maintenance"
 local ATTRIBUTE = "BC_Maintenance"
 

@@ -31,6 +31,10 @@ local Net = {
 		UpgradeCrew = "UpgradeCrew", -- { crewId } (dépense niveau + 1 copies)
 		EquipCrew = "EquipCrew", -- { ids } (2 compagnons possédés maximum)
 		SetStyle = "SetStyle", -- { slot, id? } (cosmétique ou titre débloqué ; id absent = retirer)
+		-- Récompenses (décisions durables) :
+		SpinWheel = "SpinWheel", -- { requestId, pay = "free" | "token" | "coins" }
+		ClaimDaily = "ClaimDaily", -- { requestId }
+		ClaimPlaytime = "ClaimPlaytime", -- { requestId, index }
 		DevSetMastery = "DevSetMastery", -- { baddieId, xp } (Studio uniquement)
 		DevGrant = "DevGrant", -- { what = "tickets" | "crewTickets" | "drop" | "finishRun", baddieId? } (Studio)
 	}),

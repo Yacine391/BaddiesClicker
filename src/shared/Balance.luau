@@ -9,7 +9,7 @@
 ]]
 
 local Balance = {
-	version = "v4-p1", -- p1 : équilibrage du 15/10 (docs/BALANCE.md, tools/simulate.luau)
+	version = "v4-p2", -- p1 : équilibrage du 15/10 ; p2 : Cherry et récompenses du 11/11 (docs/BALANCE.md)
 
 	power = {
 		start = 1, -- puissance de départ (et après rebirth)
@@ -154,9 +154,67 @@ local Balance = {
 		refreshSeconds = 2,
 	},
 
+	--[[
+		Récompenses (décision du 11/11, hors dossier v4) : pièces, roue, temps de jeu, connexion quotidienne.
+		Règles (Rules/Rewards) : tout est décidé par le serveur, le jour change à minuit UTC, une baddie
+		gagnée à la roue arrive comme un DROP EN ATTENTE (§14) : jamais directement dans un slot ni au Book.
+		Les chances de la roue sont affichées au joueur avant chaque tour (tirage payant possible).
+	]]
+	coins = {
+		bossPerLevel = 5, -- victoire de boss : 5 × niveau (rejouable, comme la puissance)
+	},
+	wheel = {
+		freeSpinsPerDay = 1,
+		spinCostCoins = 100,
+		minIntervalSeconds = 3, -- un tour à la fois : le temps de l'animation
+		robuxPerSpin = 5, -- affichage ; le vrai prix est celui du produit (Config/ProductsConfig)
+		-- Parts de la roue, dans l'ordre d'affichage ; le total des poids fait 100 (testé)
+		segments = {
+			{ id = "coins_small", kind = "coins", amount = 40, weight = 24 },
+			{ id = "common", kind = "baddie", rarity = "common", weight = 10 },
+			{ id = "ticket_1", kind = "baddieTicket", amount = 1, weight = 20 },
+			{ id = "silver", kind = "baddie", rarity = "silver", weight = 7 },
+			{ id = "coins_medium", kind = "coins", amount = 120, weight = 14 },
+			{ id = "gold", kind = "baddie", rarity = "gold", weight = 4.5 },
+			{ id = "crew_1", kind = "crewTicket", amount = 1, weight = 10 },
+			{ id = "legendary", kind = "baddie", rarity = "legendary", weight = 2 },
+			{ id = "ticket_3", kind = "baddieTicket", amount = 3, weight = 8 },
+			{ id = "mythic", kind = "baddie", rarity = "mythic", weight = 0.5 },
+		},
+	},
+	-- Connexion quotidienne : cycle de 7 jours ; un jour manqué ramène la série au jour 1
+	daily = {
+		cycle = {
+			{ coins = 50 },
+			{ baddieTickets = 1 },
+			{ coins = 100 },
+			{ crewTickets = 1 },
+			{ coins = 200 },
+			{ baddieTickets = 3 },
+			{ coins = 300, wheelTokens = 1 },
+		},
+	},
+	-- Temps de jeu du jour (remis à zéro à minuit UTC) : paliers à réclamer
+	playtime = {
+		tickSeconds = 5,
+		maxTickSeconds = 15, -- un tick ne crédite jamais plus (hoquet serveur)
+		milestones = {
+			{ minutes = 5, coins = 30 },
+			{ minutes = 10, coins = 60, baddieTickets = 1 },
+			{ minutes = 30, coins = 120, crewTickets = 1 },
+			{ minutes = 60, coins = 250, baddieTickets = 2 },
+			{ minutes = 180, coins = 600, wheelTokens = 1 },
+		},
+	},
+	purchases = {
+		rememberedIds = 50, -- reçus d'achat gardés au profil (ProcessReceipt idempotent)
+		saveTimeoutSeconds = 12,
+	},
+
 	-- §24 : bornes vérifiées au chargement de chaque profil (Rules/ProfileGuard) ; ni NaN ni infini
 	limits = {
 		maxPower = 1e15,
+		maxCoins = 1e9,
 		maxTickets = 1e6,
 		maxCopies = 1e6,
 		maxCounter = 1e9, -- compteurs de relances, d'entraînements, révisions, parcours

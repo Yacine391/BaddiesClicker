@@ -25,6 +25,9 @@ export type Session = {
 	movementRoot: BasePart?, -- HumanoidRootPart suivi (un nouveau personnage relance le suivi)
 	combatGains: { power: number, xp: { [string]: number } }?, -- gains de la rencontre, retirés si invalidée
 	combatBlockedUntil: number?, -- pas de nouvelle vague avant cet instant (après une invalidation)
+	lastSpinAt: number?, -- dernier tour de roue accepté (3 s entre deux)
+	lastPlaytimeAt: number?, -- dernier crédit du temps de jeu du jour
+	paidRandomAllowed: boolean, -- tirage payant autorisé dans le pays du joueur (PolicyService) ; faux tant qu'inconnu
 }
 
 local Sessions = {}
@@ -51,6 +54,9 @@ function Sessions.create(player: Player): Session
 		movementRoot = nil,
 		combatGains = nil,
 		combatBlockedUntil = nil,
+		lastSpinAt = nil,
+		lastPlaytimeAt = nil,
+		paidRandomAllowed = false,
 	}
 	byPlayer[player] = session
 	return session

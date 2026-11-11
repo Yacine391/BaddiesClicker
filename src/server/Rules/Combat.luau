@@ -31,6 +31,7 @@ export type Victory = {
 	masteryUp: number?,
 	firstClear: boolean,
 	baddieTickets: number,
+	coins: number,
 	drop: string?,
 }
 
@@ -193,6 +194,10 @@ function Combat.applyBossVictory(data: any, levelId: number, roll: number, ctx: 
 		tickets = 1
 	end
 
+	-- Pièces (Rules/Rewards) : 5 × niveau à chaque victoire
+	local coins = ctx.Balance.coins.bossPerLevel * levelId
+	data.coins = (data.coins or 0) + coins
+
 	local drop = nil
 	if roll < ctx.Balance.combat.bossDropChance then
 		drop = cfg.boss
@@ -207,6 +212,7 @@ function Combat.applyBossVictory(data: any, levelId: number, roll: number, ctx: 
 		masteryUp = up,
 		firstClear = firstClear,
 		baddieTickets = tickets,
+		coins = coins,
 		drop = drop,
 	}
 end

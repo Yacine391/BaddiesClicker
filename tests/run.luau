@@ -27,6 +27,7 @@ local Ranking = require("../src/server/Rules/Ranking")
 local Achievements = require("../src/server/Rules/Achievements")
 local Metrics = require("../src/server/Rules/Metrics")
 local Movement = require("../src/server/Rules/Movement")
+local Rewards = require("../src/server/Rules/Rewards")
 local profileV4P0 = require("./fixtures/profile_v4_p0")
 
 local Wardrobe = require("../src/shared/Wardrobe")
@@ -1856,6 +1857,326 @@ test("déplacement voulu par le serveur (reset) : pas d'anomalie", function()
 	local tracker = origin()
 	Movement.reset(tracker, { x = 400, y = 0, z = 0 }, 1, WALK, MOVE)
 	eq(Movement.observe(tracker, { x = 401, y = 0, z = 0 }, 1.1, WALK, MOVE).status, "ok")
+end)
+
+print("Récompenses : pièces, roue, connexion quotidienne, temps de jeu, achats")
+
+local DAY = 86400
+local D1 = 20000 -- un numéro de jour UTC quelconque
+
+-- Roll qui tombe au milieu de la part `id`
+local function wheelRollFor(id: string): number
+	local total, before = 0, 0
+	local found = nil
+	for _, segment in Balance.wheel.segments do
+		if segment.id == id then
+			found = segment
+			before = total
+		end
+		total += segment.weight
+	end
+	assert(found ~= nil, `part inconnue : {id}`)
+	return (before + found.weight / 2) / total
+end
+
+test("configuration : poids de la roue = 100, parts valides, cycles et paliers croissants", function()
+	local total = 0
+	local ids = {}
+	for _, segment in Balance.wheel.segments do
+		total += segment.weight
+		eq(ids[segment.id], nil, `part en double : {segment.id}`)
+		ids[segment.id] = true
+		assert(segment.weight > 0, "poids positif")
+		if segment.kind == "baddie" then
+			assert(Catalog.rarities[segment.rarity] ~= nil, `rareté {segment.rarity}`)
+			assert(#Rewards.baddiesOfRarity(segment.rarity, ctx) > 0, `aucune baddie {segment.rarity}`)
+		else
+			assert(segment.amount > 0, `montant de {segment.id}`)
+		end
+	end
+	near(total, 100, "total des poids", 1e-9)
+	eq(#Balance.daily.cycle, 7, "cycle de 7 jours")
+	local previous = 0
+	for _, milestone in Balance.playtime.milestones do
+		assert(milestone.minutes > previous, "paliers croissants")
+		previous = milestone.minutes
+	end
+end)
+
+test("jour UTC : change à minuit, secondes avant la remise à zéro", function()
+	eq(Rewards.day(D1 * DAY), D1)
+	eq(Rewards.day(D1 * DAY + DAY - 1), D1)
+	eq(Rewards.day((D1 + 1) * DAY), D1 + 1)
+	eq(Rewards.secondsUntilReset(D1 * DAY), DAY)
+	eq(Rewards.secondsUntilReset(D1 * DAY + DAY - 10), 10)
+end)
+
+test("profil neuf : aucune pièce, tour gratuit et connexion du jour disponibles", function()
+	local p = newProfile()
+	eq(p.coins, 0)
+	local view = Rewards.view(p, D1 * DAY + 60, ctx, nil)
+	eq(view.wheel.free, true)
+	eq(view.wheel.tokens, 0)
+	eq(view.wheel.productId, nil, "pas de tour payant sans produit")
+	eq(view.daily.claimed, false)
+	eq(view.daily.dayIndex, 1)
+	eq(view.playtime.seconds, 0)
+	eq(view.claimable, 2, "tour gratuit + connexion")
+end)
+
+test("roue : bornes des parts, chance égale entre les baddies d'une rareté", function()
+	local index, segment = Rewards.pickSegment(0, ctx)
+	eq(index, 1)
+	eq(segment.id, "coins_small")
+	local last = #Balance.wheel.segments
+	eq((Rewards.pickSegment(0.99999999, ctx)), last)
+	eq((Rewards.pickSegment(5, ctx)), last, "roll hors bornes")
+	eq(select(2, Rewards.pickSegment(wheelRollFor("mythic"), ctx)).id, "mythic")
+	eq(Rewards.pickBaddie("legendary", 0, ctx), "zuri")
+	eq(Rewards.pickBaddie("legendary", 0.5, ctx), "cherry")
+	eq(Rewards.pickBaddie("legendary", 0.999, ctx), "cherry")
+	eq(Rewards.pickBaddie("mythic", 0.3, ctx), "vega")
+	eq(Rewards.pickBaddie("inconnue", 0.3, ctx), nil)
+end)
+
+test("roue : un tour gratuit par jour, puis jeton, puis pièces", function()
+	local p = newProfile()
+	eq(Rewards.checkSpin(p, "free", D1, ctx), nil)
+	eq(Rewards.checkSpin(p, "token", D1, ctx), "no_token")
+	eq(Rewards.checkSpin(p, "coins", D1, ctx), "no_coins")
+	eq(Rewards.checkSpin(p, "robux", D1, ctx), "invalid")
+	eq(Rewards.checkSpin(p, nil, D1, ctx), "invalid")
+	local r = Rewards.applySpin(p, "free", D1, wheelRollFor("coins_small"), 0, ctx)
+	eq(r.prize, "coins")
+	eq(r.amount, 40)
+	eq(r.spinNumber, 1)
+	eq(p.coins, 40)
+	eq(Rewards.checkSpin(p, "free", D1, ctx), "no_free", "déjà pris aujourd'hui")
+	eq(Rewards.checkSpin(p, "free", D1 - 3, ctx), "no_free", "une horloge qui recule ne redonne rien")
+	eq(Rewards.checkSpin(p, "free", D1 + 1, ctx), nil, "le lendemain")
+	p.coins = 150
+	eq(Rewards.checkSpin(p, "coins", D1, ctx), nil)
+	local paid = Rewards.applySpin(p, "coins", D1, wheelRollFor("ticket_3"), 0, ctx)
+	eq(p.coins, 50, "coût de 100 pièces")
+	eq(paid.amount, 3)
+	eq(p.tickets.baddie, Balance.tickets.startBaddie + 3)
+	p.rewards.wheel.tokens = 2
+	local crew = Rewards.applySpin(p, "token", D1, wheelRollFor("crew_1"), 0, ctx)
+	eq(p.rewards.wheel.tokens, 1)
+	eq(crew.tokens, 1)
+	eq(p.tickets.crew, 1)
+	eq(p.coins, 50, "un jeton ne coûte pas de pièces")
+end)
+
+test("roue : une baddie gagnée est un drop en attente (ni Book, ni dégâts, ni slot)", function()
+	local p = newProfile()
+	local damage = CombatRules.attackDamage(p, ctx)
+	local revision = p.pendingRevision
+	local r = Rewards.applySpin(p, "free", D1, wheelRollFor("mythic"), 0.5, ctx)
+	eq(r.prize, "baddie")
+	eq(r.baddieId, "vega")
+	eq(r.rarity, "mythic")
+	eq(p.pendingDrops.vega, 1, "en attente")
+	eq(p.pendingRevision, revision + 1)
+	eq(p.discoveredBaddies.vega, nil, "pas au Book")
+	eq(p.slots.s1.baddieId, "maya", "slot intact")
+	eq(CombatRules.attackDamage(p, ctx), damage, "aucun multiplicateur")
+	eq((Collection.bookCount(p, ctx)), 1)
+	-- acceptée ensuite par le circuit normal des drops
+	eq(Slots.checkAcceptDrop(p, "vega", p.slots.s1.slotRevision, p.pendingRevision, ctx), nil)
+end)
+
+test("roue : sur 100 000 tours, chaque part sort à sa fréquence annoncée", function()
+	local counts = {}
+	local seed = 12345
+	local function nextRandom(): number
+		seed = (seed * 48271) % 2147483647
+		return seed / 2147483647
+	end
+	local n = 100000
+	for _ = 1, n do
+		local _, segment = Rewards.pickSegment(nextRandom(), ctx)
+		counts[segment.id] = (counts[segment.id] or 0) + 1
+	end
+	for _, segment in Balance.wheel.segments do
+		near((counts[segment.id] or 0) / n * 100, segment.weight, segment.id, 0.5)
+	end
+end)
+
+test(
+	"connexion quotidienne : une fois par jour, série +1 le lendemain, retour au jour 1 après un jour manqué",
+	function()
+		local p = newProfile()
+		eq(Rewards.checkDaily(p, D1), nil)
+		local r1 = Rewards.applyDaily(p, D1, ctx)
+		eq(r1.streak, 1)
+		eq(r1.dayIndex, 1)
+		eq(r1.coins, 50)
+		eq(p.coins, 50)
+		eq(Rewards.checkDaily(p, D1), "already")
+		eq(Rewards.checkDaily(p, D1 - 1), "already", "horloge qui recule")
+		local r2 = Rewards.applyDaily(p, D1 + 1, ctx)
+		eq(r2.streak, 2)
+		eq(r2.baddieTickets, 1)
+		eq(p.tickets.baddie, Balance.tickets.startBaddie + 1)
+		local r3 = Rewards.applyDaily(p, D1 + 3, ctx) -- un jour manqué
+		eq(r3.streak, 1, "série perdue")
+		eq(r3.dayIndex, 1)
+		eq(p.rewards.daily.claims, 3)
+	end
+)
+
+test("connexion quotidienne : le 7e jour donne un jeton de roue, le 8e reprend le cycle", function()
+	local p = newProfile()
+	local last
+	for i = 0, 6 do
+		last = Rewards.applyDaily(p, D1 + i, ctx)
+	end
+	eq(last.streak, 7)
+	eq(last.dayIndex, 7)
+	eq(last.wheelTokens, 1)
+	eq(p.rewards.wheel.tokens, 1)
+	local eighth = Rewards.applyDaily(p, D1 + 7, ctx)
+	eq(eighth.streak, 8)
+	eq(eighth.dayIndex, 1, "cycle")
+	local view = Rewards.view(p, (D1 + 7) * DAY + 5, ctx, nil)
+	eq(view.daily.claimed, true)
+	eq(view.daily.streak, 8)
+	eq(Rewards.view(p, (D1 + 8) * DAY + 5, ctx, nil).daily.dayIndex, 2, "demain : case 2")
+end)
+
+test("temps de jeu : paliers du jour, réclamés une fois, remis à zéro à minuit UTC", function()
+	local p = newProfile()
+	eq(Rewards.checkPlaytime(p, 1, D1, ctx), "not_ready")
+	eq(Rewards.checkPlaytime(p, 0, D1, ctx), "invalid")
+	eq(Rewards.checkPlaytime(p, 1.5, D1, ctx), "invalid")
+	eq(Rewards.checkPlaytime(p, 99, D1, ctx), "invalid")
+	eq(Rewards.checkPlaytime(p, "1", D1, ctx), "invalid")
+	local becameReady = false
+	for _ = 1, 60 do -- 60 ticks de 5 s = 5 min
+		becameReady = Rewards.tickPlaytime(p, D1, 5, ctx) or becameReady
+	end
+	eq(becameReady, true, "palier prêt signalé")
+	eq(Rewards.playtimeSeconds(p, D1), 300)
+	eq(Rewards.checkPlaytime(p, 1, D1, ctx), nil)
+	eq(Rewards.checkPlaytime(p, 2, D1, ctx), "not_ready")
+	local r = Rewards.applyPlaytime(p, 1, D1, ctx)
+	eq(r.coins, 30)
+	eq(r.minutes, 5)
+	eq(p.coins, 30)
+	eq(Rewards.checkPlaytime(p, 1, D1, ctx), "already")
+	local view = Rewards.view(p, D1 * DAY + 400, ctx, nil)
+	eq(view.playtime.milestones[1].claimed, true)
+	eq(view.playtime.milestones[2].ready, false)
+	-- le lendemain : compteur et paliers repartent de zéro
+	eq(Rewards.playtimeSeconds(p, D1 + 1), 0)
+	eq(Rewards.checkPlaytime(p, 1, D1 + 1, ctx), "not_ready")
+	Rewards.tickPlaytime(p, D1 + 1, 5, ctx)
+	eq(p.rewards.playtime.seconds, 5)
+	eq(p.rewards.playtime.claimed["1"], nil)
+end)
+
+test("temps de jeu : un tick ne crédite jamais plus que le plafond, ni un temps invalide", function()
+	local p = newProfile()
+	Rewards.tickPlaytime(p, D1, 3600, ctx)
+	eq(p.rewards.playtime.seconds, Balance.playtime.maxTickSeconds)
+	Rewards.tickPlaytime(p, D1, -50, ctx)
+	Rewards.tickPlaytime(p, D1, 0 / 0, ctx)
+	eq(p.rewards.playtime.seconds, Balance.playtime.maxTickSeconds)
+end)
+
+test("achats : un reçu Roblox n'est crédité qu'une fois, liste des reçus bornée", function()
+	local p = newProfile()
+	eq(Rewards.applyPurchase(p, "achat-1", { wheelTokens = 1 }, ctx), true)
+	eq(p.rewards.wheel.tokens, 1)
+	eq(Rewards.applyPurchase(p, "achat-1", { wheelTokens = 1 }, ctx), false, "même reçu")
+	eq(p.rewards.wheel.tokens, 1)
+	eq(Rewards.hasPurchase(p, "achat-1"), true)
+	for i = 2, Balance.purchases.rememberedIds + 5 do
+		Rewards.applyPurchase(p, `achat-{i}`, { wheelTokens = 1 }, ctx)
+	end
+	eq(#p.rewards.purchaseIds, Balance.purchases.rememberedIds)
+	eq(Rewards.hasPurchase(p, `achat-{Balance.purchases.rememberedIds + 5}`), true)
+end)
+
+test("tour payant : proposé seulement avec un produit configuré ET sans restriction du pays", function()
+	local p = newProfile()
+	local now = D1 * DAY
+	eq(Rewards.view(p, now, ctx, { productId = 123, allowed = true }).wheel.productId, 123)
+	eq(Rewards.view(p, now, ctx, { productId = 123, allowed = true }).wheel.robux, Balance.wheel.robuxPerSpin)
+	eq(Rewards.view(p, now, ctx, { productId = 123, allowed = false }).wheel.productId, nil, "pays restreint")
+	eq(Rewards.view(p, now, ctx, { productId = nil, allowed = true }).wheel.productId, nil, "produit absent")
+end)
+
+test("victoire de boss : pièces 5 × niveau, à chaque victoire", function()
+	local p = newProfile()
+	local v = CombatRules.applyBossVictory(p, 1, 0.99, ctx)
+	eq(v.coins, 5)
+	p.run.clearedLevels["1"] = true
+	local v3 = CombatRules.applyBossVictory(p, 2, 0.99, ctx)
+	eq(v3.coins, 10)
+	eq(p.coins, 15)
+end)
+
+test(
+	"garde-fous : profil d'avant les récompenses complété sans alerte, valeurs abîmées corrigées",
+	function()
+		local p = newProfile()
+		p.coins = nil
+		p.rewards = nil
+		eq(#ProfileGuard.repair(p, ctx), 0, "champs absents : aucun signalement")
+		eq(p.coins, 0)
+		eq(p.rewards.wheel.tokens, 0)
+		eq(type(p.rewards.playtime.claimed), "table")
+		p.coins = -5
+		p.rewards.wheel.tokens = 0 / 0
+		p.rewards.playtime.claimed = { ["1"] = true, ["2"] = "oui" }
+		p.rewards.purchaseIds = { "a", 5, "b" }
+		local issues = ProfileGuard.repair(p, ctx)
+		assert(#issues >= 2, "corrections signalées")
+		eq(p.coins, 0)
+		eq(p.rewards.wheel.tokens, 0)
+		eq(p.rewards.playtime.claimed["2"], nil)
+		eq(#p.rewards.purchaseIds, 2)
+		eq(#ProfileGuard.repair(p, ctx), 0, "idempotent")
+	end
+)
+
+test("décision durable : même requestId de tour de roue répété → un seul tour, même gain", function()
+	local p = newProfile()
+	local session = { mutating = false }
+	local replies = {}
+	local env = {
+		getData = function()
+			return p
+		end,
+		save = function()
+			return true
+		end,
+		reply = function(event)
+			table.insert(replies, event)
+		end,
+	}
+	local rolls = 0
+	local function apply(data)
+		local reason = Rewards.checkSpin(data, "free", D1, ctx)
+		if reason ~= nil then
+			return reason
+		end
+		rolls += 1
+		return nil, Rewards.applySpin(data, "free", D1, wheelRollFor("gold"), 0, ctx)
+	end
+	Receipts.run(env, session, "SpinWheel", "tour-1", apply)
+	Receipts.run(env, session, "SpinWheel", "tour-1", apply)
+	eq(rolls, 1, "un seul tirage")
+	eq(#replies, 2)
+	eq(replies[2].replay, true)
+	eq(replies[2].result.baddieId, replies[1].result.baddieId)
+	eq(p.rewards.wheel.spins, 1)
+	-- un nouveau requestId le même jour : plus de tour gratuit
+	Receipts.run(env, session, "SpinWheel", "tour-2", apply)
+	eq(replies[3].ok, false)
+	eq(replies[3].reason, "no_free")
 end)
 
 print(`\n{passed} réussi(s), {failed} échec(s)`)

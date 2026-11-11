@@ -26,6 +26,14 @@ function ProfileTemplate.new(ctx: any): { [string]: any }
 		},
 		run = { id = 1, attempt = 1, clearedLevels = {}, firstClearRewards = {} },
 		tickets = { baddie = B.tickets.startBaddie, crew = B.tickets.startCrew },
+		coins = 0, -- pièces (Rules/Rewards) : roue, gagnées en jouant
+		-- Récompenses : jours en numéro de jour UTC (0 = jamais) ; rien n'est daté par le client
+		rewards = {
+			wheel = { lastFreeDay = 0, spins = 0, tokens = 0 }, -- tokens : tours achetés ou offerts, en réserve
+			daily = { lastClaimDay = 0, streak = 0, claims = 0 },
+			playtime = { day = 0, seconds = 0, claimed = {} }, -- claimed : "1", "2"… -> true (paliers du jour)
+			purchaseIds = {}, -- derniers reçus d'achat traités (liste bornée)
+		},
 		rolls = { baddie = 0, crew = 0 },
 		trainCounters = { baddie = 0, crew = 0 },
 		pendingDrops = {}, -- baddieId -> quantité

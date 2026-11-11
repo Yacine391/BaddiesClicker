@@ -394,6 +394,54 @@ function ProfileGuard.repair(data: any, ctx: any): { string }
 		end
 	end
 
+	-- Récompenses (Rules/Rewards) : champs ajoutés après le schéma 4, absents des profils plus anciens
+	-- (Reconcile les crée ; ici on ne signale que des valeurs réellement abîmées)
+	if data.coins == nil then
+		data.coins = 0
+	end
+	data.coins = number(issues, "coins", data.coins, 0, L.maxCoins, true, 0)
+	if type(data.rewards) ~= "table" then
+		if data.rewards ~= nil then
+			table.insert(issues, "rewards illisible → remis à zéro")
+		end
+		data.rewards = {}
+	end
+	local R = data.rewards
+	local function section(name: string, defaults: { [string]: number }): any
+		if type(R[name]) ~= "table" then
+			R[name] = {}
+		end
+		for key, default in defaults do
+			if R[name][key] == nil then
+				R[name][key] = default
+			end
+			R[name][key] =
+				number(issues, `rewards.{name}.{key}`, R[name][key], 0, L.maxCounter, true, default)
+		end
+		return R[name]
+	end
+	section("wheel", { lastFreeDay = 0, spins = 0, tokens = 0 })
+	section("daily", { lastClaimDay = 0, streak = 0, claims = 0 })
+	local playtime = section("playtime", { day = 0, seconds = 0 })
+	playtime.seconds = math.min(playtime.seconds, 86400)
+	if type(playtime.claimed) ~= "table" then
+		playtime.claimed = {}
+	end
+	for key, value in playtime.claimed do
+		if type(key) ~= "string" or value ~= true then
+			playtime.claimed[key] = nil
+		end
+	end
+	local purchaseIds = {}
+	if type(R.purchaseIds) == "table" then
+		for _, id in R.purchaseIds do
+			if type(id) == "string" and #purchaseIds < B.purchases.rememberedIds then
+				table.insert(purchaseIds, id)
+			end
+		end
+	end
+	R.purchaseIds = purchaseIds
+
 	-- Statistiques : jamais bloquantes, simplement remises à zéro si illisibles
 	data.analytics = tableOr(issues, "analytics", data.analytics)
 	local A = data.analytics

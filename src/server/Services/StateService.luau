@@ -16,6 +16,7 @@ local AchievementRules = require(script.Parent.Parent.Rules.Achievements)
 local CollectionRules = require(script.Parent.Parent.Rules.Collection)
 local CombatRules = require(script.Parent.Parent.Rules.Combat)
 local CrewRules = require(script.Parent.Parent.Rules.Crew)
+local RewardRules = require(script.Parent.Parent.Rules.Rewards)
 local SlotRules = require(script.Parent.Parent.Rules.Slots)
 
 local StateService = {}
@@ -117,6 +118,8 @@ function StateService.snapshot(player: Player, data): { [string]: any }
 		trainingBonus = bonus,
 		rebirths = data.rebirths,
 		tickets = { baddie = data.tickets.baddie, crew = data.tickets.crew },
+		coins = data.coins, -- pièces : tours de roue (Rules/Rewards)
+		rewards = RewardRules.view(data, os.time(), ctx, deps.Reward.paidInfo(player)),
 		active = {
 			slotId = data.activeSlotId,
 			baddieId = baddieId,

@@ -101,6 +101,46 @@ local function tickets(player: Player, data, kind: "baddie" | "crew", amount: nu
 	end)
 end
 
+local function coins(player: Player, data, amount: number, sku: string)
+	if amount == 0 then
+		return
+	end
+	local flow = if amount > 0
+		then Enum.AnalyticsEconomyFlowType.Source
+		else Enum.AnalyticsEconomyFlowType.Sink
+	local balance = data.coins
+	send(`Pieces {if amount > 0 then "+" else ""}{amount} ({sku}) → {balance}`, function()
+		AnalyticsService:LogEconomyEvent(player, flow, "Pieces", math.abs(amount), balance, GAMEPLAY, sku)
+	end)
+end
+
+-- Récompenses : `kind` = "wheel" | "dailyReward" | "playtimeReward" ; `result` = résultat de Rules/Rewards
+function MetricsService.reward(player: Player, data, kind: string, result)
+	if kind == "wheel" then
+		if result.pay == "coins" then
+			coins(player, data, -ctx.Balance.wheel.spinCostCoins, "TourDeRoue")
+		end
+		if result.prize == "coins" then
+			coins(player, data, result.amount or 0, "Roue")
+		elseif result.prize == "baddieTicket" then
+			tickets(player, data, "baddie", result.amount or 0, "Roue")
+		elseif result.prize == "crewTicket" then
+			tickets(player, data, "crew", result.amount or 0, "Roue")
+		end
+		custom(player, "TourDeRoue", 1, result.pay, result.segmentId)
+		return
+	end
+	local sku = if kind == "dailyReward" then "ConnexionQuotidienne" else "TempsDeJeu"
+	coins(player, data, result.coins or 0, sku)
+	tickets(player, data, "baddie", result.baddieTickets or 0, sku)
+	tickets(player, data, "crew", result.crewTickets or 0, sku)
+	if kind == "dailyReward" then
+		custom(player, "SerieQuotidienne", result.streak or 1)
+	else
+		custom(player, "PalierTempsDeJeu", result.minutes or 0)
+	end
+end
+
 local function levelName(levelId: number): string
 	local level = ctx.Balance.levels[levelId]
 	return `Niveau {levelId} · {if level then level.district else "?"}`
@@ -170,6 +210,7 @@ function MetricsService.encounterInvalid(player: Player, _data, levelId: number)
 end
 
 function MetricsService.bossDefeated(player: Player, data, levelId: number, victory)
+	coins(player, data, victory.coins or 0, "Boss")
 	send(`progression réussite · {levelName(levelId)}`, function()
 		AnalyticsService:LogProgressionCompleteEvent(player, PATH, levelId, levelName(levelId))
 	end)

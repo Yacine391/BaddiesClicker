@@ -79,6 +79,20 @@ function DevService.onGrant(player: Player, payload: { [any]: any }?)
 		data.power += 5000 -- les niveaux 2 à 10 demandent des milliers de puissance (équilibrage v4-p1)
 	elseif what == "crewTickets" then
 		data.tickets.crew += 5
+	elseif what == "coins" then
+		data.coins += 500
+	elseif what == "wheelToken" then
+		data.rewards.wheel.tokens += 3
+	elseif what == "playtime" then
+		-- avance le temps de jeu du jour de 30 min (tester les paliers sans attendre)
+		data.rewards.playtime.seconds = math.min(86400, data.rewards.playtime.seconds + 1800)
+	elseif what == "newDay" then
+		-- comme si la dernière connexion datait d'hier : tour gratuit et récompense du jour à reprendre
+		local day = math.floor(os.time() / 86400)
+		data.rewards.wheel.lastFreeDay = day - 1
+		data.rewards.daily.lastClaimDay = day - 1
+		data.rewards.playtime.claimed = {}
+		data.rewards.playtime.seconds = 0
 	elseif what == "drop" then
 		local id = payload.baddieId
 		-- identités publiques seulement : un drop vient toujours d'un boss du lot

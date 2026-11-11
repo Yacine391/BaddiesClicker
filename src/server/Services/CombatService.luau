@@ -274,6 +274,7 @@ local function onBossVictory(player: Player, session, data, encounter)
 		firstClear = victory.firstClear,
 		baddieTickets = victory.baddieTickets,
 		power = victory.power,
+		coins = victory.coins,
 	})
 	notifyMastery(player, victory.masteryBaddie, victory.masteryUp)
 	deps.Metrics.bossDefeated(player, data, encounter.levelId, victory)

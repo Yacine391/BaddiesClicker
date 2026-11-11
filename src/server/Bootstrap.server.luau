@@ -54,6 +54,8 @@ local Wardrobe = require(Services.WardrobeService)
 local Metrics = require(Services.MetricsService)
 local Slots = require(Services.SlotService)
 local Book = require(Services.BookService)
+local Reward = require(Services.RewardService)
+local Purchase = require(Services.PurchaseService)
 local Dev = require(Services.DevService)
 
 local deps = table.freeze({
@@ -65,6 +67,7 @@ local deps = table.freeze({
 	Maintenance = Maintenance,
 	Ranking = Ranking,
 	Metrics = Metrics,
+	Reward = Reward,
 })
 
 Profiles.init(ctx)
@@ -77,6 +80,8 @@ Combat.init(ctx, deps)
 Mutations.init(ctx, deps)
 Slots.init(ctx, deps)
 Book.init(ctx, deps)
+Reward.init(ctx, deps)
+Purchase.init(ctx, deps)
 Dev.init(ctx, deps)
 Ranking.init(ctx, deps)
 Wardrobe.init(ctx, deps)
@@ -120,6 +125,9 @@ local routes: { [string]: IntentRouter.Route } = {
 	UpgradeCrew = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Crew.onUpgrade },
 	EquipCrew = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Crew.onEquip },
 	SetStyle = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Wardrobe.onSetStyle },
+	SpinWheel = { rate = MUTATION_RATE, burst = MUTATION_RATE, handler = Reward.onSpinWheel },
+	ClaimDaily = { rate = MUTATION_RATE, burst = MUTATION_RATE, handler = Reward.onClaimDaily },
+	ClaimPlaytime = { rate = MUTATION_RATE, burst = MUTATION_RATE, handler = Reward.onClaimPlaytime },
 }
 if Dev.enabled() then
 	routes.DevSetMastery = { rate = CHOICE_RATE, burst = CHOICE_RATE, handler = Dev.onSetMastery }
@@ -131,6 +139,7 @@ Profiles.onLoaded(function(player, data)
 	Sessions.create(player)
 	Dev.onProfileLoaded(player, data)
 	Metrics.profileLoaded(player, data)
+	Reward.onProfileLoaded(player)
 	State.onPlayerReady(player, data)
 end)
 
@@ -144,6 +153,8 @@ Maintenance.start()
 Ranking.start()
 Wardrobe.start()
 Crew.start()
+Reward.start()
+Purchase.start()
 Combat.start()
 Profiles.start()
 

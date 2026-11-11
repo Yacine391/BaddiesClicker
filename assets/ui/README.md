@@ -39,42 +39,23 @@ Icônes de trait (blanches) : teintées en jeu par `ImageColor3`. `arm` et `tick
 
 ## Icônes simulateur (refonte du 11/11)
 
-Sources générées par `export/icons_sim.py` dans `icons-sim/*.svg`, PNG par `node export.mjs icons-sim` (`icons-sim/png/`).
-Pleines et en couleur : jamais teintées en jeu. Uploadées au nom de l'utilisateur.
+Vectorielles ombrées (dégradé par forme, reflet, ombre interne, contour sombre), générées par
+`export/icons_sim.py` dans `icons-sim/*.svg`, PNG par `node export.mjs icons-sim` (`icons-sim/png/`).
+En couleur : jamais teintées en jeu. Uploadées au nom de l'utilisateur. Pas de Blender pour les icônes (choix de l'utilisateur).
 
 | Fichier | ID |
 |---|---|
-| `icons-sim/png/book.png` | `rbxassetid://88512135926373` |
-| `icons-sim/png/style.png` | `rbxassetid://70535176425536` |
-| `icons-sim/png/crew.png` | `rbxassetid://118890991313443` |
-| `icons-sim/png/slots.png` | `rbxassetid://98333344524522` |
-| `icons-sim/png/bonus.png` | `rbxassetid://113075847922595` |
-| `icons-sim/png/settings.png` | `rbxassetid://123042582402960` |
-| `icons-sim/png/power.png` | `rbxassetid://104575341948505` |
-| `icons-sim/png/ticket.png` | `rbxassetid://110263683634513` |
-| `icons-sim/png/companionTicket.png` | `rbxassetid://104613250518186` |
-| `icons-sim/png/coin.png` | `rbxassetid://81074390464856` |
-| `icons-sim/png/gift.png` | `rbxassetid://83421099312203` |
-| `icons-sim/png/lock.png` | `rbxassetid://104027571520849` |
-| `icons-sim/png/door.png` | `rbxassetid://72003425824728` |
-| `icons-sim/png/crown.png` | `rbxassetid://82780129259484` |
-
-## Icônes 3D (rendus Blender, 11/11)
-
-Scène et modèles : `blender/icon_kit.py` + `blender/icons.py` (une fonction `build_<nom>` par icône), rendus 512 × 512 transparents dans `icons-3d/`.
-Remplacent les icônes simulateur plates, sauf `lock` et `door` (toujours `icons-sim`).
-
-| Fichier | ID |
-|---|---|
-| `icons-3d/book.png` | `rbxassetid://125173625918836` |
-| `icons-3d/style.png` | `rbxassetid://101028663402756` |
-| `icons-3d/crew.png` | `rbxassetid://98520148403150` |
-| `icons-3d/slots.png` | `rbxassetid://70628433746190` |
-| `icons-3d/bonus.png` | `rbxassetid://118887008661733` |
-| `icons-3d/settings.png` | `rbxassetid://120022267838035` |
-| `icons-3d/gift.png` | `rbxassetid://111345075798964` |
-| `icons-3d/power.png` | `rbxassetid://128247149260944` |
-| `icons-3d/ticket.png` | `rbxassetid://72915798347235` |
-| `icons-3d/companionTicket.png` | `rbxassetid://137714168881506` |
-| `icons-3d/coin.png` | `rbxassetid://139690753999507` |
-| `icons-3d/crown.png` | `rbxassetid://73066508179627` |
+| `icons-sim/png/book.png` | `rbxassetid://115287645348474` |
+| `icons-sim/png/style.png` | `rbxassetid://97789432741218` |
+| `icons-sim/png/crew.png` | `rbxassetid://123418976146795` |
+| `icons-sim/png/slots.png` | `rbxassetid://98396816807789` |
+| `icons-sim/png/bonus.png` | `rbxassetid://97930375524846` |
+| `icons-sim/png/settings.png` | `rbxassetid://124354903973041` |
+| `icons-sim/png/gift.png` | `rbxassetid://117002826576254` |
+| `icons-sim/png/power.png` | `rbxassetid://85705886922860` |
+| `icons-sim/png/ticket.png` | `rbxassetid://89116907720761` |
+| `icons-sim/png/companionTicket.png` | `rbxassetid://93541429184199` |
+| `icons-sim/png/coin.png` | `rbxassetid://75842863094002` |
+| `icons-sim/png/crown.png` | `rbxassetid://136212647644515` |
+| `icons-sim/png/lock.png` | `rbxassetid://81383788793970` |
+| `icons-sim/png/door.png` | `rbxassetid://70666264534865` |

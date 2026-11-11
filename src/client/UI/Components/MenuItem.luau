@@ -2,7 +2,7 @@
 --[[
 	MenuItem : tuile du menu de gauche (style simulateur, spec §3.3 et §4.1).
 	full : 64 × 64 ; compact (petits écrans) : 56 × 56 ; toujours ≥ 48 px réels (Metrics.touch, §21).
-	Icône pleine au centre, libellé contouré qui déborde en bas, pastille rouge (BadgeModel.pip) en haut à droite.
+	Icône au centre (68 %, jamais hors de la case), libellé contouré en bas à l'intérieur, pastille rouge (BadgeModel.pip) en haut à droite.
 	Active (fenêtre ouverte) = contour blanc 4 px. Survol et pression passent par Motion (interruptibles).
 ]]
 
@@ -37,8 +37,8 @@ return function(scope: any, props: Props): Instance
 	local children: { any } = {
 		Icon(scope, {
 			Name = props.Icon,
-			Size = UDim2.fromScale(0.92, 0.92),
-			Position = UDim2.fromScale(0.5, 0.36),
+			Size = UDim2.fromScale(0.68, 0.68),
+			Position = UDim2.fromScale(0.5, 0.42),
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			ZIndex = 3,
 		}),
@@ -48,8 +48,8 @@ return function(scope: any, props: Props): Instance
 			Weight = "Heavy",
 			Stroke = true,
 			StrokeThickness = 2,
-			Size = UDim2.fromScale(1.1, 0.24),
-			Position = UDim2.new(0.5, 0, 1, 3),
+			Size = UDim2.fromScale(0.94, 0.22),
+			Position = UDim2.new(0.5, 0, 1, -2),
 			AnchorPoint = Vector2.new(0.5, 1),
 			ZIndex = 4,
 		}),

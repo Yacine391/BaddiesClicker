@@ -74,22 +74,22 @@ Theme.Logo = "rbxassetid://104433435199565"
 Theme.Glow = "rbxassetid://105925253038271" -- halo porté par Components/Halo, derrière les panneaux
 Theme.GlowSlice = Rect.new(48, 48, 80, 80)
 
--- Icônes 3D en couleur (assets/ui/icons-3d, rendus Blender) ou pleines (icons-sim : lock, door), jamais teintées. "" = pas encore uploadée → LegacyIcons.
+-- Icônes vectorielles ombrées en couleur (assets/ui/icons-sim, export/icons_sim.py), jamais teintées. "" = pas encore uploadée → LegacyIcons.
 Theme.Icons = table.freeze({
-	book = "rbxassetid://125173625918836",
-	style = "rbxassetid://101028663402756",
-	crew = "rbxassetid://98520148403150",
-	slots = "rbxassetid://70628433746190",
-	bonus = "rbxassetid://118887008661733",
-	settings = "rbxassetid://120022267838035",
-	power = "rbxassetid://128247149260944",
-	ticket = "rbxassetid://72915798347235",
-	companionTicket = "rbxassetid://137714168881506",
-	coin = "rbxassetid://139690753999507",
-	gift = "rbxassetid://111345075798964",
-	lock = "rbxassetid://104027571520849",
-	door = "rbxassetid://72003425824728",
-	crown = "rbxassetid://73066508179627",
+	book = "rbxassetid://115287645348474",
+	style = "rbxassetid://97789432741218",
+	crew = "rbxassetid://123418976146795",
+	slots = "rbxassetid://98396816807789",
+	bonus = "rbxassetid://97930375524846",
+	settings = "rbxassetid://124354903973041",
+	power = "rbxassetid://85705886922860",
+	ticket = "rbxassetid://89116907720761",
+	companionTicket = "rbxassetid://93541429184199",
+	coin = "rbxassetid://75842863094002",
+	gift = "rbxassetid://117002826576254",
+	lock = "rbxassetid://81383788793970",
+	door = "rbxassetid://70666264534865",
+	crown = "rbxassetid://136212647644515",
 })
 
 -- Icônes de trait blanches « mix A » (assets/ui/png), teintées par ImageColor3 : repli et anciens noms

@@ -95,7 +95,7 @@ test("ordres du catalogue complets et cohérents", function()
 		assert(Catalog.rarities[Catalog.baddies[id].rarity], `rareté inconnue pour {id}`)
 	end
 	eq(count, #Catalog.baddieOrder, "nombre de baddies")
-	eq(count, 8, "lot V1")
+	eq(count, 9, "lot V1 + Cherry")
 	local crewCount = 0
 	for id in Catalog.crew do
 		crewCount += 1
@@ -628,14 +628,29 @@ test("profil neuf : s1 temporaire avec Maya, principale, sans reçu", function()
 	eq(Receipts.find(p, "x"), nil, "aucun reçu")
 end)
 
-test("table standard : bornes des chances (Maya 32 %, Lina 25 %… Vega 0,5 %)", function()
+test("table standard : bornes des chances (Maya 31 %, Lina 25 %… Vega 0,5 %, Cherry 1 %)", function()
 	eq(Slots.pickStandard(0, ctx), "maya")
-	eq(Slots.pickStandard(0.3199, ctx), "maya")
-	eq(Slots.pickStandard(0.32, ctx), "lina")
-	eq(Slots.pickStandard(0.58, ctx), "jade")
-	eq(Slots.pickStandard(0.994, ctx), "zuri")
-	eq(Slots.pickStandard(0.995, ctx), "vega")
-	eq(Slots.pickStandard(0.99999999, ctx), "vega")
+	eq(Slots.pickStandard(0.3099, ctx), "maya")
+	eq(Slots.pickStandard(0.31, ctx), "lina")
+	eq(Slots.pickStandard(0.57, ctx), "jade")
+	eq(Slots.pickStandard(0.984, ctx), "zuri")
+	eq(Slots.pickStandard(0.985, ctx), "vega")
+	eq(Slots.pickStandard(0.9899, ctx), "vega")
+	eq(Slots.pickStandard(0.99, ctx), "cherry")
+	eq(Slots.pickStandard(0.99999999, ctx), "cherry")
+end)
+
+test("table standard : le total des chances reste 100 % (§32, ajout d'un personnage)", function()
+	local total = 0
+	for _, id in Catalog.baddieOrder do
+		total += Catalog.baddies[id].rollChance
+	end
+	eq(total, 100, "total")
+	eq(#Catalog.baddieOrder, 9, "identités publiques")
+	eq(Catalog.baddies.cherry.rarity, "legendary")
+	for _, id in Catalog.baddieOrder do
+		eq(#Catalog.baddies[id].looks, 3, `looks de {id}`)
+	end
 end)
 
 test("relance : coûte un ticket, remplace le contenu, révision +1, découverte", function()
@@ -679,21 +694,21 @@ test("garantie : la 50e relance donne une identité manquante (uniforme)", funct
 	eq(r.rollNumber, 50)
 	eq(Slots.untilGuarantee(p, ctx), 50, "compteur relancé")
 	p.rolls.baddie = 99
-	eq(Slots.applyRoll(p, "s1", 0.999, ctx).baddieId, "vega", "dernière manquante")
+	eq(Slots.applyRoll(p, "s1", 0.999, ctx).baddieId, "cherry", "dernière manquante")
 end)
 
-test("garantie : le lot V1 complet en 350 relances au plus, même avec un tirage malchanceux", function()
+test("garantie : le Book complet en 400 relances au plus, même avec un tirage malchanceux", function()
 	local p = newProfile()
 	p.tickets.baddie = 1000
 	local rolls = 0
 	while not Slots.isBookComplete(p, ctx) do
 		Slots.applyRoll(p, "s1", 0, ctx) -- 0 : toujours Maya hors garantie
 		rolls += 1
-		assert(rolls <= 400, "boucle")
+		assert(rolls <= 450, "boucle")
 	end
-	eq(rolls, 350, "relances")
-	-- Book complet : la table standard reprend, même à la 400e
-	p.rolls.baddie = 399
+	eq(rolls, 400, "relances") -- 8 identités manquantes × 50 (350 avant l'ajout de Cherry)
+	-- Book complet : la table standard reprend, même à la 450e
+	p.rolls.baddie = 449
 	local r = Slots.applyRoll(p, "s1", 0, ctx)
 	eq(r.guaranteed, false)
 	eq(r.baddieId, "maya")
@@ -955,7 +970,7 @@ test("identités de test : Studio seulement, après les publiques, hors Baddies 
 	local view = Collection.view(p, studioCtx)
 	eq(table.concat(view.discovered, ","), "maya,jade,test_b99", "ordre")
 	eq(view.bookCount, 2, "Book public seulement")
-	eq(view.bookTotal, 8)
+	eq(view.bookTotal, 9)
 	eq(table.concat(view.looks.test_b99.unlocked, ","), "1", "un seul look")
 	eq(Collection.setDisplay(p, { "test_b99" }, studioCtx), nil, "exposable en Studio")
 	eq(table.concat(Collection.view(p, ctx).display, ","), "", "filtrée hors Studio")
@@ -1663,7 +1678,15 @@ test("configuration de la garde-robe cohérente (sources, récompenses, lot V1 f
 		end
 	end
 	eq(Catalog.lot, "V1")
-	eq(table.concat(Wardrobe.lotV1.baddies, ","), table.concat(Catalog.baddieOrder, ","), "lot V1 baddies")
+	-- Le lot V1 des succès est FIGÉ : Cherry (ajoutée après) est au catalogue, pas dans la liste V1
+	eq(
+		table.concat(Wardrobe.lotV1.baddies, ","),
+		"maya,lina,jade,iris,sienna,nova,zuri,vega",
+		"lot V1 baddies"
+	)
+	for _, id in Wardrobe.lotV1.baddies do
+		assert(Catalog.baddies[id] ~= nil, `lot V1 : {id} absente du catalogue`)
+	end
 	eq(table.concat(Wardrobe.lotV1.crew, ","), table.concat(Catalog.crewOrder, ","), "lot V1 crew")
 end)
 

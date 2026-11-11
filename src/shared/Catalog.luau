@@ -1,6 +1,6 @@
 --!strict
 --[[
-	Catalog : identités publiques du lot V1 (baddies et compagnons).
+	Catalog : identités publiques (baddies et compagnons). Lot V1 + Cherry (ajoutée le 11/11, §32).
 
 	- Les IDs sont STABLES : ne jamais renommer un ID publié (profils, drops, Baddies Book en dépendent).
 	- Couleurs en hex, à convertir côté client avec Color3.fromHex.
@@ -26,7 +26,7 @@ local Catalog = {
 			name = "Maya",
 			rarity = "common",
 			multiplier = 1.0,
-			rollChance = 32,
+			rollChance = 31, -- 32 dans le dossier ; 1 point cédé à Cherry (le total reste 100 %, §32)
 			looks = { "Street Start", "Street Match", "Street Signature" },
 			palette = { "#3B5B8C", "#F4EEE7", "#F2A65A" }, -- denim, crème, orange doux
 		},
@@ -36,7 +36,7 @@ local Catalog = {
 			rarity = "common",
 			multiplier = 1.2,
 			rollChance = 25,
-			looks = {},
+			looks = { "Sport Start", "Sport Match", "Sport Signature" },
 			palette = { "#8FA98B", "#F4F1EA", "#3A3A40" }, -- vert sauge, blanc cassé, anthracite
 		},
 		jade = {
@@ -45,7 +45,7 @@ local Catalog = {
 			rarity = "silver",
 			multiplier = 1.5,
 			rollChance = 17,
-			looks = {},
+			looks = { "Urban Start", "Urban Match", "Urban Neon" },
 			palette = { "#151517", "#13A6B5", "#C0C4CC" }, -- noir, cyan, argent
 		},
 		iris = {
@@ -54,7 +54,7 @@ local Catalog = {
 			rarity = "silver",
 			multiplier = 1.8,
 			rollChance = 12,
-			looks = {},
+			looks = { "Studio Start", "Studio Motif", "Studio Signature" },
 			palette = { "#B9A3D9", "#F4EEE7", "#D6336C" }, -- lilas, crème, rose framboise
 		},
 		sienna = {
@@ -63,7 +63,7 @@ local Catalog = {
 			rarity = "gold",
 			multiplier = 2.2,
 			rollChance = 7,
-			looks = {},
+			looks = { "Festival Start", "Festival Shine", "Festival Signature" },
 			palette = { "#B87333", "#E8A0A8", "#FFFFFF" }, -- cuivre, rose, blanc
 		},
 		nova = {
@@ -72,7 +72,7 @@ local Catalog = {
 			rarity = "gold",
 			multiplier = 2.5,
 			rollChance = 5,
-			looks = {},
+			looks = { "Rooftop Start", "Rooftop Chic", "Rooftop Signature" },
 			palette = { "#1B2A4A", "#D7A746", "#FFFFF0" }, -- bleu nuit, or, ivoire
 		},
 		zuri = {
@@ -81,7 +81,7 @@ local Catalog = {
 			rarity = "legendary",
 			multiplier = 3.2,
 			rollChance = 1.5,
-			looks = {},
+			looks = { "Stage Start", "Stage Silver", "Stage Prism" },
 			palette = { "#4B1D7A", "#C0C4CC", "#111111" }, -- violet profond, argent, noir
 		},
 		vega = {
@@ -90,11 +90,22 @@ local Catalog = {
 			rarity = "mythic",
 			multiplier = 4.0,
 			rollChance = 0.5,
-			looks = {},
+			looks = { "Prism Start", "Prism Layers", "Prism Arrival" },
 			palette = { "#FFFFFF", "#30D5C8", "#7642A3" }, -- blanc, turquoise, violet
 		},
+		-- Ajout du 11/11 (§32 « publication d'un nouveau personnage ») : planche « Baddie — Cherry Summer ».
+		-- Hors du lot V1 figé des succès (Shared/Wardrobe.lotV1) ; comptée dans le Baddies Book et le classement.
+		cherry = {
+			code = "B09",
+			name = "Cherry",
+			rarity = "legendary",
+			multiplier = 3.5,
+			rollChance = 1,
+			looks = { "Cherry Summer", "Cherry Pop", "Cherry Signature" },
+			palette = { "#8A1C2B", "#47689E", "#F6F3EE" }, -- bordeaux cerise, denim, blanc
+		},
 	},
-	baddieOrder = { "maya", "lina", "jade", "iris", "sienna", "nova", "zuri", "vega" },
+	baddieOrder = { "maya", "lina", "jade", "iris", "sienna", "nova", "zuri", "vega", "cherry" },
 
 	-- §16 : production de base et chance de coffre (total 100 %)
 	crew = {

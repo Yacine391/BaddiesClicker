@@ -15,6 +15,7 @@ local Metrics = require(Client.UI.Metrics)
 local WindowHost = require(Client.UI.WindowHost)
 local BookModel = require(Client.Logic.BookModel)
 local Chip = require(Client.UI.Components.Chip)
+local Portrait = require(Client.UI.Components.Portrait)
 local Crew = require(script.Parent.Crew)
 
 local Book = {}
@@ -22,23 +23,11 @@ local Book = {}
 local DETAIL_WIDTH = 250
 local CARD_HEIGHT = 150
 local COLUMNS = 4
-local LOCKED = Color3.fromHex("#0B0A14")
 local CARD_TOP = Color3.fromHex("#262044")
 local CARD_BOTTOM = Color3.fromHex("#16132A")
 
 local function chipColor(key: string): Color3
 	return (Theme.Colors :: any)[key] or Theme.Colors.TextDim
-end
-
-local function silhouette(scope: any, color: Color3, size: UDim2, position: UDim2): Instance
-	return scope:New("Frame")({
-		Name = "Silhouette",
-		AnchorPoint = Vector2.new(0.5, 1),
-		Position = position,
-		Size = size,
-		BackgroundColor3 = color,
-		[scope.Children] = { scope:New("UICorner")({ CornerRadius = UDim.new(0.4, 0) }) },
-	})
 end
 
 local function signature(snapshot: any): string
@@ -47,6 +36,14 @@ local function signature(snapshot: any): string
 	end
 	local c = snapshot.collection
 	local active = snapshot.active or {}
+	-- looks choisis : les portraits suivent le look porté
+	local looksKey = ""
+	if c and type(c.looks) == "table" then
+		for _, id in c.discovered or {} do
+			local looks = c.looks[id]
+			looksKey ..= tostring(looks and looks.selected or 1)
+		end
+	end
 	return table.concat({
 		tostring(active.baddieId),
 		tostring(active.slotId),
@@ -54,6 +51,7 @@ local function signature(snapshot: any): string
 		tostring(snapshot.mode),
 		if c then table.concat(c.discovered or {}, ",") else "v1",
 		if c then table.concat(c.display or {}, ",") else "",
+		looksKey,
 	}, "|")
 end
 
@@ -76,12 +74,14 @@ local function card(scope: any, data: BookModel.Card, selected: any, order: numb
 			end),
 			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 		}),
-		silhouette(
-			scope,
-			if data.discovered then Color3.fromHex(data.color) else LOCKED,
-			UDim2.fromOffset(44, 74),
-			UDim2.new(0.5, 0, 0, 96)
-		),
+		-- portrait 3D ; identité non découverte : silhouette noire, sans révéler la tenue
+		Portrait(scope, {
+			Subject = { id = data.id, look = data.look },
+			Mode = "bust",
+			Locked = not data.discovered,
+			Size = UDim2.new(1, -8, 0, 92),
+			Position = UDim2.fromOffset(4, 6),
+		}),
 		scope:New("Frame")({
 			Name = "Rarity",
 			Position = UDim2.fromOffset(6, 6),
@@ -254,12 +254,12 @@ local function detailPanel(scope: any, deps: any, snapshot: any, id: string): { 
 					Thickness = 2,
 					ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 				}),
-				silhouette(
-					scope,
-					if d.discovered then Color3.fromHex(d.color) else LOCKED,
-					UDim2.fromOffset(62, 112),
-					UDim2.fromScale(0.5, 1)
-				),
+				Portrait(scope, {
+					Subject = { id = d.id, look = d.look },
+					Mode = "bust",
+					Locked = not d.discovered,
+					Turn = 24,
+				}),
 			},
 		}),
 		Text.label(scope, {

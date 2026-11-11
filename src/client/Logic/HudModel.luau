@@ -19,6 +19,8 @@ export type Progress =
 
 export type Card = {
 	kind: "principal" | "crew",
+	id: string, -- identité du catalogue (portrait 3D)
+	look: number?, -- look porté (baddies)
 	name: string,
 	rarity: { label: string, color: string },
 	line1: string,
@@ -110,6 +112,8 @@ local function cardsOf(snapshot: any, catalog: any, format: (number) -> string):
 				else nil
 			table.insert(cards, {
 				kind = "principal",
+				id = active.baddieId,
+				look = tonumber(active.look) or 1,
 				name = string.upper(baddie.name),
 				rarity = rarity,
 				line1 = "×" .. format(tonumber(active.multiplier) or baddie.multiplier) .. " dégâts",
@@ -128,6 +132,7 @@ local function cardsOf(snapshot: any, catalog: any, format: (number) -> string):
 				local rarity = rarityOf(catalog, def.rarity)
 				table.insert(cards, {
 					kind = "crew",
+					id = member.id,
 					name = string.upper(def.name),
 					rarity = rarity,
 					line1 = "+" .. format(tonumber(member.perSecond) or def.basePowerPerSecond) .. "/s",

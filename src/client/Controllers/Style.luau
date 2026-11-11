@@ -18,6 +18,7 @@ local StyleModel = require(Client.Logic.StyleModel)
 local ListRow = require(Client.UI.Components.ListRow)
 local Chip = require(Client.UI.Components.Chip)
 local Icon = require(Client.UI.Components.Icon)
+local Portrait = require(Client.UI.Components.Portrait)
 local Wardrobe = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Wardrobe"))
 
 local Style = {}
@@ -49,31 +50,7 @@ local function signature(snapshot: any): string
 	}, "|")
 end
 
--- Silhouette aux couleurs de la palette (bandes du haut vers le bas), en attendant les rendus
-local function figure(scope: any, palette: { string }?, size: UDim2, position: UDim2): Instance
-	local colors = palette or { "#8A84A3" }
-	local keys = {}
-	for i, hex in colors do
-		local a = (i - 1) / #colors
-		local b = i / #colors
-		local c = Color3.fromHex(hex)
-		table.insert(keys, ColorSequenceKeypoint.new(a, c))
-		table.insert(keys, ColorSequenceKeypoint.new(math.min(b, 1) - (if i < #colors then 0.001 else 0), c))
-	end
-	return scope:New("Frame")({
-		Name = "Figure",
-		AnchorPoint = Vector2.new(0.5, 1),
-		Position = position,
-		Size = size,
-		BackgroundColor3 = Color3.new(1, 1, 1),
-		[scope.Children] = {
-			scope:New("UICorner")({ CornerRadius = UDim.new(0.4, 0) }),
-			scope:New("UIGradient")({ Rotation = 90, Color = ColorSequence.new(keys) }),
-		},
-	})
-end
-
-local function preview(scope: any, def: any, worn: StyleModel.LookRow?): Instance
+local function preview(scope: any, id: string, def: any, worn: StyleModel.LookRow?): Instance
 	return scope:New("Frame")({
 		Name = "Preview",
 		Size = UDim2.new(0, PREVIEW_WIDTH, 1, 0),
@@ -111,12 +88,19 @@ local function preview(scope: any, def: any, worn: StyleModel.LookRow?): Instanc
 					scope:New("UIStroke")({ Color = Theme.Colors.Accent, Thickness = 2 }),
 				},
 			}),
-			figure(scope, def.palette, UDim2.fromOffset(90, 230), UDim2.new(0.5, 0, 1, -48)),
+			-- la principale en pied, dans le look porté
+			Portrait(scope, {
+				Subject = { id = id, look = if worn then worn.index else 1 },
+				Mode = "full",
+				Size = UDim2.new(1, 0, 1, -110),
+				Position = UDim2.fromOffset(0, 66),
+				Turn = 18,
+			}),
 		},
 	})
 end
 
-local function lookRow(scope: any, deps: any, id: string, def: any, row: StyleModel.LookRow): Instance
+local function lookRow(scope: any, deps: any, id: string, row: StyleModel.LookRow): Instance
 	local height = Metrics.touch(scope, 44)
 	local right: Instance
 	if row.state == "worn" then
@@ -230,14 +214,12 @@ local function lookRow(scope: any, deps: any, id: string, def: any, row: StyleMo
 				ClipsDescendants = true,
 				[scope.Children] = {
 					scope:New("UICorner")({ CornerRadius = UDim.new(0, 8) }),
-					if row.state == "locked"
-						then figure(scope, { "#0B0A14" }, UDim2.fromOffset(30, 70), UDim2.fromScale(0.5, 1))
-						else figure(
-							scope,
-							def.palette,
-							UDim2.fromOffset(30, 70),
-							UDim2.fromScale(0.5, 1)
-						),
+					-- vignette du look : en pied ; verrouillé = silhouette noire (la tenue reste une surprise)
+					Portrait(scope, {
+						Subject = { id = id, look = row.index },
+						Mode = "full",
+						Locked = row.state == "locked",
+					}),
 				},
 			}),
 			Text.label(scope, {
@@ -304,13 +286,13 @@ local function looksTab(scope: any, deps: any, snapshot: any): { Instance }
 		if row.state == "worn" then
 			worn = row
 		end
-		table.insert(items, lookRow(scope, deps, id, def, row))
+		table.insert(items, lookRow(scope, deps, id, row))
 	end
 	local looks = list(scope, items)
 	looks.Position = UDim2.fromOffset(PREVIEW_WIDTH + 2, 0)
 	looks.Size = UDim2.new(1, -(PREVIEW_WIDTH + 2), 1, 0)
 	return {
-		preview(scope, def, worn),
+		preview(scope, id, def, worn),
 		scope:New("Frame")({
 			Name = "PreviewLine",
 			Position = UDim2.fromOffset(PREVIEW_WIDTH, 0),

@@ -175,6 +175,10 @@ function HUD.start(scope: any, deps: any)
 				return if c then c.rarity else nil
 			end),
 			Name = field("name"),
+			Subject = scope:Computed(function(use)
+				local c = use(data)
+				return if c then { id = c.id, look = c.look } else nil
+			end),
 			Line1 = field("line1"),
 			Line2 = field("line2"),
 			Accent = scope:Computed(function(use)

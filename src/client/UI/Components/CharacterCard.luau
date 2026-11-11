@@ -1,9 +1,9 @@
 --!strict
 --[[
 	CharacterCard : carte de droite (principale, compagnons équipés).
-	full : 150 × 158 — zone portrait 96 (dégradé + silhouette teintée), pastille de rareté, nom, deux lignes.
+	full : 150 × 158 — zone portrait 96 (dégradé + portrait 3D), pastille de rareté, nom, deux lignes.
 	compact : bandeau 150 × 46 (nom + Line1).
-	Le portrait est une silhouette tant que les rendus des personnages n'existent pas.
+	Le portrait est le modèle du personnage (Components/Portrait), une silhouette sans sujet.
 ]]
 
 local UI = script.Parent.Parent
@@ -11,6 +11,7 @@ local Theme = require(UI.Theme)
 local Text = require(UI.Text)
 local Panel = require(script.Parent.Panel)
 local Icon = require(script.Parent.Icon)
+local Portrait = require(script.Parent.Portrait)
 
 export type Props = {
 	Rarity: any, -- { label: string, color: Color3 | string } ou état ; nil = pas de pastille
@@ -18,6 +19,7 @@ export type Props = {
 	Line1: any, -- string ou état (ex. « ×1 · Slot 1 » ou « +0,6/s »)
 	Line2: any?, -- string ou état
 	Accent: any, -- Color3 ou état
+	Subject: any?, -- { id, look? } ou état : portrait 3D du personnage (sinon silhouette)
 	Mode: any, -- état de "full" | "compact"
 	LayoutOrder: number?,
 	Visible: any?,
@@ -60,16 +62,18 @@ return function(scope: any, props: Props): Frame
 				Rotation = 90,
 				Color = ColorSequence.new(Color3.fromHex("#2A2147"), Color3.fromHex("#151226")),
 			}),
-			-- silhouette provisoire
-			scope:New("Frame")({
-				Name = "Silhouette",
-				AnchorPoint = Vector2.new(0.5, 1),
-				Position = UDim2.fromScale(0.5, 1),
-				Size = UDim2.fromOffset(56, 76),
-				BackgroundColor3 = props.Accent,
-				BackgroundTransparency = 0.35,
-				[scope.Children] = { scope:New("UICorner")({ CornerRadius = UDim.new(0.4, 0) }) },
-			}),
+			-- portrait 3D du personnage ; silhouette teintée si aucun sujet n'est fourni
+			if props.Subject ~= nil
+				then Portrait(scope, { Subject = props.Subject, Mode = "bust" })
+				else scope:New("Frame")({
+					Name = "Silhouette",
+					AnchorPoint = Vector2.new(0.5, 1),
+					Position = UDim2.fromScale(0.5, 1),
+					Size = UDim2.fromOffset(56, 76),
+					BackgroundColor3 = props.Accent,
+					BackgroundTransparency = 0.35,
+					[scope.Children] = { scope:New("UICorner")({ CornerRadius = UDim.new(0.4, 0) }) },
+				}),
 			scope:New("Frame")({
 				Name = "Rarity",
 				Position = UDim2.fromOffset(8, 8),

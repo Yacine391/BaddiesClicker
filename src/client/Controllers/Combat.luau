@@ -14,7 +14,6 @@
 local ContextActionService = game:GetService("ContextActionService")
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
@@ -25,13 +24,22 @@ local Metrics = require(Client.UI.Metrics)
 local Panel = require(Client.UI.Components.Panel)
 local Toast = require(Client.UI.Components.Toast)
 local CombatModel = require(Client.Logic.CombatModel)
+local Visuals = require(script.Parent.Visuals)
 
 local Combat = {}
 
 local BOSS_SCALE = 1.5
 local BAR_WIDTH = 380
 
-type View = { model: Model, target: Vector3, fill: Frame, maxHP: number, height: number, lift: number }
+type View = {
+	model: Model,
+	target: Vector3,
+	fill: Frame,
+	maxHP: number,
+	height: number,
+	lift: number,
+	tracks: Visuals.Tracks,
+}
 
 local deps: any
 local state = CombatModel.new()
@@ -56,19 +64,6 @@ local function clearWorld()
 	table.clear(views)
 end
 
-local function ghost(model: Instance)
-	for _, d in model:GetDescendants() do
-		if d:IsA("BasePart") then
-			d.Anchored = true
-			d.CanCollide = false
-			d.CanQuery = false
-			d.CanTouch = false
-		elseif d:IsA("Humanoid") then
-			d.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None -- la plaque est la nôtre
-		end
-	end
-end
-
 local function part(parent: Instance, props: { [string]: any }): Part
 	local p = Instance.new("Part")
 	p.Anchored = true
@@ -85,8 +80,12 @@ local function part(parent: Instance, props: { [string]: any }): Part
 	return p
 end
 
--- Sbire : silhouette stylisée (corps, tête, visière néon rose), origine aux pieds
+-- Sbire : archétype du niveau (Visuals.Characters.Minions) ; repli : silhouette en blocs, origine aux pieds
 local function minionModel(): Model
+	local visual = Visuals.cloneMinion(state.levelId)
+	if visual ~= nil then
+		return visual
+	end
 	local model = Instance.new("Model")
 	model.Name = "Minion"
 	local body = part(model, {
@@ -113,17 +112,12 @@ local function minionModel(): Model
 	return model
 end
 
--- Boss : modèle de baddie (P1 : Maya en boss de test tant que les autres modèles manquent), sinon bloc
+-- Boss : la baddie du niveau dans son look signature, agrandie ; repli : bloc à sa couleur
 local function bossModel(baddieId: string?): Model
-	local visuals = ReplicatedStorage:FindFirstChild("Visuals")
-	local characters = visuals and visuals:FindFirstChild("Characters")
-	local dir = characters and characters:FindFirstChild("B01_Maya")
-	local source = dir and (dir:FindFirstChild("Look03") or dir:FindFirstChild("Look01"))
-	if source ~= nil and source:IsA("Model") then
-		local model = source:Clone()
-		ghost(model)
-		model:ScaleTo(BOSS_SCALE)
-		return model
+	local visual = if baddieId then Visuals.clone(baddieId, 3) else nil
+	if visual ~= nil then
+		visual:ScaleTo(BOSS_SCALE)
+		return visual
 	end
 	local def = if baddieId then deps.Catalog.baddies[baddieId] else nil
 	local model = Instance.new("Model")
@@ -201,6 +195,12 @@ local function spawnEnemy(enemy: CombatModel.Enemy)
 	local box, size = model:GetBoundingBox()
 	local bottom = box.Position.Y - size.Y / 2
 	local lift = model:GetPivot().Position.Y - bottom
+	-- Rig du kit : la racine est à 3 studs des pieds (× échelle) ; les accessoires bas ne faussent pas l'appui
+	local root = model:FindFirstChild("HumanoidRootPart")
+	if root ~= nil and root:IsA("BasePart") and model.PrimaryPart == root then
+		lift = 3 * model:GetScale()
+		bottom = root.Position.Y - lift
+	end
 	local anchor = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart", true)
 	if anchor == nil then
 		return
@@ -209,8 +209,15 @@ local function spawnEnemy(enemy: CombatModel.Enemy)
 	local target = Vector3.new(enemy.x, state.floorY + lift, enemy.z)
 	model:PivotTo(CFrame.new(target))
 	model.Parent = container()
-	views[enemy.id] =
-		{ model = model, target = target, fill = fill, maxHP = enemy.maxHP, height = size.Y, lift = lift }
+	views[enemy.id] = {
+		model = model,
+		target = target,
+		fill = fill,
+		maxHP = enemy.maxHP,
+		height = size.Y,
+		lift = lift,
+		tracks = Visuals.animate(model),
+	}
 end
 
 local function disk(x: number, z: number, radius: number, color: Color3, transparency: number): Part
@@ -594,6 +601,7 @@ function Combat.start(scope: any, dependencies: any)
 			for _, view in views do
 				local current = view.model:GetPivot().Position
 				local nextPos = current:Lerp(view.target, alpha)
+				Visuals.setMoving(view.tracks, (view.target - current).Magnitude > 0.35)
 				local look = if me then Vector3.new(me.X, nextPos.Y, me.Z) else nextPos + Vector3.new(0, 0, 1)
 				if (look - nextPos).Magnitude > 0.1 then
 					view.model:PivotTo(CFrame.lookAt(nextPos, look))

@@ -94,6 +94,7 @@ function Crew.rows(scope: any, deps: any, snapshot: any, withActions: boolean?):
 				rows,
 				ListRow(scope, {
 					Portrait = string.sub(def.name, 1, 1),
+					PortraitSubject = { id = entry.id },
 					PortraitColor = Theme.Colors.Crew,
 					Name = `{deps.Format.upper(def.name)} · {deps.Format.upper(def.role)}`,
 					Chips = chips,

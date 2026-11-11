@@ -1277,17 +1277,13 @@ return function(Kit: any, Parts: any, Styles: any)
 	): Model
 		local b = Parts.build(if male then Parts.BUILD_M else Parts.BUILD_F, build)
 		local rig = Kit.newRig(name, Kit.skeleton(b), body, scale)
-		Parts.body(
-			rig,
-			b,
-			{
-				hips = shade(body, 0.8),
-				thigh = shade(body, 0.8),
-				calf = shade(body, 0.8),
-				chest = shade(body, 1.25),
-				legBulk = 0.06,
-			}
-		)
+		Parts.body(rig, b, {
+			hips = shade(body, 0.8),
+			thigh = shade(body, 0.8),
+			calf = shade(body, 0.8),
+			chest = shade(body, 1.25),
+			legBulk = 0.06,
+		})
 		add(
 			rig,
 			"Head",

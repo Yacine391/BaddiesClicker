@@ -6,7 +6,6 @@
 ]]
 
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
@@ -14,21 +13,13 @@ local Workspace = game:GetService("Workspace")
 local Client = script.Parent.Parent
 local Formation = require(Client.Logic.Formation)
 local FX = require(script.Parent.FX)
+local Visuals = require(script.Parent.Visuals)
 
 local Followers = {}
 
-local IDLE_ANIM = "rbxassetid://507766666"
-local WALK_ANIM = "rbxassetid://507777826"
 local WALK_SPEED = 2
 local OTHERS_MAX_DISTANCE = 120
 local MAX_ANIMATED = 20
-
--- ID du catalogue → dossier dans Visuals.Characters ; les baddies ont des looks, le crew un « Base »
-local VISUALS: { [string]: { folder: string, crew: boolean } } = {
-	maya = { folder = "B01_Maya", crew = false },
-	malik = { folder = "C02_Malik", crew = true },
-	test_b99 = { folder = "TEST", crew = false },
-}
 
 type Member = { id: string, kind: "baddie" | "crew" }
 type Follower = {
@@ -74,56 +65,21 @@ local function grey(): Model
 end
 
 local function buildModel(player: Player, member: Member): Model?
-	local entry = VISUALS[member.id]
-	if entry == nil then
-		warn(`[Followers] identité inconnue ignorée : {member.id}`)
-		return nil
-	end
-	local characters = ReplicatedStorage:FindFirstChild("Visuals")
-		and (ReplicatedStorage :: any).Visuals:FindFirstChild("Characters")
-	local dir = characters and characters:FindFirstChild(entry.folder)
-	local source: Instance? = nil
-	if dir then
-		if member.id == "test_b99" then
-			source = dir:FindFirstChild("TEST_B99")
-		elseif entry.crew then
-			source = dir:FindFirstChild("Base")
-		else
-			source = dir:FindFirstChild(string.format("Look%02d", lookIndexFor(player, member.id)))
-				or dir:FindFirstChild("Look01")
-		end
-	end
-	if source == nil or not source:IsA("Model") then
+	-- Toute identité du catalogue a son dossier (assets/visuals/export-characters le vérifie)
+	local look = if member.kind == "baddie" then lookIndexFor(player, member.id) else nil
+	local model = Visuals.clone(member.id, look)
+	if model == nil then
 		warn(`[Followers] modèle absent pour {member.id} : silhouette grise`)
 		return grey()
-	end
-	local model = source:Clone()
-	for _, d in model:GetDescendants() do
-		if d:IsA("BasePart") then
-			d.CanCollide = false
-			d.CanQuery = false
-			d.CanTouch = false
-		end
 	end
 	FX.attach(model, member.id)
 	return model
 end
 
 local function playAnims(follower: Follower)
-	local controller = follower.model:FindFirstChildOfClass("AnimationController")
-	local animator = controller and controller:FindFirstChildOfClass("Animator")
-	if animator == nil then
-		return
-	end
-	local idle = Instance.new("Animation")
-	idle.AnimationId = IDLE_ANIM
-	local walk = Instance.new("Animation")
-	walk.AnimationId = WALK_ANIM
-	follower.idle = animator:LoadAnimation(idle)
-	follower.walk = animator:LoadAnimation(walk)
-	if follower.idle then
-		follower.idle:Play()
-	end
+	local tracks = Visuals.animate(follower.model)
+	follower.idle = tracks.idle
+	follower.walk = tracks.walk
 end
 
 local function membersOf(player: Player): { Member }

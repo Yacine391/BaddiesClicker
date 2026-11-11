@@ -8,11 +8,13 @@
 
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
+local Portrait = require(script.Parent.Portrait)
 local Text = require(UI.Text)
 local Metrics = require(UI.Metrics)
 
 export type Props = {
-	Portrait: string, -- initiale tant qu'il n'y a pas de rendu
+	Portrait: string, -- initiale (réglages, lignes sans personnage)
+	PortraitSubject: any?, -- { id, look? } : portrait 3D du personnage à la place de l'initiale
 	PortraitColor: Color3?,
 	Name: string,
 	Chips: { Instance },
@@ -142,7 +144,7 @@ return function(scope: any, props: Props): Instance
 			Position = UDim2.new(0, 12, 0.5, 0),
 			Size = UDim2.fromOffset(54, 54),
 			BackgroundColor3 = Color3.fromHex("#120F22"),
-			Text = props.Portrait,
+			Text = if props.PortraitSubject then "" else props.Portrait,
 			TextScaled = true,
 			FontFace = Theme.Fonts.Heavy,
 			TextColor3 = props.PortraitColor or Theme.Colors.Text,
@@ -158,6 +160,14 @@ return function(scope: any, props: Props): Instance
 					PaddingTop = UDim.new(0, 10),
 					PaddingBottom = UDim.new(0, 10),
 				}),
+				if props.PortraitSubject
+					then Portrait(scope, {
+						Subject = props.PortraitSubject,
+						Mode = "bust",
+						Size = UDim2.new(1, 0, 1, 20),
+						Position = UDim2.fromOffset(0, -10),
+					})
+					else nil,
 			},
 		}),
 		Text.label(scope, {

@@ -16,6 +16,7 @@ export type Card = {
 	rarityLabel: string,
 	rarityColor: string,
 	color: string, -- couleur de la silhouette (palette du Catalog)
+	look: number, -- look choisi (portrait 3D) ; 1 par défaut
 	chip: Chip?,
 }
 
@@ -26,6 +27,7 @@ export type Detail = {
 	rarityLabel: string,
 	rarityColor: string,
 	color: string,
+	look: number,
 	isPrincipal: boolean,
 	slotText: string,
 	multiplierText: string,
@@ -78,6 +80,14 @@ local function principalOf(snapshot: any): (string?, string)
 	return active.baddieId, slot
 end
 
+-- Look choisi d'une identité découverte (collection.looks), 1 sinon
+local function lookOf(snapshot: any, id: string): number
+	local collection = collectionOf(snapshot)
+	local looks = collection and type(collection.looks) == "table" and collection.looks[id]
+	local selected = if type(looks) == "table" then tonumber(looks.selected) else nil
+	return if selected then math.clamp(math.floor(selected), 1, 3) else 1
+end
+
 local function identity(catalog: any, id: string): (string, string, string, string)
 	local def = catalog.baddies[id]
 	if def == nil then
@@ -119,6 +129,7 @@ function BookModel.cards(snapshot: any, catalog: any, format: (number) -> string
 			rarityLabel = rarityLabel,
 			rarityColor = rarityColor,
 			color = color,
+			look = if found then lookOf(snapshot, id) else 1,
 			chip = chip,
 		})
 	end
@@ -154,6 +165,7 @@ function BookModel.detail(snapshot: any, catalog: any, format: (number) -> strin
 		rarityLabel = rarityLabel,
 		rarityColor = rarityColor,
 		color = color,
+		look = if discovered then lookOf(snapshot, id) else 1,
 		isPrincipal = isPrincipal,
 		slotText = slot,
 		multiplierText = "×" .. format(multiplier),

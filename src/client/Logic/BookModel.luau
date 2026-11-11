@@ -136,6 +136,11 @@ function BookModel.cards(snapshot: any, catalog: any, format: (number) -> string
 	return cards
 end
 
+-- Nom affiché sous la carte : "???" tant que l'identité n'est pas découverte
+function BookModel.cardLabel(card: Card): string
+	return if card.discovered then card.name else "???"
+end
+
 function BookModel.detail(snapshot: any, catalog: any, format: (number) -> string, id: string): Detail
 	local discovered = table.find(discoveredOf(snapshot), id) ~= nil
 	local display = displayOf(snapshot)

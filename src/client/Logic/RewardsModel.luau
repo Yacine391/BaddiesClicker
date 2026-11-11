@@ -294,6 +294,31 @@ function RewardsModel.playtime(snapshot: any, balance: any): { MilestoneRow }
 	return rows
 end
 
+-- Texte de la tuile cadeau : "PRÊT" si un palier attend, sinon le temps restant avant le prochain,
+-- "" quand tout est reçu. `extraSeconds` = secondes écoulées depuis le snapshot (compte côté client).
+function RewardsModel.giftText(snapshot: any, balance: any, extraSeconds: number): string
+	local rewards = rewardsOf(snapshot)
+	if not rewards or type(rewards.playtime) ~= "table" then
+		return ""
+	end
+	local seconds = (tonumber(rewards.playtime.seconds) or 0) + math.max(0, extraSeconds)
+	local states = if type(rewards.playtime.milestones) == "table" then rewards.playtime.milestones else {}
+	local nextNeeded: number? = nil
+	for index, milestone in balance.playtime.milestones do
+		local s = states[index]
+		if type(s) == "table" and s.ready == true and s.claimed ~= true then
+			return "PRÊT"
+		end
+		if nextNeeded == nil and not (type(s) == "table" and s.claimed == true) then
+			nextNeeded = milestone.minutes * 60
+		end
+	end
+	if nextNeeded == nil then
+		return ""
+	end
+	return RewardsModel.clock(math.max(0, nextNeeded - seconds))
+end
+
 -- Toast d'un événement Result des récompenses, ou nil
 function RewardsModel.toastFor(event: { [string]: any }): string?
 	if event.kind == "dailyReward" then

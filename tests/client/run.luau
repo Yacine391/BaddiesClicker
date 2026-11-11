@@ -54,6 +54,7 @@ local VisualsModel = require("../../src/client/Logic/VisualsModel")
 local RewardsModel = require("../../src/client/Logic/RewardsModel")
 local SoundModel = require("../../src/client/Logic/SoundModel")
 local Balance = require("../../src/shared/Balance")
+local BadgeModel = require("../../src/client/Logic/BadgeModel")
 
 print("Runner")
 test("smoke", function()
@@ -1027,6 +1028,52 @@ test("pastille du menu, pièces et toasts", function()
 		"Achat reçu : 1 tour de roue"
 	)
 	eq(RewardsModel.toastFor({ kind = "ticket" }), nil)
+end)
+
+print("Refonte simulateur")
+test("pip : vide, nombre, 9+, texte", function()
+	eq(BadgeModel.pip(nil), "")
+	eq(BadgeModel.pip(""), "")
+	eq(BadgeModel.pip("3"), "3")
+	eq(BadgeModel.pip("12"), "9+")
+	eq(BadgeModel.pip("NEW"), "!")
+end)
+test("crewTicketText : tickets compagnon du snapshot", function()
+	eq(build(with({ tickets = { baddie = 10, crew = 4 } })).crewTicketText, "4")
+	eq(build(nil).crewTicketText, "—")
+end)
+test("ticketProgress : entraînements depuis le dernier ticket", function()
+	local p = HudModel.ticketProgress(with({ stats = { trainActions = 260 } }), 250)
+	eq(p.value, 10, "value")
+	eq(p.max, 250, "max")
+	eq(HudModel.ticketProgress(nil, 250).value, 0, "nil")
+	eq(HudModel.ticketProgress(with({ stats = {} }), 250).value, 0, "absent")
+end)
+test("giftText : prêt, compte à rebours, terminé, absent", function()
+	eq(RewardsModel.giftText(rewardsSnapshot(), Balance, 0), "PRÊT")
+	local waiting = rewardsSnapshot()
+	waiting.rewards.playtime = { seconds = 200, milestones = {} }
+	eq(RewardsModel.giftText(waiting, Balance, 40), RewardsModel.clock(60), "compte à rebours")
+	local done = rewardsSnapshot()
+	local all = {}
+	for i in Balance.playtime.milestones do
+		all[i] = { claimed = true }
+	end
+	done.rewards.playtime = { seconds = 99999, milestones = all }
+	eq(RewardsModel.giftText(done, Balance, 0), "", "tous reçus")
+	eq(RewardsModel.giftText({}, Balance, 0), "", "absent")
+	eq(RewardsModel.giftText(nil, Balance, 0), "", "nil")
+end)
+test("cardLabel : ??? tant que non découverte", function()
+	local cards = BookModel.cards(bookSnapshot(), Catalog, Format.number)
+	local hidden = 0
+	for _, c in cards do
+		eq(BookModel.cardLabel(c), if c.discovered then c.name else "???", c.id)
+		if not c.discovered then
+			hidden += 1
+		end
+	end
+	eq(hidden > 0, true, "au moins une carte cachée")
 end)
 
 print("Sons, accessoires et succès")

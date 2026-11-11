@@ -37,8 +37,8 @@ return function(scope: any, props: Props): Instance
 	local children: { any } = {
 		Icon(scope, {
 			Name = props.Icon,
-			Size = UDim2.fromScale(0.62, 0.62),
-			Position = UDim2.fromScale(0.5, 0.42),
+			Size = UDim2.fromScale(0.92, 0.92),
+			Position = UDim2.fromScale(0.5, 0.36),
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			ZIndex = 3,
 		}),
@@ -47,8 +47,9 @@ return function(scope: any, props: Props): Instance
 			Text = props.Label,
 			Weight = "Heavy",
 			Stroke = true,
-			Size = UDim2.fromScale(1.15, 0.26),
-			Position = UDim2.new(0.5, 0, 1, 6),
+			StrokeThickness = 2,
+			Size = UDim2.fromScale(1.1, 0.24),
+			Position = UDim2.new(0.5, 0, 1, 3),
 			AnchorPoint = Vector2.new(0.5, 1),
 			ZIndex = 4,
 		}),
@@ -131,7 +132,7 @@ return function(scope: any, props: Props): Instance
 					return if use(props.Active) then Color3.new(1, 1, 1) else Theme.Colors.Ink
 				end),
 				StrokeThickness = scope:Computed(function(use)
-					return if use(props.Active) then 4 else Theme.Stroke.Frame
+					return if use(props.Active) then 3 else 2
 				end),
 				Children = children,
 			}),

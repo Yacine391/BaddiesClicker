@@ -58,3 +58,23 @@ Pleines et en couleur : jamais teintées en jeu. Uploadées au nom de l'utilisat
 | `icons-sim/png/lock.png` | `rbxassetid://104027571520849` |
 | `icons-sim/png/door.png` | `rbxassetid://72003425824728` |
 | `icons-sim/png/crown.png` | `rbxassetid://82780129259484` |
+
+## Icônes 3D (rendus Blender, 11/11)
+
+Scène et modèles : `blender/icon_kit.py` + `blender/icons.py` (une fonction `build_<nom>` par icône), rendus 512 × 512 transparents dans `icons-3d/`.
+Remplacent les icônes simulateur plates, sauf `lock` et `door` (toujours `icons-sim`).
+
+| Fichier | ID |
+|---|---|
+| `icons-3d/book.png` | `rbxassetid://125173625918836` |
+| `icons-3d/style.png` | `rbxassetid://101028663402756` |
+| `icons-3d/crew.png` | `rbxassetid://98520148403150` |
+| `icons-3d/slots.png` | `rbxassetid://70628433746190` |
+| `icons-3d/bonus.png` | `rbxassetid://118887008661733` |
+| `icons-3d/settings.png` | `rbxassetid://120022267838035` |
+| `icons-3d/gift.png` | `rbxassetid://111345075798964` |
+| `icons-3d/power.png` | `rbxassetid://128247149260944` |
+| `icons-3d/ticket.png` | `rbxassetid://72915798347235` |
+| `icons-3d/companionTicket.png` | `rbxassetid://137714168881506` |
+| `icons-3d/coin.png` | `rbxassetid://139690753999507` |
+| `icons-3d/crown.png` | `rbxassetid://73066508179627` |

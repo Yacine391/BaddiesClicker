@@ -76,7 +76,7 @@ local function tabButton(scope: any, props: Props, gradient: Gradient, tab: Tab,
 					return if use(active) then gradient else INACTIVE
 				end),
 				Size = UDim2.new(1, 0, 1, -6),
-				Radius = 10,
+				Radius = 6,
 			}),
 			scope:New("TextLabel")({
 				Name = "Label",

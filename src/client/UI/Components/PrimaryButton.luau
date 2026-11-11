@@ -70,7 +70,7 @@ return function(scope: any, props: Props): Instance
 			Name = "Tile",
 			Gradient = gradient,
 			Size = UDim2.fromScale(1, 1),
-			Radius = 16,
+			Radius = 6,
 			Transparency = scope:Computed(function(use)
 				return if use(props.Enabled) then 0 else 0.45
 			end),
